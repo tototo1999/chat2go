@@ -1,7 +1,1062 @@
-cat > ~/chat2go/chat.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><title>Chat · Chat2GO</title></head>
-<body><h1>Chat 调试室</h1></body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>调试室 · Chat2GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:    #1D9E75;
+      --teal-50: #E1F5EE;
+      --teal-100:#9FE1CB;
+      --teal-600:#0F6E56;
+      --teal-800:#085041;
+      --purple:  #534AB7;
+      --purple-50:#EEEDFE;
+      --purple-100:#CECBF6;
+      --purple-600:#3C3489;
+      --gray-50: #F1EFE8;
+      --gray-100:#D3D1C7;
+      --gray-400:#888780;
+      --bg:      #FAFAF8;
+      --bg2:     #F4F3EF;
+      --border:  rgba(60,58,54,0.12);
+      --border2: rgba(60,58,54,0.22);
+      --text:    #1a1a18;
+      --text2:   #5f5e5a;
+      --text3:   #888780;
+      --radius:  8px;
+      --radius-lg: 12px;
+      --sidebar: 280px;
+      --nav-h:   56px;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── NAV ── */
+    nav {
+      height: var(--nav-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      background: #fff;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.5px;
+    }
+    .logo span { color: var(--teal); }
+    .nav-badge {
+      padding: 3px 10px;
+      background: var(--teal-50);
+      color: var(--teal-600);
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 100px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      font-size: 12px;
+      color: var(--text2);
+      cursor: default;
+    }
+    .user-av {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--teal-50);
+      color: var(--teal-800);
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-logout {
+      padding: 6px 14px;
+      font-size: 12px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .btn-logout:hover { background: var(--bg2); color: var(--text); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      border-right: 0.5px solid var(--border);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 1rem 1rem 0.75rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .sidebar-title {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text3);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .btn-new-room {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .15s;
+    }
+    .btn-new-room:hover { background: var(--teal-600); }
+    .btn-new-room i { font-size: 15px; }
+
+    .rooms-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .rooms-list::-webkit-scrollbar { width: 4px; }
+    .rooms-list::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 4px; }
+
+    .room-item {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+      border: 0.5px solid transparent;
+      margin-bottom: 2px;
+    }
+    .room-item:hover { background: var(--bg2); }
+    .room-item.active {
+      background: var(--teal-50);
+      border-color: var(--teal-100);
+    }
+    .room-name {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .room-item.active .room-name { color: var(--teal-800); }
+    .room-meta {
+      font-size: 11px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .room-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .rooms-empty {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--text3);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    /* ── CHAT PANEL ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text3);
+    }
+    .welcome i { font-size: 40px; color: var(--teal-100); margin-bottom: 1rem; }
+    .welcome h3 { font-size: 16px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+    .welcome p { font-size: 13px; line-height: 1.7; max-width: 300px; }
+
+    .chat-head {
+      padding: 0 1.5rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+      background: #fff;
+    }
+    .chat-head-left { display: flex; align-items: center; gap: 10px; }
+    .chat-room-name { font-size: 14px; font-weight: 500; }
+    .chat-room-industry {
+      padding: 2px 10px;
+      background: var(--bg2);
+      border-radius: 100px;
+      font-size: 11px;
+      color: var(--text3);
+    }
+    .online-count {
+      font-size: 12px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .online-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--teal);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .bridge-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all .3s;
+    }
+    .bridge-status.online  { background: var(--teal-50);  color: var(--teal-600); }
+    .bridge-status.offline { background: var(--gray-50);  color: var(--gray-400); }
+    .bridge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .bridge-status.online  .bridge-dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+    .bridge-status.offline .bridge-dot { background: var(--gray-400); }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 4px; }
+
+    .msg-group { display: flex; flex-direction: column; gap: 4px; }
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .msg-av {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .msg-av.user   { background: var(--bg2);       color: var(--text2); }
+    .msg-av.expert { background: var(--purple-50);  color: var(--purple-600); }
+    .msg-av.ai     { background: var(--teal-50);    color: var(--teal-800); }
+
+    .msg-sender { font-size: 12px; font-weight: 500; }
+    .msg-role-badge {
+      padding: 1px 8px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 500;
+    }
+    .msg-role-badge.user   { background: var(--gray-50); color: var(--gray-400); }
+    .msg-role-badge.expert { background: var(--purple-50); color: var(--purple-600); }
+    .msg-role-badge.ai     { background: var(--teal-50); color: var(--teal-600); }
+
+    .msg-ts { font-size: 11px; color: var(--text3); margin-left: auto; }
+
+    .msg-bubble {
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.7;
+      max-width: 680px;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .msg-bubble.user   { background: var(--bg2);       color: var(--text);  border-radius: 2px 12px 12px 12px; }
+    .msg-bubble.expert { background: var(--purple-50); color: var(--text);  border-radius: 2px 12px 12px 12px; }
+    .msg-bubble.ai     { background: var(--teal-50);   color: var(--text);  border-radius: 2px 12px 12px 12px; }
+
+    .typing-indicator {
+      display: none;
+      padding: 0 1.5rem 0.5rem;
+    }
+    .typing-indicator.show { display: flex; }
+    .typing-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: var(--teal-50);
+      border-radius: 2px 12px 12px 12px;
+    }
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal-600);
+      animation: dot-bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot-bounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-5px); opacity: 1; }
+    }
+
+    .input-area {
+      padding: 1rem 1.5rem;
+      border-top: 0.5px solid var(--border);
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .input-wrap {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .input-box {
+      flex: 1;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      resize: none;
+      outline: none;
+      transition: border-color .15s;
+      line-height: 1.6;
+      max-height: 140px;
+      min-height: 42px;
+    }
+    .input-box:focus { border-color: var(--teal); background: #fff; }
+    .input-box::placeholder { color: var(--text3); }
+    .send-btn {
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      height: 42px;
+    }
+    .send-btn:hover { background: var(--teal-600); }
+    .send-btn:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
+    .send-btn i { font-size: 16px; }
+
+    .input-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    /* ── NEW ROOM MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      margin: 1rem;
+    }
+    .modal h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .modal .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .modal label { font-size: 13px; font-weight: 500; color: var(--text2); }
+    .modal input, .modal select {
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .modal input:focus, .modal select:focus { border-color: var(--teal); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-cancel:hover { background: var(--bg2); }
+    .btn-create {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-create:hover { background: var(--teal-600); }
+    .btn-create:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
+
+    /* ── MARKDOWN 渲染 ── */
+    .msg-bubble.markdown {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+    }
+    .md-body {
+      padding: 14px 16px;
+      background: var(--teal-50);
+      border-radius: 2px 12px 12px 12px;
+      font-size: 14px;
+      line-height: 1.75;
+      max-width: 720px;
+    }
+    .md-body h1, .md-body h2, .md-body h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 600;
+      margin: 1rem 0 0.5rem;
+      line-height: 1.4;
+    }
+    .md-body h1 { font-size: 18px; border-bottom: 0.5px solid var(--teal-100); padding-bottom: 6px; }
+    .md-body h2 { font-size: 16px; }
+    .md-body h3 { font-size: 14px; }
+    .md-body p  { margin: 0.5rem 0; }
+    .md-body ul, .md-body ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+    .md-body li { margin: 3px 0; }
+    .md-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0;
+      font-size: 13px;
+    }
+    .md-body th, .md-body td {
+      border: 0.5px solid var(--teal-100);
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .md-body th { background: var(--teal-100); font-weight: 500; }
+    .md-body tr:nth-child(even) { background: rgba(29,158,117,0.04); }
+    .md-body code {
+      background: rgba(29,158,117,0.1);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .md-body pre { background: #1a1a18; border-radius: 8px; padding: 12px; overflow-x: auto; margin: 0.75rem 0; }
+    .md-body pre code { background: none; color: #e8e6e0; font-size: 12px; }
+    .md-body blockquote {
+      border-left: 3px solid var(--teal-100);
+      padding: 4px 12px;
+      color: var(--text2);
+      margin: 0.5rem 0;
+    }
+    .md-body hr { border: none; border-top: 0.5px solid var(--teal-100); margin: 1rem 0; }
+
+    .pdf-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 6px 0 2px;
+    }
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-pdf:hover { background: var(--teal-600); }
+    .btn-pdf i { font-size: 13px; }
+    .pdf-hint { font-size: 11px; color: var(--text3); }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--gray-50) 50%, var(--bg2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-room { height: 52px; margin-bottom: 4px; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      padding: 10px 18px;
+      background: var(--text);
+      color: #fff;
+      border-radius: var(--radius);
+      font-size: 13px;
+      z-index: 2000;
+      opacity: 0;
+      transition: all .25s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .sidebar.mobile-show { display: flex; position: fixed; inset: 0; z-index: 50; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a href="/" class="logo">Chat<span>2GO</span></a>
+    <span class="nav-badge">Chat · 调试室</span>
+  </div>
+  <div class="nav-right">
+    <div class="user-pill">
+      <div class="user-av" id="userAv">?</div>
+      <span id="userEmail">加载中...</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()">退出</button>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-title">调试室列表</div>
+      <button class="btn-new-room" onclick="openNewRoomModal()">
+        <i class="ti ti-plus"></i> 新建调试室
+      </button>
+    </div>
+    <div class="rooms-list" id="roomsList">
+      <div class="skeleton skeleton-room"></div>
+      <div class="skeleton skeleton-room"></div>
+      <div class="skeleton skeleton-room"></div>
+    </div>
+  </aside>
+
+  <div class="chat-panel" id="chatPanel">
+    <div class="welcome" id="welcomeState">
+      <i class="ti ti-messages"></i>
+      <h3>选择一个调试室开始对话</h3>
+      <p>专家、用户和 AI 三方在这里协作，把你的需求说清楚，调出属于你的专属 AI 助手。</p>
+    </div>
+
+    <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="chat-head">
+        <div class="chat-head-left">
+          <span class="chat-room-name" id="chatRoomName">-</span>
+          <span class="chat-room-industry" id="chatRoomIndustry">-</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="bridge-status offline" id="bridgeStatus">
+            <div class="bridge-dot"></div>
+            <span id="bridgeLabel">AI 未连接</span>
+          </div>
+          <div class="online-count">
+            <div class="online-dot"></div>
+            实时在线
+          </div>
+        </div>
+      </div>
+
+      <div class="messages" id="messagesList"></div>
+
+      <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-wrap">
+          <textarea
+            class="input-box"
+            id="msgInput"
+            placeholder="输入消息，AI 会在这里回应你..."
+            rows="1"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this)"
+          ></textarea>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <i class="ti ti-send"></i>
+          </button>
+        </div>
+        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="newRoomModal" onclick="closeNewRoomModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>新建调试室</h3>
+    <div class="field">
+      <label>调试室名称</label>
+      <input type="text" id="newRoomName" placeholder="例：外贸跟单助手调试">
+    </div>
+    <div class="field">
+      <label>所属行业</label>
+      <select id="newRoomIndustry">
+        <option value="外贸">外贸</option>
+        <option value="健身">健身</option>
+        <option value="地产">地产</option>
+        <option value="教育">教育</option>
+        <option value="量化">量化</option>
+        <option value="医疗">医疗</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNewRoomModal()">取消</button>
+      <button class="btn-create" id="createRoomBtn" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let currentUser = null
+  let currentRoom = null
+  let realtimeChannel = null
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { window.location.href = '/login.html'; return }
+    currentUser = session.user
+
+    const email = currentUser.email
+    document.getElementById('userEmail').textContent = email
+    document.getElementById('userAv').textContent = email[0].toUpperCase()
+
+    await loadRooms()
+  }
+
+  async function loadRooms() {
+    const { data: rooms, error } = await supabase
+      .from('rooms')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    const list = document.getElementById('roomsList')
+    list.innerHTML = ''
+
+    if (error || !rooms || rooms.length === 0) {
+      list.innerHTML = `<div class="rooms-empty">还没有调试室<br>点击上方按钮新建一个</div>`
+      return
+    }
+
+    rooms.forEach(room => renderRoomItem(room))
+  }
+
+  function renderRoomItem(room) {
+    const list = document.getElementById('roomsList')
+    const empty = list.querySelector('.rooms-empty')
+    if (empty) empty.remove()
+
+    const el = document.createElement('div')
+    el.className = 'room-item'
+    el.dataset.id = room.id
+    el.innerHTML = `
+      <div class="room-name">${escHtml(room.name)}</div>
+      <div class="room-meta"><div class="room-dot"></div>${escHtml(room.industry)}</div>
+    `
+    el.onclick = () => openRoom(room)
+    list.appendChild(el)
+  }
+
+  function isExpert(room) {
+    return room.expert_id === currentUser?.id
+  }
+
+  async function openRoom(room) {
+    currentRoom = room
+
+    document.querySelectorAll('.room-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === room.id)
+    })
+
+    document.getElementById('chatRoomName').textContent = room.name
+    document.getElementById('chatRoomIndustry').textContent = room.industry
+
+    const expert = isExpert(room)
+    document.getElementById('msgInput').placeholder = expert
+      ? '以专家身份发言，AI 不会回复此条…'
+      : '输入消息，AI 会在这里回应你…'
+    document.getElementById('roleHint').textContent = expert
+      ? '你是本调试室的专家 · AI 只回应用户消息'
+      : '按 Enter 发送 · Shift+Enter 换行'
+
+    document.getElementById('welcomeState').style.display = 'none'
+    const ac = document.getElementById('activeChat')
+    ac.style.display = 'flex'
+
+    await loadMessages(room.id)
+    subscribeRoom(room.id)
+    document.getElementById('msgInput').focus()
+  }
+
+  async function loadMessages(roomId) {
+    document.getElementById('messagesList').innerHTML = ''
+
+    const { data: msgs, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+
+    if (error) { showToast('加载消息失败'); return }
+    if (msgs) msgs.forEach(m => appendMessage(m))
+    scrollToBottom()
+  }
+
+  function subscribeRoom(roomId) {
+    if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+
+    realtimeChannel = supabase
+      .channel(`room-${roomId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        const exists = document.querySelector(`[data-msg-id="${payload.new.id}"]`)
+        if (!exists) {
+          if (payload.new.role === 'ai') {
+            clearTimeout(typingTimer)
+            hideTyping()
+            setBridgeStatus(true)
+            lastAiMessageAt = Date.now()
+          }
+          appendMessage(payload.new)
+          scrollToBottom()
+        }
+      })
+      .subscribe()
+  }
+
+  function appendMessage(msg) {
+    const list = document.getElementById('messagesList')
+    const role = msg.role
+    const isOwn = msg.user_id === currentUser?.id
+    const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
+
+    const roleLabels = { user: '用户', expert: '专家', ai: 'AI 助手' }
+    const roleLabel = roleLabels[role] || role
+    const avText = role === 'ai' ? 'AI' : role === 'expert' ? '专' : '用'
+    const senderName = isOwn ? (role === 'expert' ? '我（专家）' : '我') : roleLabel
+    const ts = formatTime(msg.created_at)
+
+    const el = document.createElement('div')
+    el.className = 'msg-group'
+    el.dataset.msgId = msg.id
+
+    const bubbleHtml = isMarkdown
+      ? `<div class="msg-bubble markdown">
+           <div class="md-body" id="md-${msg.id}">${marked.parse(msg.content)}</div>
+           <div class="pdf-bar">
+             <button class="btn-pdf" onclick="exportPdf('md-${msg.id}', '文档')">
+               <i class="ti ti-file-type-pdf"></i> 下载 PDF
+             </button>
+             <span class="pdf-hint">AI 生成文档 · 请核对内容</span>
+           </div>
+         </div>`
+      : `<div class="msg-bubble ${role}">${escHtml(msg.content)}</div>`
+
+    el.innerHTML = `
+      <div class="msg-meta">
+        <div class="msg-av ${role}">${avText}</div>
+        <span class="msg-sender">${senderName}</span>
+        <span class="msg-role-badge ${role}">${roleLabel}</span>
+        <span class="msg-ts">${ts}</span>
+      </div>
+      ${bubbleHtml}
+    `
+    list.appendChild(el)
+  }
+
+  function looksLikeMarkdown(text) {
+    return /^#{1,3} /m.test(text) || /\|.+\|.+\|/.test(text) || /^[-*] /m.test(text)
+  }
+
+  function exportPdf(elemId, filename) {
+    const el = document.getElementById(elemId)
+    if (!el) return
+    const opt = {
+      margin:      [12, 14, 12, 14],
+      filename:    filename + '_' + new Date().toISOString().slice(0,10) + '.pdf',
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }
+    html2pdf().set(opt).from(el).save()
+  }
+
+  function scrollToBottom() {
+    const list = document.getElementById('messagesList')
+    list.scrollTop = list.scrollHeight
+  }
+
+  // Track when we last saw an AI message, to infer bridge online status
+  let lastAiMessageAt = 0
+  let typingTimer = null
+
+  async function sendMessage() {
+    if (!currentRoom) return
+    const input = document.getElementById('msgInput')
+    const content = input.value.trim()
+    if (!content) return
+
+    input.value = ''
+    autoResize(input)
+
+    const sendBtn = document.getElementById('sendBtn')
+    sendBtn.disabled = true
+
+    const role = isExpert(currentRoom) ? 'expert' : 'user'
+    const { data: msgData, error } = await supabase.from('messages').insert({
+      room_id: currentRoom.id,
+      user_id: currentUser.id,
+      role,
+      content
+    }).select().single()
+
+    sendBtn.disabled = false
+    input.focus()
+
+    if (error) { showToast('发送失败，请重试'); return }
+
+    appendMessage(msgData)
+    scrollToBottom()
+
+    // Show typing indicator; bridge will respond via Realtime
+    // Auto-hide after 30s if no response (bridge offline)
+    showTyping()
+    clearTimeout(typingTimer)
+    typingTimer = setTimeout(() => {
+      hideTyping()
+      setBridgeStatus(false)
+    }, 30000)
+  }
+
+  function setBridgeStatus(online) {
+    const el = document.getElementById('bridgeStatus')
+    const label = document.getElementById('bridgeLabel')
+    el.className = 'bridge-status ' + (online ? 'online' : 'offline')
+    label.textContent = online ? 'AI 已连接' : 'AI 未连接'
+  }
+
+  function showTyping() {
+    document.getElementById('typingIndicator').classList.add('show')
+    scrollToBottom()
+  }
+  function hideTyping() {
+    document.getElementById('typingIndicator').classList.remove('show')
+  }
+
+  function openNewRoomModal() {
+    document.getElementById('newRoomModal').classList.add('show')
+    document.getElementById('newRoomName').focus()
+  }
+  function closeNewRoomModal(e) {
+    if (e && e.target !== document.getElementById('newRoomModal')) return
+    document.getElementById('newRoomModal').classList.remove('show')
+  }
+
+  async function createRoom() {
+    const name = document.getElementById('newRoomName').value.trim()
+    const industry = document.getElementById('newRoomIndustry').value
+    if (!name) { document.getElementById('newRoomName').focus(); return }
+
+    const btn = document.getElementById('createRoomBtn')
+    btn.disabled = true; btn.textContent = '创建中...'
+
+    const { data: room, error } = await supabase.from('rooms').insert({
+      name,
+      industry,
+      expert_id: currentUser.id,
+      status: 'active'
+    }).select().single()
+
+    btn.disabled = false; btn.textContent = '创建'
+
+    if (error) { showToast('创建失败：' + error.message); return }
+
+    document.getElementById('newRoomModal').classList.remove('show')
+    document.getElementById('newRoomName').value = ''
+
+    renderRoomItem(room)
+    openRoom(room)
+    showToast('调试室创建成功')
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    window.location.href = '/login.html'
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso)
+    const h = d.getHours().toString().padStart(2, '0')
+    const m = d.getMinutes().toString().padStart(2, '0')
+    return `${h}:${m}`
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast')
+    el.textContent = msg
+    el.classList.add('show')
+    setTimeout(() => el.classList.remove('show'), 2500)
+  }
+
+  init()
+</script>
+</body>
 </html>
-HTMLEOF

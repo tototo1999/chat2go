@@ -4,7 +4,9 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登录 · Chat2GO</title>
-  <link href="./登录 · Chat2GO_files/css2" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -57,8 +59,8 @@
 </head>
 <body>
   <nav>
-    <a href="file:///" class="logo">Chat<span>2GO</span></a>
-    <a href="file:///" class="nav-link">← 返回首页</a>
+    <a href="/" class="logo">Chat<span>2GO</span></a>
+    <a href="/" class="nav-link">← 返回首页</a>
   </nav>
 
   <main class="main">
@@ -119,17 +121,17 @@
       </div>
 
       <div class="footer-note">
-        登录即代表同意 <a href="file:///Users/dami2026/Downloads/login.html#">服务条款</a> 和 <a href="file:///Users/dami2026/Downloads/login.html#">隐私政策</a>
+        登录即代表同意 <a href="/terms">服务条款</a> 和 <a href="/privacy">隐私政策</a>
       </div>
     </div>
   </main>
 
   <footer>
-    <a href="file:///" class="back-link">← Chat2GO 首页</a>
+    <a href="/" class="back-link">← Chat2GO 首页</a>
     <p>© 2025 Chat2GO</p>
   </footer>
 
-  <script src="./登录 · Chat2GO_files/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
