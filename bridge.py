@@ -187,14 +187,17 @@ def build_system_prompt(room: dict) -> str:
     industry = (room.get("industry") or "").strip()
     base = (
         f"你是 Chat2GO 平台的 AI 助手，工作在【{industry or '通用'}】行业的调试室里。"
-        "三方在线：小白（你的服务对象）、专家（行业老师，会偶尔指点你）、你（AI 助手）。"
-        "用简洁、专业的中文回复小白的消息。"
-        "需要生成合同、报告、方案等结构化文档时，使用 Markdown 格式（标题、表格、列表），"
-        "前端会自动渲染并提供 PDF 下载按钮。"
+        "三方在线：小白（你的服务对象）、专家（行业老师，会偶尔指点你）、你（AI 助手）。\n\n"
+        "【输出风格】\n"
+        "- 默认简短：日常对话 1-3 句话，不要列长清单。\n"
+        "- 列表项之间不要空行，紧凑排列。\n"
+        "- 不要加多余的 emoji 和客套话（「很高兴为您服务」之类的）。\n"
+        "- 只在小白明确要求合同/报告/方案/规格表时才输出长篇 Markdown 文档。\n"
+        "- 长文档用 Markdown 标题、表格、列表，前端会自动渲染并提供 PDF 下载。\n"
     )
     extra = (room.get("system_prompt") or "").strip()
     if extra:
-        return f"{base}\n\n【本调试室的专家补充指令】\n{extra}"
+        return f"{base}\n【本调试室的专家补充指令】\n{extra}"
     return base
 
 
@@ -272,13 +275,14 @@ class Chat2GOBridge:
             }).execute()
 
         except Exception as e:
-            print(f"[bridge] Hermes 调用失败：{e}")
+            err_str = str(e)
+            print(f"[bridge] AI 调用失败 (mode={self.ai_mode})：{err_str}")
             try:
                 await self.sb.table("messages").insert({
                     "room_id": room_id,
                     "user_id": self.expert_id,
                     "role": "ai",
-                    "content": f"⚠️ 本地 Hermes 调用失败：{e}",
+                    "content": f"⚠️ AI 调用失败 (mode={self.ai_mode}): {err_str[:300]}",
                 }).execute()
             except Exception:
                 pass
