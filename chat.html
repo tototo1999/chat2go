@@ -457,6 +457,76 @@
       color: var(--text3);
     }
 
+    /* ── 附件 ── */
+    .attach-btn {
+      width: 38px;
+      height: 42px;
+      flex-shrink: 0;
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+    }
+    .attach-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
+    .attach-btn i { font-size: 18px; }
+
+    .attach-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .attach-preview:empty { display: none; }
+    .attach-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px 5px 10px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .attach-chip i.file { font-size: 14px; color: var(--teal); }
+    .attach-chip .name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attach-chip .size { color: var(--text3); font-size: 10px; }
+    .attach-chip .x {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--text3);
+      transition: all .15s;
+    }
+    .attach-chip .x:hover { background: var(--gray-100); color: var(--text); }
+    .attach-chip.uploading { opacity: 0.6; }
+    .attach-chip.uploading .name::after { content: ' (上传中…)'; color: var(--text3); font-size: 10px; }
+
+    /* 已发送消息里的附件卡片 */
+    .msg-attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .msg-attachment {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      text-decoration: none;
+      color: var(--text);
+      max-width: 300px;
+    }
+    .msg-attachment:hover { border-color: var(--teal-100); background: var(--teal-50); }
+    .msg-attachment i { font-size: 16px; color: var(--teal); flex-shrink: 0; }
+    .msg-attachment .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
     /* ── NEW ROOM MODAL ── */
     .modal-overlay {
       display: none;
@@ -719,7 +789,16 @@
       </div>
 
       <div class="input-area">
+        <!-- 待上传的附件预览 -->
+        <div class="attach-preview" id="attachPreview"></div>
+
         <div class="input-wrap">
+          <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
+            <i class="ti ti-paperclip"></i>
+          </button>
+          <input type="file" id="fileInput" multiple style="display:none"
+                 accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml"
+                 onchange="onFilePick(event)">
           <textarea
             class="input-box"
             id="msgInput"
@@ -732,7 +811,7 @@
             <i class="ti ti-send"></i>
           </button>
         </div>
-        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行</div>
+        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行 · 📎 上传模板 / 文档</div>
       </div>
     </div>
   </div>
@@ -775,6 +854,7 @@
   let currentUser = null
   let currentRoom = null
   let realtimeChannel = null
+  let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession()
@@ -908,6 +988,19 @@
     el.className = 'msg-group'
     el.dataset.msgId = msg.id
 
+    const attachments = Array.isArray(msg.attachments) ? msg.attachments : []
+    const attachHtml = attachments.length ? `
+      <div class="msg-attachments">
+        ${attachments.map(a => `
+          <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
+            <i class="ti ti-file"></i>
+            <span class="name">${escHtml(a.name)}</span>
+            <span style="color:var(--text3);font-size:10px;">${formatSize(a.size || 0)}</span>
+          </a>
+        `).join('')}
+      </div>` : ''
+
+    const isPlaceholderMsg = attachments.length > 0 && /^\[发送了 \d+ 个文件\]$/.test(msg.content)
     const bubbleHtml = isMarkdown
       ? `<div class="msg-bubble markdown" style="padding:0;background:transparent;border:none;">
            <div class="md-body" id="md-${msg.id}">${marked.parse(msg.content)}</div>
@@ -918,7 +1011,9 @@
              <span class="pdf-hint">AI 生成 · 请核对</span>
            </div>
          </div>`
-      : `<div class="msg-bubble ${role}">${escHtml(msg.content)}</div>`
+      : (isPlaceholderMsg
+          ? ''  // 纯文件消息不显示气泡，只显示附件卡片
+          : `<div class="msg-bubble ${role}">${escHtml(msg.content)}</div>`)
 
     el.innerHTML = `
       <div class="msg-av ${role}">${avText}</div>
@@ -929,6 +1024,7 @@
           <span class="msg-ts">${ts}</span>
         </div>
         ${bubbleHtml}
+        ${attachHtml}
       </div>
     `
     list.appendChild(el)
@@ -964,7 +1060,14 @@
     if (!currentRoom) return
     const input = document.getElementById('msgInput')
     const content = input.value.trim()
-    if (!content) return
+    // 必须有内容或附件之一
+    if (!content && pendingAttachments.length === 0) return
+
+    // 等所有附件上传完
+    if (pendingAttachments.some(a => a.uploading)) {
+      showToast('附件还在上传中，请稍候')
+      return
+    }
 
     input.value = ''
     autoResize(input)
@@ -973,12 +1076,21 @@
     sendBtn.disabled = true
 
     const role = isExpert(currentRoom) ? 'expert' : 'user'
+    const finalContent = content || `[发送了 ${pendingAttachments.length} 个文件]`
+    const attachments = pendingAttachments.map(a => ({
+      name: a.name, url: a.url, size: a.size, mime_type: a.mime_type, storage_path: a.storage_path
+    }))
+
     const { data: msgData, error } = await sb.from('messages').insert({
       room_id: currentRoom.id,
       user_id: currentUser.id,
       role,
-      content
+      content: finalContent,
+      attachments
     }).select().single()
+
+    pendingAttachments = []
+    renderAttachPreview()
 
     sendBtn.disabled = false
     input.focus()
@@ -1064,6 +1176,61 @@
   function autoResize(el) {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
+
+  // ── 附件上传 ──
+  async function onFilePick(e) {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''  // 允许重复选同一个文件
+    for (const file of files) {
+      if (file.size > 20 * 1024 * 1024) {
+        showToast(`${file.name} 超过 20MB，跳过`); continue
+      }
+      const stub = {
+        name: file.name, size: file.size, mime_type: file.type || 'application/octet-stream',
+        url: '', storage_path: '', uploading: true
+      }
+      pendingAttachments.push(stub)
+      renderAttachPreview()
+      try {
+        const path = `${currentUser.id}/${Date.now()}_${file.name}`
+        const { error } = await sb.storage.from('chat-uploads').upload(path, file, {
+          cacheControl: '3600', upsert: false
+        })
+        if (error) throw error
+        const { data: pub } = sb.storage.from('chat-uploads').getPublicUrl(path)
+        stub.url = pub.publicUrl
+        stub.storage_path = path
+        stub.uploading = false
+      } catch (err) {
+        showToast(`上传失败：${file.name} - ${err.message || err}`)
+        pendingAttachments = pendingAttachments.filter(a => a !== stub)
+      }
+      renderAttachPreview()
+    }
+  }
+
+  function renderAttachPreview() {
+    const wrap = document.getElementById('attachPreview')
+    wrap.innerHTML = pendingAttachments.map((a, i) => `
+      <div class="attach-chip ${a.uploading ? 'uploading' : ''}">
+        <i class="ti ti-file file"></i>
+        <span class="name">${escHtml(a.name)}</span>
+        <span class="size">${formatSize(a.size)}</span>
+        <span class="x" onclick="removeAttachment(${i})"><i class="ti ti-x"></i></span>
+      </div>
+    `).join('')
+  }
+
+  function removeAttachment(i) {
+    pendingAttachments.splice(i, 1)
+    renderAttachPreview()
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + 'B'
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + 'KB'
+    return (bytes / 1024 / 1024).toFixed(1) + 'MB'
   }
 
   function escHtml(str) {

@@ -164,21 +164,98 @@ async def call_hermes(query: str, model: str = "", skills: str = "", timeout: in
 
 async def fetch_history(sb, room_id: str, limit: int = 12) -> list:
     """取最近 N 条消息，按时间正序返回。"""
-    r = await sb.table("messages").select("role,content,created_at").eq("room_id", room_id).order("created_at", desc=True).limit(limit).execute()
+    r = await sb.table("messages").select("role,content,attachments,created_at").eq("room_id", room_id).order("created_at", desc=True).limit(limit).execute()
     return list(reversed(r.data or []))
 
 
-def format_conversation(history: list, current_user_msg: str, expert_prompt: str = "") -> str:
-    """把对话历史格式化成一段给 LLM 的 query 文本。"""
+# ── 附件文本提取 ──
+async def extract_attachment_text(att: dict, max_chars: int = 30000) -> str:
+    """下载附件并提取文本。失败返回空字符串。"""
+    import httpx
+    name = att.get("name", "unknown")
+    url = att.get("url", "")
+    mime = (att.get("mime_type") or "").lower()
+    if not url:
+        return ""
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            data = resp.content
+    except Exception as e:
+        return f"[下载失败: {name} - {e}]"
+
+    text = ""
+    lower_name = name.lower()
+
+    # 文本类
+    if (
+        lower_name.endswith((".txt", ".md", ".markdown", ".csv", ".json", ".html", ".htm", ".xml", ".log"))
+        or mime.startswith("text/")
+        or "json" in mime
+    ):
+        try:
+            text = data.decode("utf-8", errors="replace")
+        except Exception:
+            text = data.decode("latin-1", errors="replace")
+
+    # PDF
+    elif lower_name.endswith(".pdf") or "pdf" in mime:
+        try:
+            import pypdf
+            from io import BytesIO
+            reader = pypdf.PdfReader(BytesIO(data))
+            text = "\n".join(p.extract_text() or "" for p in reader.pages)
+        except ImportError:
+            return f"[PDF 文本提取需要安装 pypdf：pip install pypdf]"
+        except Exception as e:
+            return f"[PDF 解析失败: {name} - {e}]"
+
+    # DOCX
+    elif lower_name.endswith(".docx") or "wordprocessing" in mime:
+        try:
+            import docx
+            from io import BytesIO
+            doc = docx.Document(BytesIO(data))
+            text = "\n".join(p.text for p in doc.paragraphs)
+        except ImportError:
+            return f"[DOCX 文本提取需要安装 python-docx：pip install python-docx]"
+        except Exception as e:
+            return f"[DOCX 解析失败: {name} - {e}]"
+
+    else:
+        return f"[不支持的文件类型: {name} ({mime})]"
+
+    text = text.strip()
+    if len(text) > max_chars:
+        text = text[:max_chars] + f"\n\n[... 文件过长，已截断到 {max_chars} 字符 ...]"
+    return text
+
+
+def format_conversation(history: list, current_user_msg: str, expert_prompt: str = "", attachment_texts: list | None = None) -> str:
+    """把对话历史和当前消息（含附件文本）格式化成给 LLM 的 query。"""
     parts = []
     if history:
         parts.append("【对话历史】")
         for m in history:
             role = m["role"]
             label = {"user": "小白", "expert": "专家", "ai": "你（AI）"}.get(role, role)
-            parts.append(f"{label}: {m['content']}")
+            content = m.get("content") or ""
+            atts = m.get("attachments") or []
+            if atts:
+                names = ", ".join(a.get("name", "?") for a in atts)
+                content = f"{content} [附件: {names}]"
+            parts.append(f"{label}: {content}")
         parts.append("")
+
     parts.append(f"【小白用户最新消息】\n{current_user_msg}")
+
+    if attachment_texts:
+        parts.append("\n【小白上传的文件内容（请仔细阅读，作为生成内容的参考模板/资料）】")
+        for fname, ftext in attachment_texts:
+            parts.append(f"\n--- 文件：{fname} ---\n{ftext}\n--- 文件结束 ---")
+
     return "\n".join(parts)
 
 
@@ -188,17 +265,40 @@ def build_system_prompt(room: dict) -> str:
     base = (
         f"你是 Chat2GO 平台的 AI 助手，工作在【{industry or '通用'}】行业的调试室里。"
         "三方在线：小白（你的服务对象）、专家（行业老师，会偶尔指点你）、你（AI 助手）。\n\n"
-        "【输出风格】\n"
-        "- 默认简短：日常对话 1-3 句话，不要列长清单。\n"
-        "- 列表项之间不要空行，紧凑排列。\n"
-        "- 不要加多余的 emoji 和客套话（「很高兴为您服务」之类的）。\n"
-        "- 只在小白明确要求合同/报告/方案/规格表时才输出长篇 Markdown 文档。\n"
-        "- 长文档用 Markdown 标题、表格、列表，前端会自动渲染并提供 PDF 下载。\n"
+        "【输出风格 - 严格遵守】\n"
+        "1. 默认简短：日常对话 1-3 句话，绝不列长清单或多个标题。\n"
+        "2. **绝对不要**在列表项之间加空行，bullet/编号列表必须紧贴排列：\n"
+        "   ✅ 正确格式：\n"
+        "   - 项目一\n"
+        "   - 项目二\n"
+        "   - 项目三\n"
+        "   ❌ 错误格式（不要这样写）：\n"
+        "   - 项目一\n"
+        "   \n"
+        "   - 项目二\n"
+        "3. 段落之间最多一个空行，不要连续多个空行。\n"
+        "4. 不要每段开头加 emoji，不要写「很高兴为您服务」这类客套话。\n"
+        "5. 只在小白明确要求合同/报告/方案/规格表时才输出长篇 Markdown 文档。\n"
+        "6. 长文档用紧凑的 Markdown：标题下直接接内容，表格代替长列表。\n"
     )
     extra = (room.get("system_prompt") or "").strip()
     if extra:
         return f"{base}\n【本调试室的专家补充指令】\n{extra}"
     return base
+
+
+def normalize_markdown(text: str) -> str:
+    """压缩 AI 输出里多余的空行、列表项之间的空行。"""
+    if not text:
+        return text
+    # 1. 三个及以上连续换行 → 两个
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    # 2. 列表项之间的空行（- xxx \n\n - yyy → - xxx \n - yyy）
+    text = re.sub(r'(\n[-*+] [^\n]+)\n\n(?=[-*+] )', r'\1\n', text)
+    text = re.sub(r'(\n\d+\. [^\n]+)\n\n(?=\d+\. )', r'\1\n', text)
+    # 3. 标题后的空行收紧（标题后 \n\n 内容 → 标题后 \n 内容）
+    text = re.sub(r'(\n#{1,4} [^\n]+)\n\n', r'\1\n', text)
+    return text.strip()
 
 
 # ── 主桥接类 ──
@@ -234,6 +334,7 @@ class Chat2GOBridge:
         msg_id = msg.get("id")
         room_id = msg.get("room_id")
         content = msg.get("content", "")
+        attachments = msg.get("attachments") or []
 
         if msg_id in self.processing:
             return
@@ -246,14 +347,23 @@ class Chat2GOBridge:
         model = self.resolve_model(room)
         expert_prompt = (room.get("system_prompt") or "").strip()
 
-        print(f"[bridge] [{room['name']}] 用户: {content[:60]}{'…' if len(content) > 60 else ''}")
+        att_summary = f" [附件 {len(attachments)} 个]" if attachments else ""
+        print(f"[bridge] [{room['name']}] 用户: {content[:60]}{'…' if len(content) > 60 else ''}{att_summary}")
         print(f"[bridge] → {self.ai_mode} (model={model or 'default'})")
 
         try:
+            # 提取附件文本
+            attachment_texts = []
+            for att in attachments:
+                print(f"[bridge] 读取附件: {att.get('name')}")
+                text = await extract_attachment_text(att)
+                attachment_texts.append((att.get("name", "file"), text))
+                print(f"[bridge] 附件 {att.get('name')} 提取了 {len(text)} 字符")
+
             history = await fetch_history(self.sb, room_id, limit=12)
             # 排除掉当前这条最新的 user 消息（避免重复）
             history = [m for m in history if m.get("content") != content or m.get("role") != "user"]
-            query = format_conversation(history, content, expert_prompt)
+            query = format_conversation(history, content, expert_prompt, attachment_texts)
             system = build_system_prompt(room)
 
             if self.ai_mode == "hermes":
@@ -262,6 +372,9 @@ class Chat2GOBridge:
                 ai_text = await call_hermes(full_query, model=model, skills=self.skills)
             else:
                 ai_text = await call_claude(query, system=system, model=model or "claude-sonnet-4-5")
+
+            # 压缩 AI 输出里多余的空行
+            ai_text = normalize_markdown(ai_text)
             if not ai_text:
                 ai_text = "（Hermes 返回空回复，请检查 hermes chat 是否能正常工作）"
             print(f"[bridge] [{room['name']}] AI: {ai_text[:80]}{'…' if len(ai_text) > 80 else ''}")
