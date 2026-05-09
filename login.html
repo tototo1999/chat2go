@@ -147,7 +147,8 @@
   <script>
     const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    // 避免与 UMD 注入的全局 supabase 冲突，本地 client 用 sb 命名
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
     function showMsg(text, type) {
       const el = document.getElementById('msg')
@@ -176,7 +177,7 @@
       if (!email || !password) { showMsg('请填写邮箱和密码', 'error'); return }
       const btn = document.querySelector('#form-login .submit-btn')
       btn.disabled = true; btn.textContent = '登录中...'
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { data, error } = await sb.auth.signInWithPassword({ email, password })
       btn.disabled = false; btn.textContent = '登录'
       if (error) { showMsg('登录失败：' + (error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message), 'error'); return }
       showMsg('登录成功！正在跳转...', 'success')
@@ -194,7 +195,7 @@
       const btn = document.querySelector('#form-register .submit-btn')
       btn.disabled = true; btn.textContent = '注册中...'
       try {
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await sb.auth.signUp({
           email, password,
           options: { data: { role } }
         })
@@ -233,16 +234,16 @@
 
       // 先尝试登录；失败则自动注册
       showMsg('登录中…', 'info')
-      let { data, error } = await supabase.auth.signInWithPassword(acc)
+      let { data, error } = await sb.auth.signInWithPassword(acc)
       if (error && /Invalid login credentials/i.test(error.message)) {
         showMsg('账号未注册，正在自动创建…', 'info')
-        const reg = await supabase.auth.signUp({
+        const reg = await sb.auth.signUp({
           ...acc,
           options: { data: { role: role === 'expert' ? 'expert' : 'user' } }
         })
         if (reg.error) { showMsg('自动注册失败：' + reg.error.message, 'error'); return }
         // 注册后再登录
-        const r2 = await supabase.auth.signInWithPassword(acc)
+        const r2 = await sb.auth.signInWithPassword(acc)
         if (r2.error) {
           showMsg('注册成功但需要邮箱验证。请去 Supabase Dashboard → Auth 关掉 Confirm Email', 'error')
           return
@@ -257,7 +258,7 @@
 
     // 已登录则跳转
     if (window.supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      sb.auth.getSession().then(({ data: { session } }) => {
         if (session) window.location.href = '/chat.html'
       })
     }

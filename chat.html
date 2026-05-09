@@ -743,14 +743,14 @@
 <script>
   const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
   let currentUser = null
   let currentRoom = null
   let realtimeChannel = null
 
   async function init() {
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session } } = await sb.auth.getSession()
     if (!session) { window.location.href = '/login.html'; return }
     currentUser = session.user
 
@@ -840,7 +840,7 @@
   }
 
   function subscribeRoom(roomId) {
-    if (realtimeChannel) supabase.removeChannel(realtimeChannel)
+    if (realtimeChannel) sb.removeChannel(realtimeChannel)
 
     realtimeChannel = supabase
       .channel(`room-${roomId}`)
@@ -944,7 +944,7 @@
     sendBtn.disabled = true
 
     const role = isExpert(currentRoom) ? 'expert' : 'user'
-    const { data: msgData, error } = await supabase.from('messages').insert({
+    const { data: msgData, error } = await sb.from('messages').insert({
       room_id: currentRoom.id,
       user_id: currentUser.id,
       role,
@@ -1001,7 +1001,7 @@
     const btn = document.getElementById('createRoomBtn')
     btn.disabled = true; btn.textContent = '创建中...'
 
-    const { data: room, error } = await supabase.from('rooms').insert({
+    const { data: room, error } = await sb.from('rooms').insert({
       name,
       industry,
       expert_id: currentUser.id,
@@ -1021,7 +1021,7 @@
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut()
+    await sb.auth.signOut()
     window.location.href = '/login.html'
   }
 
