@@ -494,6 +494,7 @@
       color: var(--text);
     }
     .attach-chip i.file { font-size: 14px; color: var(--teal); }
+    .attach-chip .thumb { width: 22px; height: 22px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
     .attach-chip .name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .attach-chip .size { color: var(--text3); font-size: 10px; }
     .attach-chip .x {
@@ -526,6 +527,18 @@
     .msg-attachment:hover { border-color: var(--teal-100); background: var(--teal-50); }
     .msg-attachment i { font-size: 16px; color: var(--teal); flex-shrink: 0; }
     .msg-attachment .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* 消息内图片直接显示（不走 chip） */
+    .msg-image {
+      display: block;
+      max-width: 320px;
+      max-height: 240px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border);
+      cursor: zoom-in;
+      margin-top: 4px;
+    }
+    .msg-image:hover { border-color: var(--teal-100); }
 
     /* ── NEW ROOM MODAL ── */
     .modal-overlay {
@@ -797,15 +810,16 @@
             <i class="ti ti-paperclip"></i>
           </button>
           <input type="file" id="fileInput" multiple style="display:none"
-                 accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml"
+                 accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml,image/*"
                  onchange="onFilePick(event)">
           <textarea
             class="input-box"
             id="msgInput"
-            placeholder="输入消息，AI 会在这里回应你..."
+            placeholder="输入消息，AI 会在这里回应你... (可粘贴图片)"
             rows="1"
             onkeydown="handleKey(event)"
             oninput="autoResize(this)"
+            onpaste="onPasteImage(event)"
           ></textarea>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">
             <i class="ti ti-send"></i>
@@ -991,13 +1005,20 @@
     const attachments = Array.isArray(msg.attachments) ? msg.attachments : []
     const attachHtml = attachments.length ? `
       <div class="msg-attachments">
-        ${attachments.map(a => `
-          <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
-            <i class="ti ti-file"></i>
-            <span class="name">${escHtml(a.name)}</span>
-            <span style="color:var(--text3);font-size:10px;">${formatSize(a.size || 0)}</span>
-          </a>
-        `).join('')}
+        ${attachments.map(a => {
+          const isImage = (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+          if (isImage) {
+            return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener">
+              <img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}">
+            </a>`
+          }
+          return `
+            <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
+              <i class="ti ti-file"></i>
+              <span class="name">${escHtml(a.name)}</span>
+              <span style="color:var(--text3);font-size:10px;">${formatSize(a.size || 0)}</span>
+            </a>`
+        }).join('')}
       </div>` : ''
 
     const isPlaceholderMsg = attachments.length > 0 && /^\[发送了 \d+ 个文件\]$/.test(msg.content)
@@ -1179,20 +1200,46 @@
   }
 
   // ── 附件上传 ──
+  async function onPasteImage(e) {
+    const items = (e.clipboardData || window.clipboardData)?.items
+    if (!items) return
+    const images = []
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) images.push(file)
+      }
+    }
+    if (images.length === 0) return  // 普通文字粘贴，让默认行为发生
+    e.preventDefault()
+    for (const blob of images) {
+      const ext = (blob.type.split('/')[1] || 'png').replace('+xml', '')
+      const named = new File([blob], `截图_${Date.now()}.${ext}`, { type: blob.type })
+      await uploadOneFile(named)
+    }
+  }
+
   async function onFilePick(e) {
     const files = Array.from(e.target.files || [])
     e.target.value = ''  // 允许重复选同一个文件
     for (const file of files) {
-      if (file.size > 20 * 1024 * 1024) {
-        showToast(`${file.name} 超过 20MB，跳过`); continue
-      }
-      const stub = {
-        name: file.name, size: file.size, mime_type: file.type || 'application/octet-stream',
-        url: '', storage_path: '', uploading: true
-      }
-      pendingAttachments.push(stub)
-      renderAttachPreview()
-      try {
+      await uploadOneFile(file)
+    }
+  }
+
+  async function uploadOneFile(file) {
+    if (file.size > 20 * 1024 * 1024) {
+      showToast(`${file.name} 超过 20MB，跳过`); return
+    }
+    const stub = {
+      name: file.name, size: file.size, mime_type: file.type || 'application/octet-stream',
+      url: '', storage_path: '', uploading: true,
+      // 本地预览（图片用 dataURL，纯前端，不依赖网络）
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+    }
+    pendingAttachments.push(stub)
+    renderAttachPreview()
+    try {
         // 清洗文件名：保留扩展名，非 ASCII / 特殊字符替换为下划线
         // （Supabase Storage 对路径里的非 ASCII 字符不友好，会 400）
         const ext = (file.name.match(/\.[^.]+$/) || [''])[0].toLowerCase()
@@ -1213,25 +1260,28 @@
         stub.url = pub.publicUrl
         stub.storage_path = path
         stub.uploading = false
-      } catch (err) {
-        console.error('upload failed:', err)
-        showToast(`上传失败：${file.name} - ${err.message || err}`)
-        pendingAttachments = pendingAttachments.filter(a => a !== stub)
-      }
-      renderAttachPreview()
+    } catch (err) {
+      console.error('upload failed:', err)
+      showToast(`上传失败：${file.name} - ${err.message || err}`)
+      pendingAttachments = pendingAttachments.filter(a => a !== stub)
     }
+    renderAttachPreview()
   }
 
   function renderAttachPreview() {
     const wrap = document.getElementById('attachPreview')
-    wrap.innerHTML = pendingAttachments.map((a, i) => `
-      <div class="attach-chip ${a.uploading ? 'uploading' : ''}">
-        <i class="ti ti-file file"></i>
-        <span class="name">${escHtml(a.name)}</span>
-        <span class="size">${formatSize(a.size)}</span>
-        <span class="x" onclick="removeAttachment(${i})"><i class="ti ti-x"></i></span>
-      </div>
-    `).join('')
+    wrap.innerHTML = pendingAttachments.map((a, i) => {
+      const thumb = a.preview
+        ? `<img src="${a.preview}" class="thumb" alt="">`
+        : `<i class="ti ti-file file"></i>`
+      return `
+        <div class="attach-chip ${a.uploading ? 'uploading' : ''}">
+          ${thumb}
+          <span class="name">${escHtml(a.name)}</span>
+          <span class="size">${formatSize(a.size)}</span>
+          <span class="x" onclick="removeAttachment(${i})"><i class="ti ti-x"></i></span>
+        </div>`
+    }).join('')
   }
 
   function removeAttachment(i) {

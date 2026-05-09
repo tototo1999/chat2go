@@ -91,17 +91,27 @@ def lookslike_markdown(text: str) -> bool:
     )
 
 
-async def call_claude(query: str, system: str = "", model: str = "claude-sonnet-4-5", timeout: int = 120) -> str:
-    """直接调 Anthropic API（demo 临时方案，跳过 Hermes）。"""
+async def call_claude(query: str, system: str = "", model: str = "claude-sonnet-4-5",
+                      image_urls: list | None = None, timeout: int = 120) -> str:
+    """直接调 Anthropic API。支持 image_urls=[(url, mime_type), ...]。"""
     import httpx
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         raise RuntimeError("环境变量 ANTHROPIC_API_KEY 未设置")
 
+    # 构造 user message content：图片在前，文本在后
+    content_blocks = []
+    for url, mime in (image_urls or []):
+        content_blocks.append({
+            "type": "image",
+            "source": {"type": "url", "url": url},
+        })
+    content_blocks.append({"type": "text", "text": query})
+
     payload = {
         "model": model or "claude-sonnet-4-5",
         "max_tokens": 2048,
-        "messages": [{"role": "user", "content": query}],
+        "messages": [{"role": "user", "content": content_blocks}],
     }
     if system:
         payload["system"] = system
@@ -352,13 +362,21 @@ class Chat2GOBridge:
         print(f"[bridge] → {self.ai_mode} (model={model or 'default'})")
 
         try:
-            # 提取附件文本
+            # 分类附件：图片 vs 文本类
             attachment_texts = []
+            image_urls = []
             for att in attachments:
-                print(f"[bridge] 读取附件: {att.get('name')}")
-                text = await extract_attachment_text(att)
-                attachment_texts.append((att.get("name", "file"), text))
-                print(f"[bridge] 附件 {att.get('name')} 提取了 {len(text)} 字符")
+                mime = (att.get("mime_type") or "").lower()
+                name = att.get("name", "file")
+                url  = att.get("url", "")
+                if mime.startswith("image/") or any(name.lower().endswith(e) for e in (".png", ".jpg", ".jpeg", ".gif", ".webp")):
+                    image_urls.append((url, mime or "image/png"))
+                    print(f"[bridge] 图片附件: {name}")
+                else:
+                    print(f"[bridge] 读取附件: {name}")
+                    text = await extract_attachment_text(att)
+                    attachment_texts.append((name, text))
+                    print(f"[bridge] 附件 {name} 提取了 {len(text)} 字符")
 
             history = await fetch_history(self.sb, room_id, limit=12)
             # 排除掉当前这条最新的 user 消息（避免重复）
@@ -371,7 +389,8 @@ class Chat2GOBridge:
                 full_query = f"{system}\n\n{query}\n\n请直接回复小白的最新消息。"
                 ai_text = await call_hermes(full_query, model=model, skills=self.skills)
             else:
-                ai_text = await call_claude(query, system=system, model=model or "claude-sonnet-4-5")
+                ai_text = await call_claude(query, system=system, model=model or "claude-sonnet-4-5",
+                                            image_urls=image_urls)
 
             # 压缩 AI 输出里多余的空行
             ai_text = normalize_markdown(ai_text)
