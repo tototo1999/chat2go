@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<!-- saved from url=(0043)file:///Users/dami2026/Downloads/login.html -->
+<html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · Chat2GO</title>
+  <link href="./登录 · Chat2GO_files/css2" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --teal: #1D9E75; --teal-50: #E1F5EE; --teal-600: #0F6E56;
+      --purple: #534AB7; --purple-50: #EEEDFE;
+      --bg: #FAFAF8; --bg2: #F4F3EF;
+      --border: rgba(60,58,54,0.12); --border2: rgba(60,58,54,0.22);
+      --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+      --radius: 8px; --radius-lg: 12px;
+    }
+    body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2.5rem; height: 60px; background: #fff; border-bottom: 0.5px solid var(--border); }
+    .logo { font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 600; text-decoration: none; color: var(--text); }
+    .logo span { color: var(--teal); }
+    .nav-link { font-size: 13px; color: var(--text2); text-decoration: none; }
+    .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .card { background: #fff; border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 400px; }
+    .card-header { text-align: center; margin-bottom: 2rem; }
+    .card-logo { font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+    .card-logo span { color: var(--teal); }
+    .card-sub { font-size: 14px; color: var(--text2); }
+    .tabs { display: flex; gap: 0; border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.75rem; }
+    .tab { flex: 1; padding: 9px; font-size: 13px; font-family: inherit; cursor: pointer; border: none; background: transparent; color: var(--text2); font-weight: 500; transition: all .15s; }
+    .tab.active { background: var(--teal); color: #fff; }
+    .form { display: flex; flex-direction: column; gap: 14px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    label { font-size: 13px; font-weight: 500; color: var(--text2); }
+    input { padding: 10px 12px; font-size: 14px; font-family: inherit; border: 0.5px solid var(--border2); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; }
+    input:focus { border-color: var(--teal); background: #fff; }
+    .submit-btn { padding: 12px; font-size: 14px; font-family: inherit; font-weight: 500; border: none; border-radius: var(--radius); background: var(--teal); color: #fff; cursor: pointer; transition: background .15s; margin-top: 4px; }
+    .submit-btn:hover { background: var(--teal-600); }
+    .submit-btn:disabled { background: var(--text3); cursor: not-allowed; }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+    .divider span { font-size: 12px; color: var(--text3); }
+    .wechat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; font-size: 14px; font-family: inherit; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: #fff; color: var(--text); cursor: pointer; transition: background .15s; }
+    .wechat-btn:hover { background: var(--bg2); }
+    .wechat-icon { width: 20px; height: 20px; background: #07C160; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; flex-shrink: 0; }
+    .msg { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; display: none; }
+    .msg.success { background: var(--teal-50); color: var(--teal-600); display: block; }
+    .msg.error { background: #FDE8E8; color: #9B1C1C; display: block; }
+    .msg.info { background: var(--purple-50); color: var(--purple); display: block; }
+    .footer-note { text-align: center; margin-top: 1.5rem; font-size: 12px; color: var(--text3); line-height: 1.6; }
+    .footer-note a { color: var(--teal); text-decoration: none; }
+    footer { padding: 1.5rem 2.5rem; border-top: 0.5px solid var(--border); display: flex; justify-content: space-between; background: #fff; }
+    footer p { font-size: 12px; color: var(--text3); }
+    .back-link { font-size: 12px; color: var(--text3); text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="file:///" class="logo">Chat<span>2GO</span></a>
+    <a href="file:///" class="nav-link">← 返回首页</a>
+  </nav>
+
+  <main class="main">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-logo">Chat<span>2GO</span></div>
+        <div class="card-sub">登录后开始使用专属AI助手</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(&#39;login&#39;)">登录</button>
+        <button class="tab" onclick="switchTab(&#39;register&#39;)">注册</button>
+      </div>
+
+      <div id="msg" class="msg"></div>
+
+      <!-- 登录表单 -->
+      <div id="form-login" class="form">
+        <div class="field">
+          <label>邮箱</label>
+          <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input type="password" id="login-password" placeholder="输入密码" autocomplete="current-password">
+        </div>
+        <button class="submit-btn" onclick="handleLogin()">登录</button>
+        <div class="divider"><span>或</span></div>
+        <button class="wechat-btn" onclick="handleWechat()">
+          <div class="wechat-icon">微</div>
+          微信登录（即将开放）
+        </button>
+      </div>
+
+      <!-- 注册表单 -->
+      <div id="form-register" class="form" style="display:none;">
+        <div class="field">
+          <label>邮箱</label>
+          <input type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>密码</label>
+          <input type="password" id="reg-password" placeholder="至少8位" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label>你的角色</label>
+          <select id="reg-role" style="padding:10px 12px;font-size:14px;font-family:inherit;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;">
+            <option value="user">小白用户 · 找专家用AI</option>
+            <option value="expert">行业专家 · 入驻赚收益</option>
+          </select>
+        </div>
+        <button class="submit-btn" onclick="handleRegister()">注册账号</button>
+        <div class="divider"><span>或</span></div>
+        <button class="wechat-btn" onclick="handleWechat()">
+          <div class="wechat-icon">微</div>
+          微信登录（即将开放）
+        </button>
+      </div>
+
+      <div class="footer-note">
+        登录即代表同意 <a href="file:///Users/dami2026/Downloads/login.html#">服务条款</a> 和 <a href="file:///Users/dami2026/Downloads/login.html#">隐私政策</a>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <a href="file:///" class="back-link">← Chat2GO 首页</a>
+    <p>© 2025 Chat2GO</p>
+  </footer>
+
+  <script src="./登录 · Chat2GO_files/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+    function showMsg(text, type) {
+      const el = document.getElementById('msg')
+      el.textContent = text
+      el.className = 'msg ' + type
+    }
+    function clearMsg() {
+      const el = document.getElementById('msg')
+      el.className = 'msg'
+      el.textContent = ''
+    }
+
+    function switchTab(tab) {
+      clearMsg()
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1))
+      })
+      document.getElementById('form-login').style.display = tab === 'login' ? 'flex' : 'none'
+      document.getElementById('form-register').style.display = tab === 'register' ? 'flex' : 'none'
+    }
+
+    async function handleLogin() {
+      clearMsg()
+      const email = document.getElementById('login-email').value.trim()
+      const password = document.getElementById('login-password').value
+      if (!email || !password) { showMsg('请填写邮箱和密码', 'error'); return }
+      const btn = document.querySelector('#form-login .submit-btn')
+      btn.disabled = true; btn.textContent = '登录中...'
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      btn.disabled = false; btn.textContent = '登录'
+      if (error) { showMsg('登录失败：' + (error.message === 'Invalid login credentials' ? '邮箱或密码错误' : error.message), 'error'); return }
+      showMsg('登录成功！正在跳转...', 'success')
+      setTimeout(() => { window.location.href = '/chat' }, 1000)
+    }
+
+    async function handleRegister() {
+      clearMsg()
+      const email = document.getElementById('reg-email').value.trim()
+      const password = document.getElementById('reg-password').value
+      const role = document.getElementById('reg-role').value
+      if (!email || !password) { showMsg('请填写邮箱和密码', 'error'); return }
+      if (password.length < 8) { showMsg('密码至少8位', 'error'); return }
+      const btn = document.querySelector('#form-register .submit-btn')
+      btn.disabled = true; btn.textContent = '注册中...'
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { data: { role } }
+      })
+      btn.disabled = false; btn.textContent = '注册账号'
+      if (error) { showMsg('注册失败：' + error.message, 'error'); return }
+      showMsg('注册成功！请查收邮件完成验证，然后登录。', 'success')
+    }
+
+    function handleWechat() {
+      showMsg('微信登录正在接入中，请先使用邮箱登录', 'info')
+    }
+
+    // 已登录则跳转
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.href = '/chat'
+    })
+  </script>
+
+
+</body></html>
