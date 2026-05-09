@@ -293,8 +293,12 @@ def main():
         print(f"[bridge]    pip install hermes-agent && hermes setup")
         sys.exit(1)
 
-    email    = args.email    or input("Chat2GO 专家邮箱: ").strip()
-    password = args.password or input("Chat2GO 密码: ").strip()
+    # Demo 默认专家账号（用 --email/--password 覆盖）
+    DEFAULT_EXPERT_EMAIL    = "lirui88888862@gmail.com"
+    DEFAULT_EXPERT_PASSWORD = "123456"
+
+    email    = args.email    or DEFAULT_EXPERT_EMAIL
+    password = args.password or DEFAULT_EXPERT_PASSWORD
 
     bridge = Chat2GOBridge(email=email, password=password, model=args.model, skills=args.skills)
 
