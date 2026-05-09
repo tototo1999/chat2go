@@ -1193,9 +1193,20 @@
       pendingAttachments.push(stub)
       renderAttachPreview()
       try {
-        const path = `${currentUser.id}/${Date.now()}_${file.name}`
+        // 清洗文件名：保留扩展名，非 ASCII / 特殊字符替换为下划线
+        // （Supabase Storage 对路径里的非 ASCII 字符不友好，会 400）
+        const ext = (file.name.match(/\.[^.]+$/) || [''])[0].toLowerCase()
+        const safeBase = file.name
+          .replace(/\.[^.]+$/, '')               // 去扩展名
+          .replace(/[^\w\-]+/g, '_')              // 非字母数字下划线连字符 → _
+          .replace(/_+/g, '_')                    // 连续 _ 合并
+          .replace(/^_+|_+$/g, '')                // 首尾 _ 去掉
+          .slice(0, 40) || 'file'                 // 限长
+        const safeName = `${safeBase}${ext}`
+        const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`
+
         const { error } = await sb.storage.from('chat-uploads').upload(path, file, {
-          cacheControl: '3600', upsert: false
+          cacheControl: '3600', upsert: false, contentType: file.type || 'application/octet-stream'
         })
         if (error) throw error
         const { data: pub } = sb.storage.from('chat-uploads').getPublicUrl(path)
@@ -1203,6 +1214,7 @@
         stub.storage_path = path
         stub.uploading = false
       } catch (err) {
+        console.error('upload failed:', err)
         showToast(`上传失败：${file.name} - ${err.message || err}`)
         pendingAttachments = pendingAttachments.filter(a => a !== stub)
       }
