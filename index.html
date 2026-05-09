@@ -2,10 +2,740 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>Chat2GO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat2GO · 真人专家 × AI，交付一个能干活的助手</title>
+  <meta name="description" content="不懂技术没关系。专家帮你把AI调好，你直接用。从外贸合同到医疗诊疗，每个行业都有专属方案。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:    #1D9E75;
+      --teal-50: #E1F5EE;
+      --teal-100:#9FE1CB;
+      --teal-600:#0F6E56;
+      --teal-800:#085041;
+      --purple:  #534AB7;
+      --purple-50:#EEEDFE;
+      --purple-100:#CECBF6;
+      --purple-600:#3C3489;
+      --gray-50: #F1EFE8;
+      --gray-100:#D3D1C7;
+      --gray-400:#888780;
+      --bg:      #FAFAF8;
+      --bg2:     #F4F3EF;
+      --border:  rgba(60,58,54,0.12);
+      --border2: rgba(60,58,54,0.22);
+      --text:    #1a1a18;
+      --text2:   #5f5e5a;
+      --text3:   #888780;
+      --radius:  8px;
+      --radius-lg: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2.5rem;
+      height: 60px;
+      background: #fff;
+      border-bottom: 0.5px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo span { color: var(--teal); }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 14px;
+      color: var(--text2);
+      text-decoration: none;
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-actions { display: flex; gap: 10px; }
+    .btn-sm {
+      padding: 7px 18px;
+      font-size: 13px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      color: var(--text);
+    }
+    .btn-outline:hover { background: var(--bg2); }
+    .btn-primary {
+      background: var(--teal);
+      border: none;
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--teal-600); }
+
+    /* ── HERO ── */
+    .hero {
+      background: #fff;
+      border-bottom: 0.5px solid var(--border);
+      padding: 5rem 2.5rem 4rem;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--teal-50);
+      color: var(--teal-600);
+      border-radius: 100px;
+      margin-bottom: 1.75rem;
+    }
+    .hero-badge i { font-size: 13px; }
+    h1 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -1px;
+      margin-bottom: 1.25rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    h1 em { color: var(--teal); font-style: normal; }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--text2);
+      line-height: 1.8;
+      font-weight: 300;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 4rem;
+      flex-wrap: wrap;
+    }
+    .btn-hero {
+      padding: 13px 30px;
+      font-size: 15px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .btn-hero-primary {
+      background: var(--teal);
+      border: none;
+      color: #fff;
+    }
+    .btn-hero-primary:hover { background: var(--teal-600); }
+    .btn-hero-outline {
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      color: var(--text);
+    }
+    .btn-hero-outline:hover { background: var(--bg2); }
+
+    /* Flow diagram */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .flow-box {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      border: 0.5px solid var(--border);
+    }
+    .flow-box.chat {
+      background: var(--teal-50);
+      border-color: var(--teal-100);
+    }
+    .flow-box.go {
+      background: var(--purple-50);
+      border-color: var(--purple-100);
+    }
+    .flow-tag {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .flow-box.chat .flow-tag { color: var(--teal-600); }
+    .flow-box.go .flow-tag { color: var(--purple-600); }
+    .flow-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .flow-box.chat .flow-title { color: var(--teal-800); }
+    .flow-box.go .flow-title { color: var(--purple-600); }
+    .flow-desc { font-size: 12px; }
+    .flow-box.chat .flow-desc { color: var(--teal-600); }
+    .flow-box.go .flow-desc { color: var(--purple); }
+    .flow-arrow {
+      padding: 0 16px;
+      font-size: 22px;
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      background: #fff;
+      border-top: 0.5px solid var(--border);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .how-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .how-col {
+      padding: 3.5rem 2.5rem;
+    }
+    .how-col:first-child {
+      border-right: 0.5px solid var(--border);
+    }
+    .how-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+    }
+    .how-pill.chat { background: var(--teal-50); color: var(--teal-600); }
+    .how-pill.go { background: var(--purple-50); color: var(--purple-600); }
+    .how-pill i { font-size: 13px; }
+    .how-col h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      line-height: 1.4;
+    }
+    .steps { list-style: none; }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text2);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 500;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-num.c { background: var(--teal-100); color: var(--teal-800); }
+    .step-num.g { background: var(--purple-100); color: var(--purple-600); }
+
+    /* ── SCENES ── */
+    .scenes {
+      padding: 5rem 2.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-eyebrow {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--teal);
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      line-height: 1.35;
+    }
+    .section-sub {
+      font-size: 15px;
+      color: var(--text2);
+      font-weight: 300;
+      max-width: 520px;
+      margin-bottom: 2.5rem;
+      line-height: 1.8;
+    }
+    .scenes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .scene-card {
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .scene-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-1px);
+    }
+    .scene-icon {
+      font-size: 24px;
+      color: var(--teal);
+      margin-bottom: 10px;
+    }
+    .scene-name {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .scene-who {
+      font-size: 12px;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+    .scene-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      font-size: 11px;
+      border-radius: 100px;
+    }
+    .scene-tag.live { background: var(--teal-50); color: var(--teal-600); }
+    .scene-tag.soon { background: var(--gray-50); color: var(--gray-400); }
+
+    /* ── EXPERTS ── */
+    .experts {
+      background: #fff;
+      border-top: 0.5px solid var(--border);
+      border-bottom: 0.5px solid var(--border);
+      padding: 5rem 2.5rem;
+    }
+    .experts-inner { max-width: 1100px; margin: 0 auto; }
+    .experts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 2.5rem;
+    }
+    .expert-card {
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      background: var(--bg);
+    }
+    .expert-av {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+    .expert-name { font-size: 15px; font-weight: 500; margin-bottom: 2px; }
+    .expert-role { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+    .expert-stat strong {
+      display: block;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--teal);
+    }
+    .expert-stat span { font-size: 12px; color: var(--text3); }
+
+    /* ── CTA ── */
+    .cta-section {
+      padding: 6rem 2.5rem;
+      text-align: center;
+    }
+    .cta-section h2 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 32px;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .cta-section p {
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+    .cta-cards {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .cta-card {
+      flex: 1;
+      min-width: 220px;
+      padding: 2rem 1.75rem;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      text-align: left;
+      background: var(--bg2);
+    }
+    .cta-label {
+      font-size: 10px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .cta-card.user .cta-label { color: var(--teal-600); }
+    .cta-card.expert .cta-label { color: var(--purple-600); }
+    .cta-card h4 {
+      font-size: 17px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .cta-card p {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.7;
+      margin-bottom: 1.25rem;
+    }
+    .cta-btn {
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .cta-card.user .cta-btn {
+      background: var(--teal);
+      color: #fff;
+      border: none;
+    }
+    .cta-card.user .cta-btn:hover { background: var(--teal-600); }
+    .cta-card.expert .cta-btn {
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      color: var(--text);
+    }
+    .cta-card.expert .cta-btn:hover { background: #fff; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 0.5px solid var(--border);
+      padding: 1.75rem 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+    }
+    .footer-logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .footer-logo span { color: var(--teal); }
+    footer p { font-size: 12px; color: var(--text3); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      nav { padding: 0 1.25rem; }
+      .nav-links { display: none; }
+      .hero { padding: 3.5rem 1.25rem 3rem; }
+      .how-grid { grid-template-columns: 1fr; }
+      .how-col:first-child { border-right: none; border-bottom: 0.5px solid var(--border); padding-bottom: 2.5rem; }
+      .how-col { padding: 2.5rem 1.25rem; }
+      .scenes { padding: 3.5rem 1.25rem; }
+      .experts { padding: 3.5rem 1.25rem; }
+      .experts-grid { grid-template-columns: 1fr; }
+      .cta-section { padding: 4rem 1.25rem; }
+      footer { padding: 1.25rem; flex-direction: column; gap: 8px; text-align: center; }
+      .flow { flex-direction: column; gap: 8px; }
+      .flow-arrow { transform: rotate(90deg); padding: 0; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Chat2GO · 即将上线</h1>
-  <p>真人专家 × AI，交付一个能干活的助手给你</p>
+
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="logo">Chat<span>2GO</span></a>
+    <ul class="nav-links">
+      <li><a href="#scenes">使用场景</a></li>
+      <li><a href="#how">平台机制</a></li>
+      <li><a href="#experts">专家入驻</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn-sm btn-outline">登录</button>
+      <button class="btn-sm btn-primary">免费体验</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">
+      <i class="ti ti-circle-check" aria-hidden="true"></i>
+      外贸场景已跑通 · 7个行业陆续开放
+    </div>
+    <h1>真人专家 × AI<br>交付一个<em>能干活</em>的助手给你</h1>
+    <p class="hero-sub">
+      不懂技术没关系。专家帮你把AI调好，你直接用。<br>
+      从外贸合同到医疗诊疗，每个行业都有专属方案。
+    </p>
+    <div class="hero-actions">
+      <button class="btn-hero btn-hero-primary" onclick="document.getElementById('scenes').scrollIntoView({behavior:'smooth'})">
+        找一个专家 &rarr;
+      </button>
+      <button class="btn-hero btn-hero-outline" onclick="document.getElementById('experts').scrollIntoView({behavior:'smooth'})">
+        我是专家，想入驻
+      </button>
+    </div>
+
+    <div class="flow">
+      <div class="flow-box chat">
+        <div class="flow-tag">Chat · 调试室</div>
+        <div class="flow-title">专家 + 你 + AI</div>
+        <div class="flow-desc">公开透明 · 需求共创 · Demo演示</div>
+      </div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box go">
+        <div class="flow-tag">Go · 交付室</div>
+        <div class="flow-title">你 + 专属AI</div>
+        <div class="flow-desc">私人隐私 · 独立运行 · 脱离专家</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how" id="how">
+    <div class="how-grid">
+      <div class="how-col">
+        <div class="how-pill chat">
+          <i class="ti ti-messages" aria-hidden="true"></i>
+          Chat · 调试室
+        </div>
+        <h3>专家陪你把需求说清楚</h3>
+        <ul class="steps">
+          <li class="step">
+            <span class="step-num c">1</span>
+            <span>进入公开的Chat，专家已在线，AI也在场</span>
+          </li>
+          <li class="step">
+            <span class="step-num c">2</span>
+            <span>三方对话，专家挖掘你的真实需求，当场演示</span>
+          </li>
+          <li class="step">
+            <span class="step-num c">3</span>
+            <span>你验收Demo，确认AI理解了你的业务逻辑</span>
+          </li>
+          <li class="step">
+            <span class="step-num c">4</span>
+            <span>专家一键发布，你的专属Go空间自动生成</span>
+          </li>
+        </ul>
+      </div>
+      <div class="how-col">
+        <div class="how-pill go">
+          <i class="ti ti-rocket" aria-hidden="true"></i>
+          Go · 交付室
+        </div>
+        <h3>脱离专家，独立使用</h3>
+        <ul class="steps">
+          <li class="step">
+            <span class="step-num g">1</span>
+            <span>私人空间，只有你和AI，数据绝对隐私</span>
+          </li>
+          <li class="step">
+            <span class="step-num g">2</span>
+            <span>AI已记住你的业务模板、产品型号、工作习惯</span>
+          </li>
+          <li class="step">
+            <span class="step-num g">3</span>
+            <span>一句话生成合同、提取CRM、输出报告</span>
+          </li>
+          <li class="step">
+            <span class="step-num g">4</span>
+            <span>按token计费，专家服务费与模型费打包透明</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENES -->
+  <section class="scenes" id="scenes">
+    <div class="section-eyebrow">使用场景</div>
+    <h2 class="section-title">7个行业，每个都有专家坐镇</h2>
+    <p class="section-sub">不是通用AI，是被行业专家调教过的专属助手。</p>
+    <div class="scenes-grid">
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-ship" aria-hidden="true"></i></div>
+        <div class="scene-name">外贸跟单</div>
+        <div class="scene-who">外贸公司跟单员 · 合同生成 · 物流追踪</div>
+        <span class="scene-tag live">已上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-barbell" aria-hidden="true"></i></div>
+        <div class="scene-name">健身教练 CRM</div>
+        <div class="scene-who">健身教练 · 学员管理 · 课程记录</div>
+        <span class="scene-tag live">已上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-building" aria-hidden="true"></i></div>
+        <div class="scene-name">地产中介</div>
+        <div class="scene-who">中介 · 带客录音 · 周边房产研报</div>
+        <span class="scene-tag live">已上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-school" aria-hidden="true"></i></div>
+        <div class="scene-name">学习系统</div>
+        <div class="scene-who">学生 · 课件转大模型学习助手</div>
+        <span class="scene-tag live">已上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-chart-candle" aria-hidden="true"></i></div>
+        <div class="scene-name">量化交易</div>
+        <div class="scene-who">量化专家为小白搭建的大模型系统</div>
+        <span class="scene-tag soon">即将上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-stethoscope" aria-hidden="true"></i></div>
+        <div class="scene-name">医疗诊疗</div>
+        <div class="scene-who">医生 · 患者咨询 · 诊疗辅助</div>
+        <span class="scene-tag soon">即将上线</span>
+      </a>
+      <a class="scene-card" href="#">
+        <div class="scene-icon"><i class="ti ti-abc" aria-hidden="true"></i></div>
+        <div class="scene-name">亲子做题</div>
+        <div class="scene-who">家长 · 小朋友 · 个性化学习系统</div>
+        <span class="scene-tag soon">即将上线</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- EXPERTS -->
+  <section class="experts" id="experts">
+    <div class="experts-inner">
+      <div class="section-eyebrow">专家入驻</div>
+      <h2 class="section-title">你的行业经验，值得被AI放大</h2>
+      <p class="section-sub">把你的专业知识配置成AI，让它24小时帮你服务更多客户，按token持续获得收益。</p>
+      <div class="experts-grid">
+        <div class="expert-card">
+          <div class="expert-av" style="background:#E1F5EE;color:#085041;">张</div>
+          <div class="expert-name">张老师</div>
+          <div class="expert-role">外贸 · 瓷砖卫浴专家</div>
+          <div class="expert-stat">
+            <strong>142</strong>
+            <span>活跃Go用户</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-av" style="background:#EEEDFE;color:#3C3489;">林</div>
+          <div class="expert-name">林教练</div>
+          <div class="expert-role">健身 · CRM系统专家</div>
+          <div class="expert-stat">
+            <strong>87</strong>
+            <span>活跃Go用户</span>
+          </div>
+        </div>
+        <div class="expert-card">
+          <div class="expert-av" style="background:#FAECE7;color:#712B13;">王</div>
+          <div class="expert-name">王中介</div>
+          <div class="expert-role">地产 · 带客分析专家</div>
+          <div class="expert-stat">
+            <strong>63</strong>
+            <span>活跃Go用户</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2>选择你的角色，现在开始</h2>
+    <p>小白用起来，专家赚起来</p>
+    <div class="cta-cards">
+      <div class="cta-card user">
+        <div class="cta-label">我是小白用户</div>
+        <h4>找专家，用AI</h4>
+        <p>进入Chat，和专家一起把你的需求说清楚，然后拿到专属的AI助手。</p>
+        <button class="cta-btn">立即找专家 &rarr;</button>
+      </div>
+      <div class="cta-card expert">
+        <div class="cta-label">我是行业专家</div>
+        <h4>入驻，放大影响力</h4>
+        <p>把你的行业经验变成AI产品，服务更多客户，按token持续获得收益。</p>
+        <button class="cta-btn">申请入驻 &rarr;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <a href="/" class="footer-logo">Chat<span>2GO</span></a>
+    <p>© 2025 Chat2GO · 让AI真正帮你干活</p>
+  </footer>
+
 </body>
 </html>
