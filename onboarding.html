@@ -116,42 +116,31 @@ chat2go-agent              # 启动 bridge</pre>
   &copy; 2026 Chat2GO · 行业大咖 × AI × 小白用户
 </footer>
 
-<script type="module">
-import { createClient } from './vendor/supabase-js@2.45.4-umd.min.js'
-
-// 自包含的 Supabase 配置（避免和其他 page 共享全局）
+<script src="/vendor/supabase.js"
+        onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
+<script>
 const SB_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
-window.sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null
-
-// 用 vendor UMD（和 chat.html 一致）
-if (!window.sb) {
-  const s = document.createElement('script')
-  s.src = '/vendor/supabase-js@2.45.4-umd.min.js'
-  s.onload = () => { window.sb = window.supabase.createClient(SB_URL, SB_KEY); init() }
-  document.head.appendChild(s)
-} else {
-  init()
-}
+const sb = window.supabase.createClient(SB_URL, SB_KEY)
 
 let lastKey = null
 let pollTimer = null
 
 async function init() {
-  const { data: { session } } = await window.sb.auth.getSession()
+  const { data: { session } } = await sb.auth.getSession()
   if (!session) { window.location.href = '/login.html'; return }
   document.getElementById('userEmail').textContent = session.user.email
 
   // 检查角色 / 升级为 expert（如 user_metadata 已表明是大咖但 profile 是 user）
-  const { data: profile } = await window.sb
+  const { data: profile } = await sb
     .from('profiles').select('role').eq('user_id', session.user.id).maybeSingle()
   if (profile?.role !== 'expert') {
     // 升级为 expert（前提：注册时已选大咖；安全起见这里也允许）
-    await window.sb.from('profiles').update({ role: 'expert' }).eq('user_id', session.user.id)
+    await sb.from('profiles').update({ role: 'expert' }).eq('user_id', session.user.id)
   }
 }
 
-window.copyCode = function(btn) {
+function copyCode(btn) {
   const pre = btn.parentElement
   const text = pre.innerText.replace(/^复制\s*/m, '').trim()
   navigator.clipboard.writeText(text)
@@ -159,7 +148,7 @@ window.copyCode = function(btn) {
   setTimeout(() => btn.textContent = '复制', 1500)
 }
 
-window.copyKey = function() {
+function copyKey() {
   if (!lastKey) return
   navigator.clipboard.writeText(lastKey).then(
     () => alert('已复制到剪贴板'),
@@ -167,11 +156,11 @@ window.copyKey = function() {
   )
 }
 
-window.generateKey = async function() {
+async function generateKey() {
   const name = prompt('给这把密钥起个名字（如：我的 Mac）：', 'My Device')
   if (!name) return
   try {
-    const { data, error } = await window.sb.rpc('generate_agent_key', { p_name: name })
+    const { data, error } = await sb.rpc('generate_agent_key', { p_name: name })
     if (error) throw error
     const row = (data || [])[0]
     if (!row) throw new Error('RPC 没返回数据')
@@ -191,7 +180,7 @@ window.generateKey = async function() {
 function startPolling(keyId) {
   if (pollTimer) clearInterval(pollTimer)
   pollTimer = setInterval(async () => {
-    const { data, error } = await window.sb.rpc('list_agent_keys')
+    const { data, error } = await sb.rpc('list_agent_keys')
     if (error) return
     const k = (data || []).find(x => x.id === keyId)
     if (k && k.last_used_at) {
@@ -205,6 +194,8 @@ function startPolling(keyId) {
     }
   }, 3000)
 }
+
+init()
 </script>
 </body>
 </html>
