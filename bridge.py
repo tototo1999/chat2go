@@ -2,7 +2,7 @@
 """
 Chat2GO · Hermes Bridge (async)
 ================================
-专家在本地运行此脚本，把本地 Hermes Agent 接入 Chat2GO 调试室。
+大咖在本地运行此脚本，把本地 Hermes Agent 接入 Chat2GO 调试室。
 
 架构：
   小白发消息 → Supabase messages 表 → Realtime 推送
@@ -12,7 +12,7 @@ Chat2GO · Hermes Bridge (async)
           → Realtime 推送给所有参与者
 
 关键设计：
-  • bridge.py 不直接调 LLM API。一切走 Hermes，让专家通过 ~/.hermes 的
+  • bridge.py 不直接调 LLM API。一切走 Hermes，让大咖通过 ~/.hermes 的
     soul.md、skills、tools、memory 来定制 AI 行为。
   • 每个调试室对应一个 Hermes session（chat2go-<room_id_short>），
     长期记忆自动累积。
@@ -90,7 +90,7 @@ SUPABASE_ANON_KEY = (
     ".GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8"
 )
 
-# Demo 默认专家账号
+# Demo 默认大咖账号
 DEFAULT_EXPERT_EMAIL    = "lirui88888862@gmail.com"
 DEFAULT_EXPERT_PASSWORD = "123456"
 
@@ -268,7 +268,7 @@ def format_conversation(history: list, current_user_msg: str, expert_prompt: str
         parts.append("【对话历史】")
         for m in history:
             role = m["role"]
-            label = {"user": "小白", "expert": "专家", "ai": "你（AI）"}.get(role, role)
+            label = {"user": "小白", "expert": "大咖", "ai": "你（AI）"}.get(role, role)
             content = m.get("content") or ""
             atts = m.get("attachments") or []
             if atts:
@@ -288,11 +288,11 @@ def format_conversation(history: list, current_user_msg: str, expert_prompt: str
 
 
 def build_system_prompt(room: dict) -> str:
-    """构造 system prompt。行业基础 + 专家补充。"""
+    """构造 system prompt。行业基础 + 大咖补充。"""
     industry = (room.get("industry") or "").strip()
     base = (
         f"你是 Chat2GO 平台的 AI 助手，工作在【{industry or '通用'}】行业的调试室里。"
-        "三方在线：小白（你的服务对象）、专家（行业老师，会偶尔指点你）、你（AI 助手）。\n\n"
+        "三方在线：小白（你的服务对象）、大咖（行业老师，会偶尔指点你）、你（AI 助手）。\n\n"
         "【输出风格 - 严格遵守】\n"
         "1. 默认简短：日常对话 1-3 句话，绝不列长清单或多个标题。\n"
         "2. **绝对不要**在列表项之间加空行，bullet/编号列表必须紧贴排列：\n"
@@ -311,7 +311,7 @@ def build_system_prompt(room: dict) -> str:
     )
     extra = (room.get("system_prompt") or "").strip()
     if extra:
-        return f"{base}\n【本调试室的专家补充指令】\n{extra}"
+        return f"{base}\n【本调试室的大咖补充指令】\n{extra}"
     return base
 
 
@@ -377,7 +377,7 @@ class Chat2GOBridge:
         expert_prompt = (room.get("system_prompt") or "").strip()
 
         att_summary = f" [附件 {len(attachments)} 个]" if attachments else ""
-        sender_label = "专家" if sender_role == "expert" else "小白"
+        sender_label = "大咖" if sender_role == "expert" else "小白"
         print(f"[bridge] [{room['name']}] {sender_label}: {content[:60]}{'…' if len(content) > 60 else ''}{att_summary}")
         print(f"[bridge] → {self.ai_mode} (model={model or 'default'})")
 

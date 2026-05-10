@@ -808,7 +808,7 @@
     <div class="welcome" id="welcomeState">
       <i class="ti ti-messages"></i>
       <h3>选择一个调试室开始对话</h3>
-      <p>专家、用户和 AI 三方在这里协作，把你的需求说清楚，调出属于你的专属 AI 助手。</p>
+      <p>大咖、用户和 AI 三方在这里协作，把你的需求说清楚，调出属于你的专属 AI 助手。</p>
     </div>
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
@@ -970,10 +970,10 @@
 
     const expert = isExpert(room)
     document.getElementById('msgInput').placeholder = expert
-      ? '以专家身份发言，AI 不会回复此条…'
+      ? '以大咖身份发言，AI 不会回复此条…'
       : '输入消息，AI 会在这里回应你…'
     document.getElementById('roleHint').textContent = expert
-      ? '你是本调试室的专家 · AI 只回应用户消息'
+      ? '你是本调试室的大咖 · AI 只回应用户消息'
       : '按 Enter 发送 · Shift+Enter 换行'
 
     document.getElementById('welcomeState').style.display = 'none'
@@ -1040,10 +1040,10 @@
     const isOwn = msg.user_id === currentUser?.id
     const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
 
-    const roleLabels = { user: '用户', expert: '专家', ai: 'AI 助手' }
+    const roleLabels = { user: '用户', expert: '大咖', ai: 'AI 助手' }
     const roleLabel = roleLabels[role] || role
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '专' : '用'
-    const senderName = isOwn ? (role === 'expert' ? '我（专家）' : '我') : roleLabel
+    const senderName = isOwn ? (role === 'expert' ? '我（大咖）' : '我') : roleLabel
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')

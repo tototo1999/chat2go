@@ -6,8 +6,8 @@ create policy "登录用户可建房" on rooms
   to authenticated
   with check (auth.uid() = expert_id);
 
--- 2. 专家可以更新自己创建的调试室（改 model / system_prompt）
-create policy "专家可改自己房间" on rooms
+-- 2. 大咖可以更新自己创建的调试室（改 model / system_prompt）
+create policy "大咖可改自己房间" on rooms
   for update
   to authenticated
   using (auth.uid() = expert_id)
