@@ -1,14 +1,12 @@
 #!/usr/bin/env bash
-# 一键启动 Chat2GO bridge
-# 用法：
-#   bash ~/chat2go/start.sh                   # 默认 claude 模式
-#   bash ~/chat2go/start.sh --ai-mode hermes  # 切换 hermes
+# 一键启动 Chat2GO Agent
 set -e
 cd "$(dirname "$0")"
 
-# 杀掉已有 bridge 进程，避免重复
-pkill -f "chat2go/bridge.py" 2>/dev/null || true
-sleep 0.3
+# 杀掉已有 bridge 进程，避免重复（兼容老 bridge.py 和新 chat2go_agent）
+pkill -f "chat2go/bridge\.py" 2>/dev/null || true
+pkill -f "chat2go_agent" 2>/dev/null || true
+sleep 0.5
 
 # 提示 .env 状态
 if [ ! -f .env ]; then
@@ -17,12 +15,15 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-# 检查 venv
+# 检查 venv + 装 agent 包
 if [ ! -x .venv/bin/python ]; then
   echo "[start] 初始化 venv..."
   python3 -m venv .venv
-  .venv/bin/pip install -q supabase pyyaml httpx pypdf python-docx
+fi
+if ! .venv/bin/python -c "import chat2go_agent" 2>/dev/null; then
+  echo "[start] 安装 chat2go-agent 包..."
+  .venv/bin/pip install -q -e ./agent
 fi
 
-echo "[start] 启动 bridge..."
-exec .venv/bin/python bridge.py "$@"
+echo "[start] 启动 chat2go-agent..."
+exec .venv/bin/python -m chat2go_agent "$@"
