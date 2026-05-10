@@ -959,6 +959,15 @@
     if (error) { showToast('加载消息失败'); return }
     if (msgs) msgs.forEach(m => appendMessage(m))
     scrollToBottom()
+
+    // 如果房间近 10 分钟内有 AI 消息，认为 bridge 在线
+    if (msgs && msgs.length > 0) {
+      const tenMinAgo = Date.now() - 10 * 60 * 1000
+      const recentAi = msgs.some(m => m.role === 'ai' && new Date(m.created_at).getTime() > tenMinAgo)
+      setBridgeStatus(recentAi)
+    } else {
+      setBridgeStatus(false)
+    }
   }
 
   function subscribeRoom(roomId) {
@@ -1127,14 +1136,15 @@
     appendMessage(msgData)
     scrollToBottom()
 
-    // Show typing indicator; bridge will respond via Realtime
-    // Auto-hide after 30s if no response (bridge offline)
-    showTyping()
-    clearTimeout(typingTimer)
-    typingTimer = setTimeout(() => {
-      hideTyping()
-      setBridgeStatus(false)
-    }, 30000)
+    // 只有小白发消息才会触发 AI；专家消息 AI 不响应，不要等
+    if (role === 'user') {
+      showTyping()
+      clearTimeout(typingTimer)
+      typingTimer = setTimeout(() => {
+        hideTyping()
+        setBridgeStatus(false)
+      }, 30000)
+    }
   }
 
   function setBridgeStatus(online) {
