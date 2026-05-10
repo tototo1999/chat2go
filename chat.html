@@ -316,6 +316,20 @@
       background: var(--teal-50);
       color: var(--teal-600);
     }
+    /* token 总量、context 占比徽章 */
+    .stat-badge {
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--gray-50);
+      color: var(--text3);
+      font-size: 11px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      cursor: help;
+      transition: all .3s;
+    }
+    .stat-badge.warn   { background: #fef3c7; color: #92400e; }   /* 60-85% */
+    .stat-badge.danger { background: #fee2e2; color: #991b1b; }   /* >85% */
 
     /* ── 飞书风消息布局：左头像 + 右侧 名字+时间+气泡 ── */
     .messages {
@@ -839,6 +853,8 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="cost-badge" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</div>
+          <div class="stat-badge" id="chatRoomTokens" title="累计 token 用量（input + output）">0 tok</div>
+          <div class="stat-badge" id="chatRoomCtx" title="当前 context 占用">0%</div>
           <div class="bridge-status offline" id="bridgeStatus">
             <div class="bridge-dot"></div>
             <span id="bridgeLabel">AI 未连接</span>
@@ -1001,22 +1017,77 @@
     document.getElementById('msgInput').focus()
   }
 
+  // 模型 context window 大小（tokens）。表外的模型走默认值 200K。
+  const MODEL_CONTEXT_WINDOWS = {
+    'anthropic/claude-sonnet-4-5':  200000,
+    'anthropic/claude-haiku-4-5':   200000,
+    'anthropic/claude-opus-4-5':    200000,
+    'openai/gpt-5':                 400000,
+    'openai/gpt-5-mini':            400000,
+    'deepseek/deepseek-chat':       128000,
+    'deepseek/deepseek-reasoner':    64000,
+    'qwen/qwen-max':                 32000,
+    'qwen/qwen-plus':               128000,
+    'kimi/moonshot-v1-128k':        128000,
+    'glm/glm-4-plus':               128000,
+    'gemini/gemini-2-pro':         2000000,
+  }
+  const DEFAULT_CTX_WINDOW = 200000
+
+  function formatTokens(n) {
+    n = Number(n) || 0
+    if (n < 1000) return `${n}`
+    if (n < 1_000_000) return `${(n / 1000).toFixed(1)}K`
+    return `${(n / 1_000_000).toFixed(2)}M`
+  }
+
   async function loadRoomCost(roomId) {
-    try {
-      const { data, error } = await sb
-        .from('room_costs')
-        .select('total_charge_cny')
+    // 并行拉 room_costs（汇总）+ 最近一条 model_usage（context 占用）
+    const [rc, lu] = await Promise.all([
+      sb.from('room_costs')
+        .select('total_charge_cny,total_input_tokens,total_output_tokens')
         .eq('room_id', roomId)
-        .maybeSingle()
-      if (error) throw error
-      const cny = Number(data?.total_charge_cny ?? 0)
+        .maybeSingle(),
+      sb.from('model_usage')
+        .select('input_tokens,model')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    // ── 1. 总账单 ¥X.XX ──
+    try {
+      const cny = Number(rc.data?.total_charge_cny ?? 0)
       const el = document.getElementById('chatRoomCost')
       el.textContent = `¥${cny.toFixed(2)}`
       el.classList.toggle('has-cost', cny > 0)
-    } catch (e) {
-      // 表不存在/RLS 拦截/网络等都不阻断主流程
-      console.warn('[cost] load failed:', e)
-    }
+    } catch (e) { console.warn('[cost] failed:', e) }
+
+    // ── 2. 累计 token 数 ──
+    try {
+      const inTok = Number(rc.data?.total_input_tokens ?? 0)
+      const outTok = Number(rc.data?.total_output_tokens ?? 0)
+      const total = inTok + outTok
+      const el = document.getElementById('chatRoomTokens')
+      el.textContent = `${formatTokens(total)} tok`
+      el.title = `input ${formatTokens(inTok)} + output ${formatTokens(outTok)} = ${total} tokens`
+    } catch (e) { console.warn('[tokens] failed:', e) }
+
+    // ── 3. 当前 context 占用 ──
+    try {
+      const used = Number(lu.data?.input_tokens ?? 0)
+      const model = lu.data?.model ?? ''
+      const window = MODEL_CONTEXT_WINDOWS[model] || DEFAULT_CTX_WINDOW
+      const pct = window > 0 ? (used / window) * 100 : 0
+      const el = document.getElementById('chatRoomCtx')
+      el.textContent = `${pct.toFixed(0)}%`
+      el.title = model
+        ? `${model.split('/')[1]}：${formatTokens(used)} / ${formatTokens(window)}`
+        : '尚未对话'
+      el.classList.toggle('warn',   pct >= 60 && pct < 85)
+      el.classList.toggle('danger', pct >= 85)
+    } catch (e) { console.warn('[ctx] failed:', e) }
   }
 
   async function loadMessages(roomId) {
