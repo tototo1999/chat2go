@@ -1049,7 +1049,7 @@
         .eq('room_id', roomId)
         .maybeSingle(),
       sb.from('model_usage')
-        .select('input_tokens,model')
+        .select('input_tokens,cache_creation_input_tokens,cache_read_input_tokens,model')
         .eq('room_id', roomId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -1076,7 +1076,11 @@
 
     // ── 3. 当前 context 占用 ──
     try {
+      // hermes 用 prompt caching 时 input_tokens 只是 fresh 部分，
+      // 真正占 context 的是三档之和
       const used = Number(lu.data?.input_tokens ?? 0)
+                 + Number(lu.data?.cache_creation_input_tokens ?? 0)
+                 + Number(lu.data?.cache_read_input_tokens ?? 0)
       const model = lu.data?.model ?? ''
       const window = MODEL_CONTEXT_WINDOWS[model] || DEFAULT_CTX_WINDOW
       const pct = window > 0 ? (used / window) * 100 : 0
