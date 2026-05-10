@@ -300,6 +300,23 @@
     .bridge-status.online  .bridge-dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
     .bridge-status.offline .bridge-dot { background: var(--gray-400); }
 
+    /* 计费徽章：本房间累计消费 */
+    .cost-badge {
+      padding: 3px 10px;
+      border-radius: 100px;
+      background: var(--gray-50);
+      color: var(--text2);
+      font-size: 11px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+      cursor: help;
+      transition: all .3s;
+    }
+    .cost-badge.has-cost {
+      background: var(--teal-50);
+      color: var(--teal-600);
+    }
+
     /* ── 飞书风消息布局：左头像 + 右侧 名字+时间+气泡 ── */
     .messages {
       flex: 1;
@@ -821,6 +838,7 @@
           <span class="chat-room-industry" id="chatRoomIndustry">-</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
+          <div class="cost-badge" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</div>
           <div class="bridge-status offline" id="bridgeStatus">
             <div class="bridge-dot"></div>
             <span id="bridgeLabel">AI 未连接</span>
@@ -978,8 +996,27 @@
     ac.style.display = 'flex'
 
     await loadMessages(room.id)
+    await loadRoomCost(room.id)
     subscribeRoom(room.id)
     document.getElementById('msgInput').focus()
+  }
+
+  async function loadRoomCost(roomId) {
+    try {
+      const { data, error } = await sb
+        .from('room_costs')
+        .select('total_charge_cny')
+        .eq('room_id', roomId)
+        .maybeSingle()
+      if (error) throw error
+      const cny = Number(data?.total_charge_cny ?? 0)
+      const el = document.getElementById('chatRoomCost')
+      el.textContent = `¥${cny.toFixed(2)}`
+      el.classList.toggle('has-cost', cny > 0)
+    } catch (e) {
+      // 表不存在/RLS 拦截/网络等都不阻断主流程
+      console.warn('[cost] load failed:', e)
+    }
   }
 
   async function loadMessages(roomId) {
@@ -1023,6 +1060,9 @@
             hideTyping()
             setBridgeStatus(true)
             lastAiMessageAt = Date.now()
+            // AI 回复完成 → bridge 刚写完 model_usage 行 → 刷新成本徽章
+            // 延迟 500ms 等 model_usage insert 落地
+            setTimeout(() => loadRoomCost(roomId), 500)
           }
           appendMessage(payload.new)
           scrollToBottom()
