@@ -863,7 +863,7 @@
   <aside class="sidebar">
     <div class="sidebar-head">
       <div class="sidebar-title">调试室列表</div>
-      <button class="btn-new-room" onclick="openNewRoomModal()">
+      <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
         <i class="ti ti-plus"></i> 新建调试室
       </button>
     </div>
@@ -888,6 +888,7 @@
           <span class="chat-room-industry" id="chatRoomIndustry">-</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
+          <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:3px 10px;border-radius:100px;background:var(--gray-50);color:var(--text2);font-size:11px;font-weight:500;border:0.5px solid var(--border2);cursor:pointer;font-family:inherit;">🔗 邀请</button>
           <div class="cost-badge" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</div>
           <div class="stat-badge" id="chatRoomTokens" title="累计 token 用量（input + output）">0 tok</div>
           <div class="stat-badge" id="chatRoomCtx" title="当前 context 占用">0%</div>
@@ -998,12 +999,56 @@
         .select('role')
         .eq('user_id', currentUser.id)
         .maybeSingle()
-      if (profile?.role === 'expert') {
+      currentRole = profile?.role || 'user'
+      if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
+        document.getElementById('newRoomBtn').style.display = ''
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
     await loadRooms()
+
+    // 支持 ?room=<id> 直接进房间（小白邀请链接用）
+    const params = new URLSearchParams(window.location.search)
+    const roomParam = params.get('room')
+    if (roomParam) {
+      await openRoomById(roomParam)
+    }
+  }
+
+  let currentRole = 'user'  // 'user' | 'expert'
+
+  function copyInviteLink() {
+    if (!currentRoom) return
+    const url = `${window.location.origin}/chat.html?room=${currentRoom.id}`
+    navigator.clipboard.writeText(url).then(
+      () => {
+        const btn = document.getElementById('inviteBtn')
+        const orig = btn.textContent
+        btn.textContent = '✓ 已复制'
+        setTimeout(() => { btn.textContent = orig }, 1500)
+      },
+      () => prompt('复制失败，请手动复制以下链接：', url),
+    )
+  }
+
+  async function openRoomById(roomId) {
+    try {
+      const { data: room, error } = await sb
+        .from('rooms').select('*').eq('id', roomId).maybeSingle()
+      if (error || !room) {
+        console.warn('[openRoomById] not found:', roomId, error)
+        return
+      }
+      // 小白通过链接来的房间：如果还不在列表里，临时塞进列表
+      const list = document.getElementById('roomsList')
+      if (!list.querySelector(`[data-id="${room.id}"]`)) {
+        renderRoomItem(room)
+      }
+      await openRoom(room)
+    } catch (e) {
+      console.warn('[openRoomById] failed:', e)
+    }
   }
 
   // ── Settings 模态框（大咖独享）──
@@ -1096,16 +1141,42 @@
   }
 
   async function loadRooms() {
-    const { data: rooms, error } = await sb
-      .from('rooms')
-      .select('*')
-      .order('created_at', { ascending: false })
-
     const list = document.getElementById('roomsList')
     list.innerHTML = ''
 
-    if (error || !rooms || rooms.length === 0) {
-      list.innerHTML = `<div class="rooms-empty">还没有调试室<br>点击上方按钮新建一个</div>`
+    let rooms = []
+    if (currentRole === 'expert') {
+      // 大咖：只看自己 owned 的房间
+      const { data, error } = await sb
+        .from('rooms').select('*')
+        .eq('expert_id', currentUser.id)
+        .order('created_at', { ascending: false })
+      if (error) { console.warn('[loadRooms expert] error:', error); return }
+      rooms = data || []
+    } else {
+      // 小白：只看自己 participated 的房间（发过消息的）
+      // 1. 拉自己的 messages，distinct room_id
+      const { data: myMsgs } = await sb
+        .from('messages').select('room_id')
+        .eq('user_id', currentUser.id)
+      const myRoomIds = [...new Set((myMsgs || []).map(m => m.room_id))]
+      if (myRoomIds.length === 0) {
+        rooms = []
+      } else {
+        const { data, error } = await sb
+          .from('rooms').select('*')
+          .in('id', myRoomIds)
+          .order('created_at', { ascending: false })
+        if (error) { console.warn('[loadRooms user] error:', error); return }
+        rooms = data || []
+      }
+    }
+
+    if (rooms.length === 0) {
+      const hint = currentRole === 'expert'
+        ? '还没有调试室<br>点击上方按钮新建一个'
+        : '还没有进入过任何调试室<br>请通过大咖发给你的邀请链接进入'
+      list.innerHTML = `<div class="rooms-empty">${hint}</div>`
       return
     }
 
@@ -1141,6 +1212,9 @@
 
     document.getElementById('chatRoomName').textContent = room.name
     document.getElementById('chatRoomIndustry').textContent = room.industry
+
+    // 大咖侧显示「邀请」按钮（用来生成给小白的链接）
+    document.getElementById('inviteBtn').style.display = isExpert(room) ? '' : 'none'
 
     document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
 

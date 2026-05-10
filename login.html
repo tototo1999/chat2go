@@ -195,9 +195,14 @@
       const btn = document.querySelector('#form-register .submit-btn')
       btn.disabled = true; btn.textContent = '注册中...'
       try {
+        // 大咖 → onboarding；小白 → chat
+        const target = role === 'expert' ? '/onboarding.html' : '/chat.html'
         const { data, error } = await sb.auth.signUp({
           email, password,
-          options: { data: { role } }
+          options: {
+            data: { role },
+            emailRedirectTo: `${window.location.origin}${target}`,
+          },
         })
         btn.disabled = false; btn.textContent = '注册账号'
         if (error) { showMsg('注册失败：' + error.message, 'error'); return }
