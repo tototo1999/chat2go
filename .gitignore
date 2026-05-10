@@ -9,6 +9,9 @@
 __pycache__/
 *.pyc
 
+# 运行时日志（每次重启变化）
+logs/
+
 # macOS
 .DS_Store
 
