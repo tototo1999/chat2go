@@ -968,13 +968,8 @@
     document.getElementById('chatRoomName').textContent = room.name
     document.getElementById('chatRoomIndustry').textContent = room.industry
 
-    const expert = isExpert(room)
-    document.getElementById('msgInput').placeholder = expert
-      ? '以大咖身份发言，AI 不会回复此条…'
-      : '输入消息，AI 会在这里回应你…'
-    document.getElementById('roleHint').textContent = expert
-      ? '你是本调试室的大咖 · AI 只回应用户消息'
-      : '按 Enter 发送 · Shift+Enter 换行'
+    document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
+    document.getElementById('roleHint').textContent = '按 Enter 发送 · Shift+Enter 换行 · 📎 上传 · 🎤 语音输入'
 
     document.getElementById('welcomeState').style.display = 'none'
     const ac = document.getElementById('activeChat')
