@@ -484,7 +484,7 @@
     }
 
     /* ── 附件 ── */
-    .attach-btn {
+    .attach-btn, .voice-btn {
       width: 38px;
       height: 42px;
       flex-shrink: 0;
@@ -498,8 +498,19 @@
       justify-content: center;
       transition: all .15s;
     }
-    .attach-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
-    .attach-btn i { font-size: 18px; }
+    .attach-btn:hover, .voice-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
+    .attach-btn i, .voice-btn i { font-size: 18px; }
+
+    .voice-btn.recording {
+      background: #FDE8E8;
+      border-color: #F5A0A0;
+      color: #9B1C1C;
+      animation: voicePulse 1s ease-in-out infinite;
+    }
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(155, 28, 28, 0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(155, 28, 28, 0); }
+    }
 
     .attach-preview {
       display: flex;
@@ -837,6 +848,9 @@
           <input type="file" id="fileInput" multiple style="display:none"
                  accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml,image/*"
                  onchange="onFilePick(event)">
+          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
+            <i class="ti ti-microphone"></i>
+          </button>
           <textarea
             class="input-box"
             id="msgInput"
@@ -850,7 +864,7 @@
             <i class="ti ti-send"></i>
           </button>
         </div>
-        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行 · 📎 上传模板 / 文档</div>
+        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行 · 📎 上传 · 🎤 语音输入</div>
       </div>
     </div>
   </div>
@@ -1354,6 +1368,79 @@
     const h = d.getHours().toString().padStart(2, '0')
     const m = d.getMinutes().toString().padStart(2, '0')
     return `${h}:${m}`
+  }
+
+  // ── 语音输入 ──
+  let recognition = null
+  let isRecording = false
+  let voiceTextBefore = ''   // 开始录音前输入框已有的内容
+
+  function getRecognition() {
+    if (recognition) return recognition
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) return null
+    recognition = new SR()
+    recognition.lang = 'zh-CN'
+    recognition.continuous = true
+    recognition.interimResults = true   // 边说边出文字
+
+    recognition.onresult = (event) => {
+      let finalText = ''
+      let interimText = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) finalText += transcript
+        else interimText += transcript
+      }
+      const input = document.getElementById('msgInput')
+      input.value = (voiceTextBefore + finalText + interimText).trim()
+      autoResize(input)
+      // 累积已确认的部分
+      if (finalText) voiceTextBefore = (voiceTextBefore + finalText).trim() + ' '
+    }
+
+    recognition.onerror = (e) => {
+      console.error('voice error:', e)
+      stopVoice()
+      if (e.error === 'not-allowed') showToast('麦克风权限被拒，请到 chrome://settings 允许 chat2go.cn 使用麦克风')
+      else if (e.error === 'no-speech') {} // 无语音不报错
+      else showToast('语音识别错误：' + e.error)
+    }
+
+    recognition.onend = () => {
+      // 用户停止说话后浏览器会自动 onend，再次 start 才能继续
+      if (isRecording) {
+        try { recognition.start() } catch(e) {}
+      }
+    }
+    return recognition
+  }
+
+  function toggleVoice() {
+    if (isRecording) stopVoice()
+    else startVoice()
+  }
+
+  function startVoice() {
+    const r = getRecognition()
+    if (!r) {
+      showToast('当前浏览器不支持语音识别（建议 Chrome / Edge / Safari）')
+      return
+    }
+    voiceTextBefore = document.getElementById('msgInput').value
+    if (voiceTextBefore && !voiceTextBefore.endsWith(' ')) voiceTextBefore += ' '
+    isRecording = true
+    document.getElementById('voiceBtn').classList.add('recording')
+    try { r.start() } catch(e) { console.warn(e) }
+    showToast('开始说话…')
+  }
+
+  function stopVoice() {
+    isRecording = false
+    document.getElementById('voiceBtn').classList.remove('recording')
+    if (recognition) {
+      try { recognition.stop() } catch(e) {}
+    }
   }
 
   async function copyMessage(btn, b64) {
