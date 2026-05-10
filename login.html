@@ -202,8 +202,10 @@
         btn.disabled = false; btn.textContent = '注册账号'
         if (error) { showMsg('注册失败：' + error.message, 'error'); return }
         if (data.session) {
+          // 大咖注册 → 入住引导页；小白 → 直接进调试室
+          const target = role === 'expert' ? '/onboarding.html' : '/chat.html'
           showMsg('注册成功！正在跳转...', 'success')
-          setTimeout(() => { window.location.href = '/chat.html' }, 800)
+          setTimeout(() => { window.location.href = target }, 800)
         } else {
           showMsg('注册成功！请查收邮件完成验证后再登录。', 'success')
         }

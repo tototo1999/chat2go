@@ -818,9 +818,45 @@
       <div class="user-av" id="userAv">?</div>
       <span id="userEmail">加载中...</span>
     </div>
+    <button class="btn-logout" id="settingsBtn" onclick="openSettings()" style="display:none;">⚙ 设置</button>
     <button class="btn-logout" onclick="handleLogout()">退出</button>
   </div>
 </nav>
+
+<!-- Settings Modal（仅大咖可见，含 Agent Keys 管理）-->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
+  <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
+    <h3>大咖设置</h3>
+
+    <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
+    <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);">
+      把本地 chat2go-agent 接入这个账号。每把密钥独立可撤销，建议每台机器一把。
+    </p>
+
+    <div id="agentKeysList" style="font-size:13px;">加载中...</div>
+
+    <div style="margin-top:1rem;display:flex;gap:.5rem;">
+      <input type="text" id="newKeyName" placeholder="密钥名称（如：我的 Mac）" style="flex:1;">
+      <button class="btn-cancel" onclick="generateKey()" style="padding:.5rem 1rem;white-space:nowrap;">生成新密钥</button>
+    </div>
+
+    <div id="newKeyDisplay" style="display:none;margin-top:1rem;padding:1rem;background:#fef3c7;border-radius:8px;border:1px solid #f59e0b;">
+      <strong style="color:#92400e;font-size:13px;">⚠️ 这是你新生成的密钥，只此一次显示，请立即保存：</strong>
+      <pre id="newKeyValue" style="margin:.5rem 0;padding:.5rem;background:#fff;border-radius:4px;overflow-x:auto;font-size:11px;font-family:'SF Mono',Monaco,monospace;"></pre>
+      <button onclick="copyNewKey()" style="padding:.4rem .8rem;cursor:pointer;font-size:12px;">复制密钥</button>
+      <p style="margin:.5rem 0 0;font-size:12px;color:var(--text2);line-height:1.7;">
+        安装步骤:<br>
+        ① <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">pip install -e ~/chat2go-agent</code><br>
+        ② <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">chat2go-agent connect &lt;粘贴密钥&gt;</code><br>
+        ③ 启动 bridge（launchd / start.sh）
+      </p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSettings()">关闭</button>
+    </div>
+  </div>
+</div>
 
 <div class="layout">
 
@@ -955,7 +991,108 @@
     document.getElementById('userEmail').textContent = email
     document.getElementById('userAv').textContent = email[0].toUpperCase()
 
+    // 检查角色：大咖才显示设置按钮
+    try {
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('role')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      if (profile?.role === 'expert') {
+        document.getElementById('settingsBtn').style.display = ''
+      }
+    } catch (e) { console.warn('[role] failed:', e) }
+
     await loadRooms()
+  }
+
+  // ── Settings 模态框（大咖独享）──
+  function openSettings() {
+    document.getElementById('settingsModal').classList.add('show')
+    loadAgentKeys()
+  }
+  function closeSettings(e) {
+    if (e && e.currentTarget !== e.target) return
+    document.getElementById('settingsModal').classList.remove('show')
+    document.getElementById('newKeyDisplay').style.display = 'none'
+    document.getElementById('newKeyName').value = ''
+  }
+
+  async function loadAgentKeys() {
+    const el = document.getElementById('agentKeysList')
+    el.innerHTML = '加载中...'
+    try {
+      const { data, error } = await sb.rpc('list_agent_keys')
+      if (error) throw error
+      if (!data || data.length === 0) {
+        el.innerHTML = '<div style="padding:1rem;color:var(--text3);text-align:center;">还没有密钥，点下方"生成新密钥"创建第一把</div>'
+        return
+      }
+      el.innerHTML = data.map(k => {
+        const status = k.revoked_at ? '已撤销' : (k.last_used_at ? `上次使用：${formatRelativeTime(k.last_used_at)}` : '从未使用')
+        const ip = k.last_used_ip ? ` from ${k.last_used_ip}` : ''
+        const isActive = !k.revoked_at
+        return `
+          <div style="border:1px solid var(--border2);border-radius:8px;padding:.75rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;${k.revoked_at?'opacity:.4;':''}">
+            <div>
+              <div style="font-weight:600;">${escHtml(k.name)}</div>
+              <div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px;">${escHtml(k.prefix)}…</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px;">${status}${ip}</div>
+            </div>
+            ${isActive ? `<button onclick="revokeKey('${k.id}')" style="padding:.3rem .6rem;font-size:12px;cursor:pointer;color:#dc2626;background:#fff;border:1px solid #fca5a5;border-radius:4px;">撤销</button>` : '<span style="font-size:11px;color:#dc2626;">REVOKED</span>'}
+          </div>`
+      }).join('')
+    } catch (e) {
+      el.innerHTML = `<div style="color:#dc2626;">加载失败：${escHtml(e.message || String(e))}</div>`
+    }
+  }
+
+  async function generateKey() {
+    const nameInput = document.getElementById('newKeyName')
+    const name = (nameInput.value || '').trim() || `${navigator.platform || 'Device'}`
+    try {
+      const { data, error } = await sb.rpc('generate_agent_key', { p_name: name })
+      if (error) throw error
+      const row = (data || [])[0]
+      if (!row) throw new Error('RPC 没有返回新 key')
+
+      const display = document.getElementById('newKeyDisplay')
+      display.style.display = ''
+      document.getElementById('newKeyValue').textContent = row.token
+      window._lastKey = row.token  // 给 copy 用
+      nameInput.value = ''
+      await loadAgentKeys()
+    } catch (e) {
+      alert('生成失败：' + (e.message || String(e)))
+    }
+  }
+
+  function copyNewKey() {
+    const key = window._lastKey
+    if (!key) return
+    navigator.clipboard.writeText(key).then(
+      () => alert('已复制到剪贴板'),
+      () => alert('复制失败，请手动选择文本复制')
+    )
+  }
+
+  async function revokeKey(id) {
+    if (!confirm('撤销后这把密钥立即失效，确定？')) return
+    try {
+      const { error } = await sb.rpc('revoke_agent_key', { p_id: id })
+      if (error) throw error
+      await loadAgentKeys()
+    } catch (e) {
+      alert('撤销失败：' + (e.message || String(e)))
+    }
+  }
+
+  function formatRelativeTime(iso) {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000
+    if (diff < 60) return '刚刚'
+    if (diff < 3600) return Math.floor(diff/60) + ' 分钟前'
+    if (diff < 86400) return Math.floor(diff/3600) + ' 小时前'
+    return Math.floor(diff/86400) + ' 天前'
   }
 
   async function loadRooms() {

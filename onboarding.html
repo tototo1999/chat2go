@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大咖入住 · Chat2GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --teal: #1D9E75; --teal-50: #E1F5EE; --teal-600: #0F6E56;
+      --purple: #534AB7; --purple-50: #EEEDFE;
+      --bg: #FAFAF8; --bg2: #F4F3EF;
+      --border: rgba(60,58,54,0.12); --border2: rgba(60,58,54,0.22);
+      --text: #1a1a18; --text2: #5f5e5a; --text3: #888780;
+      --radius: 8px; --radius-lg: 12px;
+    }
+    body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2.5rem; height: 60px; background: #fff; border-bottom: 0.5px solid var(--border); }
+    .logo { font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 600; text-decoration: none; color: var(--text); }
+    .logo span { color: var(--teal); }
+    .main { flex: 1; padding: 2rem; }
+    .container { max-width: 720px; margin: 0 auto; }
+    .hero { text-align:center; margin-bottom: 2rem; }
+    .hero h1 { font-family: 'Noto Serif SC', serif; font-size: 28px; margin-bottom: .5rem; }
+    .hero h1 span { color: var(--teal); }
+    .hero p { color: var(--text2); font-size: 14px; }
+    .step { background:#fff; border:0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; display:flex; gap: 1rem; align-items: flex-start; }
+    .step-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--teal-50); color: var(--teal-600); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; }
+    .step.done .step-num { background: var(--teal); color: #fff; }
+    .step-body { flex: 1; }
+    .step-body h3 { font-size: 15px; margin-bottom: .5rem; }
+    .step-body p { font-size: 13px; color: var(--text2); margin-bottom: .75rem; line-height: 1.6; }
+    pre.code { background: var(--bg2); padding: .75rem 1rem; border-radius: var(--radius); font-family: 'SF Mono', Monaco, monospace; font-size: 12px; overflow-x: auto; position: relative; }
+    .copy-btn { position: absolute; top: .5rem; right: .5rem; padding: .25rem .5rem; font-size: 11px; cursor: pointer; background: #fff; border: 0.5px solid var(--border2); border-radius: 4px; }
+    .copy-btn:hover { background: var(--bg2); }
+    button.btn-action { padding: 9px 16px; font-size: 13px; font-family: inherit; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: #fff; color: var(--text); cursor: pointer; transition: all .15s; }
+    button.btn-action:hover { background: var(--bg2); }
+    button.btn-primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+    button.btn-primary:hover { background: var(--teal-600); }
+    .key-box { background: #fef3c7; border: 1px solid #f59e0b; border-radius: var(--radius); padding: 1rem; margin-top: .75rem; font-family: 'SF Mono', Monaco, monospace; font-size: 12px; word-break: break-all; }
+    .status-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .25rem .75rem; border-radius: 100px; font-size: 12px; }
+    .status-pill.waiting { background: var(--bg2); color: var(--text3); }
+    .status-pill.online { background: var(--teal-50); color: var(--teal-600); font-weight: 500; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-pill.waiting .status-dot { background: var(--text3); }
+    .status-pill.online .status-dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+    footer { padding: 1.5rem 2.5rem; border-top: 0.5px solid var(--border); text-align: center; background: #fff; font-size: 12px; color: var(--text3); }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">Chat<span>2GO</span></a>
+  <span style="font-size:13px;color:var(--text2);" id="userEmail"></span>
+</nav>
+
+<main class="main">
+  <div class="container">
+    <div class="hero">
+      <h1>欢迎成为<span>大咖</span></h1>
+      <p>3 步把你的本地 AI agent 接入 Chat2GO</p>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="step" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>装 chat2go-agent</h3>
+        <p>在你的电脑上跑：</p>
+        <pre class="code"><button class="copy-btn" onclick="copyCode(this)">复制</button>git clone https://github.com/tototo1999/chat2go-agent
+cd chat2go-agent
+pip install -e .</pre>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>生成连接密钥</h3>
+        <p>下面这个按钮生成一把密钥，<strong>只显示一次</strong>，立即复制：</p>
+        <button class="btn-action btn-primary" onclick="generateKey()">生成我的连接密钥</button>
+        <div id="keyBox" style="display:none;" class="key-box">
+          <div id="keyValue"></div>
+          <button class="copy-btn" style="position:static;margin-top:.5rem;" onclick="copyKey()">复制密钥</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>接通</h3>
+        <p>把刚才的密钥粘进这条命令：</p>
+        <pre class="code"><button class="copy-btn" onclick="copyCode(this)">复制</button>chat2go-agent connect &lt;粘贴密钥&gt;
+chat2go-agent              # 启动 bridge</pre>
+        <p style="margin-top:1rem;">
+          <span class="status-pill" id="statusPill">
+            <span class="status-dot"></span>
+            <span id="statusText">等待 agent 接入…</span>
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:2rem;">
+      <a href="/chat.html" style="color:var(--text3);font-size:13px;text-decoration:none;">已配置好，去调试室 →</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  &copy; 2026 Chat2GO · 行业大咖 × AI × 小白用户
+</footer>
+
+<script type="module">
+import { createClient } from './vendor/supabase-js@2.45.4-umd.min.js'
+
+// 自包含的 Supabase 配置（避免和其他 page 共享全局）
+const SB_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
+window.sb = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null
+
+// 用 vendor UMD（和 chat.html 一致）
+if (!window.sb) {
+  const s = document.createElement('script')
+  s.src = '/vendor/supabase-js@2.45.4-umd.min.js'
+  s.onload = () => { window.sb = window.supabase.createClient(SB_URL, SB_KEY); init() }
+  document.head.appendChild(s)
+} else {
+  init()
+}
+
+let lastKey = null
+let pollTimer = null
+
+async function init() {
+  const { data: { session } } = await window.sb.auth.getSession()
+  if (!session) { window.location.href = '/login.html'; return }
+  document.getElementById('userEmail').textContent = session.user.email
+
+  // 检查角色 / 升级为 expert（如 user_metadata 已表明是大咖但 profile 是 user）
+  const { data: profile } = await window.sb
+    .from('profiles').select('role').eq('user_id', session.user.id).maybeSingle()
+  if (profile?.role !== 'expert') {
+    // 升级为 expert（前提：注册时已选大咖；安全起见这里也允许）
+    await window.sb.from('profiles').update({ role: 'expert' }).eq('user_id', session.user.id)
+  }
+}
+
+window.copyCode = function(btn) {
+  const pre = btn.parentElement
+  const text = pre.innerText.replace(/^复制\s*/m, '').trim()
+  navigator.clipboard.writeText(text)
+  btn.textContent = '已复制!'
+  setTimeout(() => btn.textContent = '复制', 1500)
+}
+
+window.copyKey = function() {
+  if (!lastKey) return
+  navigator.clipboard.writeText(lastKey).then(
+    () => alert('已复制到剪贴板'),
+    () => alert('复制失败，请手动选择文本复制')
+  )
+}
+
+window.generateKey = async function() {
+  const name = prompt('给这把密钥起个名字（如：我的 Mac）：', 'My Device')
+  if (!name) return
+  try {
+    const { data, error } = await window.sb.rpc('generate_agent_key', { p_name: name })
+    if (error) throw error
+    const row = (data || [])[0]
+    if (!row) throw new Error('RPC 没返回数据')
+
+    lastKey = row.token
+    document.getElementById('keyValue').textContent = row.token
+    document.getElementById('keyBox').style.display = ''
+    document.getElementById('step2').classList.add('done')
+
+    // 开始轮询 last_used_at（agent 接入后变绿）
+    startPolling(row.id)
+  } catch (e) {
+    alert('生成失败：' + (e.message || String(e)))
+  }
+}
+
+function startPolling(keyId) {
+  if (pollTimer) clearInterval(pollTimer)
+  pollTimer = setInterval(async () => {
+    const { data, error } = await window.sb.rpc('list_agent_keys')
+    if (error) return
+    const k = (data || []).find(x => x.id === keyId)
+    if (k && k.last_used_at) {
+      const pill = document.getElementById('statusPill')
+      pill.classList.remove('waiting')
+      pill.classList.add('online')
+      document.getElementById('statusText').textContent =
+        'Agent 已接入！上次使用：' + new Date(k.last_used_at).toLocaleString('zh-CN')
+      document.getElementById('step3').classList.add('done')
+      clearInterval(pollTimer)
+    }
+  }, 3000)
+}
+</script>
+</body>
+</html>
