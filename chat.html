@@ -1136,15 +1136,13 @@
     appendMessage(msgData)
     scrollToBottom()
 
-    // 只有小白发消息才会触发 AI；专家消息 AI 不响应，不要等
-    if (role === 'user') {
-      showTyping()
-      clearTimeout(typingTimer)
-      typingTimer = setTimeout(() => {
-        hideTyping()
-        setBridgeStatus(false)
-      }, 30000)
-    }
+    // 任何非 AI 角色发消息都触发 AI 响应
+    showTyping()
+    clearTimeout(typingTimer)
+    typingTimer = setTimeout(() => {
+      hideTyping()
+      setBridgeStatus(false)
+    }, 30000)
   }
 
   function setBridgeStatus(online) {

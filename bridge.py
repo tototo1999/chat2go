@@ -363,6 +363,7 @@ class Chat2GOBridge:
         room_id = msg.get("room_id")
         content = msg.get("content", "")
         attachments = msg.get("attachments") or []
+        sender_role = msg.get("role", "user")  # 'user' | 'expert'
 
         if msg_id in self.processing:
             return
@@ -376,7 +377,8 @@ class Chat2GOBridge:
         expert_prompt = (room.get("system_prompt") or "").strip()
 
         att_summary = f" [附件 {len(attachments)} 个]" if attachments else ""
-        print(f"[bridge] [{room['name']}] 用户: {content[:60]}{'…' if len(content) > 60 else ''}{att_summary}")
+        sender_label = "专家" if sender_role == "expert" else "小白"
+        print(f"[bridge] [{room['name']}] {sender_label}: {content[:60]}{'…' if len(content) > 60 else ''}{att_summary}")
         print(f"[bridge] → {self.ai_mode} (model={model or 'default'})")
 
         try:
@@ -440,14 +442,7 @@ class Chat2GOBridge:
             self.processing.discard(msg_id)
 
     def on_realtime_message(self, payload):
-        """Realtime 回调（同步）。把 user 消息派发到 async 任务里处理。"""
-        # ── 调试：打印原始 payload，方便排查结构 ──
-        try:
-            print(f"[bridge][debug] realtime payload keys: {list(payload.keys()) if isinstance(payload, dict) else type(payload)}")
-        except Exception:
-            pass
-
-        # 兼容多种 payload 结构（不同版本 supabase-py / realtime-py 字段不同）
+        """Realtime 回调（同步）。把 user/expert 消息派发到 async 任务里处理。"""
         msg = {}
         if isinstance(payload, dict):
             msg = (
@@ -459,15 +454,16 @@ class Chat2GOBridge:
             )
 
         if not msg:
-            print(f"[bridge][debug] 找不到 record 字段，原始 payload: {payload}")
             return
 
         role    = msg.get("role")
         room_id = msg.get("room_id")
-        print(f"[bridge][debug] 收到 INSERT: role={role} room={str(room_id)[:8]}… in_rooms={room_id in self.rooms}")
 
-        if role != "user" or room_id not in self.rooms:
+        # AI 自己的消息跳过（防死循环）；其他角色（user / expert）都响应
+        if role == "ai" or room_id not in self.rooms:
             return
+
+        print(f"[bridge][debug] 收到 INSERT: role={role} room={str(room_id)[:8]}…")
 
         try:
             loop = asyncio.get_running_loop()
