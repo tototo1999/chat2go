@@ -26,6 +26,24 @@ Chat2GO · Hermes Bridge (async)
 """
 
 import os
+from pathlib import Path as _Path
+
+# ── 自动加载 ~/chat2go/.env（API key 等私密配置）──
+def _load_dotenv():
+    env_file = _Path(__file__).parent / ".env"
+    if not env_file.exists():
+        return
+    for line in env_file.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k = k.strip()
+        v = v.strip().strip('"').strip("'")
+        # 已有同名环境变量优先使用现有的
+        os.environ.setdefault(k, v)
+_load_dotenv()
+
 # ── 修复 Homebrew Python 的 SSL 证书路径问题 ──
 # 必须在 import websockets / supabase 之前设置
 try:
