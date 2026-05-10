@@ -1040,7 +1040,8 @@
     const roleLabels = { user: '小白', expert: '大咖', ai: 'AI 助手' }
     const roleLabel = roleLabels[role] || role
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
-    const senderName = isOwn ? '我' : roleLabel
+    // AI 消息永远显示「AI 助手」，不管谁的 user_id 写的；只有 user/expert 才用「我」判断
+    const senderName = (role !== 'ai' && isOwn) ? '我' : roleLabel
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')
