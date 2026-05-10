@@ -348,6 +348,9 @@
       line-height: 1.2;
     }
     .msg-sender { font-size: 13px; font-weight: 500; color: var(--text); }
+    .msg-sender.user   { color: #B8893A; }
+    .msg-sender.expert { color: var(--purple-600); }
+    .msg-sender.ai     { color: var(--teal-600); }
     .msg-role-badge {
       padding: 1px 6px;
       border-radius: 3px;
@@ -864,7 +867,7 @@
             <i class="ti ti-send"></i>
           </button>
         </div>
-        <div class="input-hint" id="roleHint">按 Enter 发送 · Shift+Enter 换行 · 📎 上传 · 🎤 语音输入</div>
+        <div class="input-hint" id="roleHint" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -969,7 +972,6 @@
     document.getElementById('chatRoomIndustry').textContent = room.industry
 
     document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
-    document.getElementById('roleHint').textContent = '按 Enter 发送 · Shift+Enter 换行 · 📎 上传 · 🎤 语音输入'
 
     document.getElementById('welcomeState').style.display = 'none'
     const ac = document.getElementById('activeChat')
@@ -1035,10 +1037,10 @@
     const isOwn = msg.user_id === currentUser?.id
     const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
 
-    const roleLabels = { user: '用户', expert: '大咖', ai: 'AI 助手' }
+    const roleLabels = { user: '小白', expert: '大咖', ai: 'AI 助手' }
     const roleLabel = roleLabels[role] || role
-    const avText = role === 'ai' ? 'AI' : role === 'expert' ? '专' : '用'
-    const senderName = isOwn ? (role === 'expert' ? '我（大咖）' : '我') : roleLabel
+    const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
+    const senderName = isOwn ? '我' : roleLabel
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')
@@ -1086,8 +1088,7 @@
       <div class="msg-av ${role}">${avText}</div>
       <div class="msg-body">
         <div class="msg-meta">
-          <span class="msg-sender">${senderName}</span>
-          <span class="msg-role-badge ${role}">${roleLabel}</span>
+          <span class="msg-sender ${role}">${senderName}</span>
           <span class="msg-ts">${ts}</span>
           <div class="msg-actions">
             <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
