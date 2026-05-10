@@ -1111,13 +1111,18 @@
       attachments
     }).select().single()
 
+    if (error) {
+      console.error('insert message failed:', error)
+      showToast('发送失败：' + (error.message || error.details || JSON.stringify(error)).slice(0, 100))
+      sendBtn.disabled = false
+      return
+    }
+
     pendingAttachments = []
     renderAttachPreview()
 
     sendBtn.disabled = false
     input.focus()
-
-    if (error) { showToast('发送失败，请重试'); return }
 
     appendMessage(msgData)
     scrollToBottom()
