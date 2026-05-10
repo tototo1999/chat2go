@@ -360,6 +360,30 @@
     .msg-role-badge.ai     { background: var(--teal-50); color: var(--teal-600); }
     .msg-ts { font-size: 11px; color: var(--text3); }
 
+    /* hover 出现的操作按钮 */
+    .msg-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity .15s;
+      margin-left: auto;
+    }
+    .msg-group:hover .msg-actions { opacity: 1; }
+    .msg-action-btn {
+      width: 22px; height: 22px;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .15s;
+    }
+    .msg-action-btn:hover { background: var(--bg2); color: var(--text); }
+    .msg-action-btn.copied { color: var(--teal); }
+
     .msg-bubble {
       padding: 9px 13px;
       border-radius: 6px;
@@ -1046,6 +1070,9 @@
           ? ''  // 纯文件消息不显示气泡，只显示附件卡片
           : `<div class="msg-bubble ${role}">${escHtml(msg.content)}</div>`)
 
+    // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
+    const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
+
     el.innerHTML = `
       <div class="msg-av ${role}">${avText}</div>
       <div class="msg-body">
@@ -1053,6 +1080,11 @@
           <span class="msg-sender">${senderName}</span>
           <span class="msg-role-badge ${role}">${roleLabel}</span>
           <span class="msg-ts">${ts}</span>
+          <div class="msg-actions">
+            <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
+              <i class="ti ti-copy"></i>
+            </button>
+          </div>
         </div>
         ${bubbleHtml}
         ${attachHtml}
@@ -1322,6 +1354,33 @@
     const h = d.getHours().toString().padStart(2, '0')
     const m = d.getMinutes().toString().padStart(2, '0')
     return `${h}:${m}`
+  }
+
+  async function copyMessage(btn, b64) {
+    let text = ''
+    try {
+      text = decodeURIComponent(escape(atob(b64)))
+    } catch (e) { text = atob(b64) }
+    try {
+      await navigator.clipboard.writeText(text)
+      btn.classList.add('copied')
+      btn.innerHTML = '<i class="ti ti-check"></i>'
+      showToast('已复制')
+      setTimeout(() => {
+        btn.classList.remove('copied')
+        btn.innerHTML = '<i class="ti ti-copy"></i>'
+      }, 1500)
+    } catch (e) {
+      // 降级方案：fallback to textarea
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'; ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy'); showToast('已复制') }
+      catch { showToast('复制失败') }
+      ta.remove()
+    }
   }
 
   function showToast(msg) {
