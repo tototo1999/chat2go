@@ -1290,6 +1290,11 @@
     }
 
     rooms.forEach(room => renderRoomItem(room))
+
+    // 自动打开第一个房间（小白和大咖都一样），但已经有打开的就不动
+    if (!currentRoom && rooms.length > 0) {
+      openRoom(rooms[0])
+    }
   }
 
   function renderRoomItem(room) {
