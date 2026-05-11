@@ -507,7 +507,7 @@
     }
 
     /* ── 附件 ── */
-    /* 用户身份徽章：白(小白) / 咖(大咖)，teal 圆底白字 */
+    /* 用户身份徽章：白(小白) / 咖(大咖)，teal 圆底白字，点击进入资料设置 */
     .role-badge {
       width: 38px;
       height: 38px;
@@ -520,9 +520,12 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      cursor: default;
+      cursor: pointer;
       user-select: none;
+      transition: background .15s, transform .1s;
     }
+    .role-badge:hover { background: var(--teal-600); }
+    .role-badge:active { transform: scale(0.94); }
     .attach-btn, .voice-btn {
       width: 34px;
       height: 38px;
@@ -826,30 +829,43 @@
 <!-- Settings Modal（仅大咖可见，含 Agent Keys 管理）-->
 <div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
   <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
-    <h3>大咖设置</h3>
+    <h3 id="settingsTitle">设置</h3>
 
-    <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
-    <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);">
-      把本地 chat2go-agent 接入这个账号。每把密钥独立可撤销，建议每台机器一把。
-    </p>
-
-    <div id="agentKeysList" style="font-size:13px;">加载中...</div>
-
-    <div style="margin-top:1rem;display:flex;gap:.5rem;">
-      <input type="text" id="newKeyName" placeholder="密钥名称（如：我的 Mac）" style="flex:1;">
-      <button class="btn-cancel" onclick="generateKey()" style="padding:.5rem 1rem;white-space:nowrap;">生成新密钥</button>
+    <!-- 个人资料 -->
+    <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">个人资料</h4>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
+      <label style="font-size:12px;color:var(--text2);">显示名</label>
+      <input type="text" id="profileDisplayName" placeholder="给自己起个名字" style="padding:.5rem;font-size:13px;">
+      <label style="font-size:12px;color:var(--text2);margin-top:.3rem;">邮箱</label>
+      <input type="text" id="profileEmail" disabled style="padding:.5rem;font-size:13px;background:var(--bg);color:var(--text3);">
+      <button class="btn-cancel" onclick="saveProfile()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存资料</button>
     </div>
 
-    <div id="newKeyDisplay" style="display:none;margin-top:1rem;padding:1rem;background:#fef3c7;border-radius:8px;border:1px solid #f59e0b;">
-      <strong style="color:#92400e;font-size:13px;">⚠️ 这是你新生成的密钥，只此一次显示，请立即保存：</strong>
-      <pre id="newKeyValue" style="margin:.5rem 0;padding:.5rem;background:#fff;border-radius:4px;overflow-x:auto;font-size:11px;font-family:'SF Mono',Monaco,monospace;"></pre>
-      <button onclick="copyNewKey()" style="padding:.4rem .8rem;cursor:pointer;font-size:12px;">复制密钥</button>
-      <p style="margin:.5rem 0 0;font-size:12px;color:var(--text2);line-height:1.7;">
-        安装步骤:<br>
-        ① <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">pip install -e ~/chat2go-agent</code><br>
-        ② <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">chat2go-agent connect &lt;粘贴密钥&gt;</code><br>
-        ③ 启动 bridge（launchd / start.sh）
+    <!-- Agent Keys（仅大咖可见） -->
+    <div id="agentKeysSection" style="display:none;">
+      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
+      <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);">
+        把本地 chat2go-agent 接入这个账号。每把密钥独立可撤销，建议每台机器一把。
       </p>
+
+      <div id="agentKeysList" style="font-size:13px;">加载中...</div>
+
+      <div style="margin-top:1rem;display:flex;gap:.5rem;">
+        <input type="text" id="newKeyName" placeholder="密钥名称（如：我的 Mac）" style="flex:1;">
+        <button class="btn-cancel" onclick="generateKey()" style="padding:.5rem 1rem;white-space:nowrap;">生成新密钥</button>
+      </div>
+
+      <div id="newKeyDisplay" style="display:none;margin-top:1rem;padding:1rem;background:#fef3c7;border-radius:8px;border:1px solid #f59e0b;">
+        <strong style="color:#92400e;font-size:13px;">⚠️ 这是你新生成的密钥，只此一次显示，请立即保存：</strong>
+        <pre id="newKeyValue" style="margin:.5rem 0;padding:.5rem;background:#fff;border-radius:4px;overflow-x:auto;font-size:11px;font-family:'SF Mono',Monaco,monospace;"></pre>
+        <button onclick="copyNewKey()" style="padding:.4rem .8rem;cursor:pointer;font-size:12px;">复制密钥</button>
+        <p style="margin:.5rem 0 0;font-size:12px;color:var(--text2);line-height:1.7;">
+          安装步骤:<br>
+          ① <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">pip install -e ~/chat2go-agent</code><br>
+          ② <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">chat2go-agent connect &lt;粘贴密钥&gt;</code><br>
+          ③ 启动 bridge（launchd / start.sh）
+        </p>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -924,7 +940,7 @@
         <div class="attach-preview" id="attachPreview"></div>
 
         <div class="input-wrap">
-          <div class="role-badge" id="roleBadge" title="你的身份">—</div>
+          <div class="role-badge" id="roleBadge" title="你的身份（点击修改资料）" onclick="openSettings()">—</div>
           <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
             <i class="ti ti-paperclip"></i>
           </button>
@@ -1060,15 +1076,47 @@
   }
 
   // ── Settings 模态框（大咖独享）──
-  function openSettings() {
+  async function openSettings() {
     document.getElementById('settingsModal').classList.add('show')
-    loadAgentKeys()
+    // 标题随角色变化
+    document.getElementById('settingsTitle').textContent =
+      currentRole === 'expert' ? '大咖设置' : '小白设置'
+    // 邮箱（只读）
+    document.getElementById('profileEmail').value = currentUser?.email || ''
+    // 拉当前 display_name
+    try {
+      const { data } = await sb.from('profiles')
+        .select('display_name')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      document.getElementById('profileDisplayName').value = data?.display_name || ''
+    } catch (e) { console.warn('[profile load]', e) }
+    // Agent Keys 仅大咖
+    document.getElementById('agentKeysSection').style.display =
+      currentRole === 'expert' ? '' : 'none'
+    if (currentRole === 'expert') loadAgentKeys()
   }
   function closeSettings(e) {
     if (e && e.currentTarget !== e.target) return
     document.getElementById('settingsModal').classList.remove('show')
-    document.getElementById('newKeyDisplay').style.display = 'none'
-    document.getElementById('newKeyName').value = ''
+    const keyDisplay = document.getElementById('newKeyDisplay')
+    if (keyDisplay) keyDisplay.style.display = 'none'
+    const keyName = document.getElementById('newKeyName')
+    if (keyName) keyName.value = ''
+  }
+  async function saveProfile() {
+    const name = document.getElementById('profileDisplayName').value.trim()
+    if (!name) { showToast('显示名不能为空'); return }
+    try {
+      const { error } = await sb.from('profiles')
+        .update({ display_name: name })
+        .eq('user_id', currentUser.id)
+      if (error) throw error
+      showToast('资料已保存')
+    } catch (e) {
+      console.warn('[profile save]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
   }
 
   async function loadAgentKeys() {
