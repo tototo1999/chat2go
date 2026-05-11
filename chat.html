@@ -1007,6 +1007,7 @@
   let currentRoom = null
   let realtimeChannel = null
   let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
+  let currentDisplayName = '' // 自己的 display_name，用于消息头展示
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession()
@@ -1019,10 +1020,11 @@
     try {
       const { data: profile } = await sb
         .from('profiles')
-        .select('role')
+        .select('role,display_name')
         .eq('user_id', currentUser.id)
         .maybeSingle()
       currentRole = profile?.role || 'user'
+      currentDisplayName = profile?.display_name || ''
       // 输入区身份徽章: 大咖 → 咖, 小白 → 白
       const badge = document.getElementById('roleBadge')
       if (badge) {
@@ -1112,6 +1114,11 @@
         .update({ display_name: name })
         .eq('user_id', currentUser.id)
       if (error) throw error
+      currentDisplayName = name
+      // 把当前已渲染的自己消息的 sender 名同步刷新
+      document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
+        el.textContent = name
+      })
       showToast('资料已保存')
     } catch (e) {
       console.warn('[profile save]', e)
@@ -1427,7 +1434,7 @@
     const roleLabel = roleLabels[role] || role
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
     // AI 消息永远显示「AI 助手」，不管谁的 user_id 写的；只有 user/expert 才用「我」判断
-    const senderName = (role !== 'ai' && isOwn) ? '我' : roleLabel
+    const senderName = (role !== 'ai' && isOwn) ? (currentDisplayName || '我') : roleLabel
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')
@@ -1475,7 +1482,7 @@
       <div class="msg-av ${role}">${avText}</div>
       <div class="msg-body">
         <div class="msg-meta">
-          <span class="msg-sender ${role}">${senderName}</span>
+          <span class="msg-sender ${role}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${senderName}</span>
           <span class="msg-ts">${ts}</span>
           <div class="msg-actions">
             <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
