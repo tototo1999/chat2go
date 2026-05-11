@@ -46,25 +46,25 @@
       --nav-h:   56px;
     }
 
+    html { background: #DDDCD6; }
     html, body { height: 100%; overflow: hidden; }
 
+    /* body 本身就是 800px 居中容器，跟 index.html 完全一致 */
     body {
       font-family: 'Noto Sans SC', -apple-system, sans-serif;
       color: var(--text);
-      background: #DDDCD6;
+      background: var(--bg);
       -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      max-width: 800px;
+      margin: 0 auto;
+      border-left: 0.5px solid var(--border);
+      border-right: 0.5px solid var(--border);
     }
 
-    /* 锁定整体内容为竖立长方形布局，两侧灰色留白 */
-    nav, .layout {
-      width: 100%;
-      max-width: 800px;
-    }
-    nav { background: #fff; box-shadow: 0 0 0 0.5px var(--border); }
-    .layout { background: var(--bg); box-shadow: 0 0 0 0.5px var(--border); }
+    nav { background: #fff; }
+    .layout { background: var(--bg); }
 
     /* ── NAV ── */
     nav {
