@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>调试室 · Chat2GO</title>
+  <title>Chat · Chat2GO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
@@ -813,7 +813,7 @@
 <nav>
   <div class="nav-left">
     <a href="/" class="logo">Chat<span>2GO</span></a>
-    <span class="nav-badge">Chat · 调试室</span>
+    <span class="nav-badge">Chat</span>
   </div>
   <div class="nav-right">
     <div class="user-pill">
@@ -864,9 +864,9 @@
 
   <aside class="sidebar">
     <div class="sidebar-head">
-      <div class="sidebar-title">调试室列表</div>
+      <div class="sidebar-title">Chat 列表</div>
       <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
-        <i class="ti ti-plus"></i> 新建调试室
+        <i class="ti ti-plus"></i> 新建 Chat
       </button>
     </div>
     <div class="rooms-list" id="roomsList">
@@ -879,7 +879,7 @@
   <div class="chat-panel" id="chatPanel">
     <div class="welcome" id="welcomeState">
       <i class="ti ti-messages"></i>
-      <h3>选择一个调试室开始对话</h3>
+      <h3>选择一个 Chat 开始对话</h3>
       <p>大咖、用户和 AI 三方在这里协作，把你的需求说清楚，调出属于你的专属 AI 助手。</p>
     </div>
 
@@ -949,9 +949,9 @@
 
 <div class="modal-overlay" id="newRoomModal" onclick="closeNewRoomModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
-    <h3>新建调试室</h3>
+    <h3>新建 Chat</h3>
     <div class="field">
-      <label>调试室名称</label>
+      <label>Chat 名称</label>
       <input type="text" id="newRoomName" placeholder="例：外贸跟单助手调试">
     </div>
     <div class="field">
@@ -1176,8 +1176,8 @@
 
     if (rooms.length === 0) {
       const hint = currentRole === 'expert'
-        ? '还没有调试室<br>点击上方按钮新建一个'
-        : '还没有进入过任何调试室<br>请通过大咖发给你的邀请链接进入'
+        ? '还没有 Chat<br>点击上方按钮新建一个'
+        : '还没有进入过任何 Chat<br>请通过大咖发给你的邀请链接进入'
       list.innerHTML = `<div class="rooms-empty">${hint}</div>`
       return
     }
@@ -1564,7 +1564,7 @@
 
     renderRoomItem(room)
     openRoom(room)
-    showToast('调试室创建成功')
+    showToast('Chat 创建成功')
   }
 
   async function handleLogout() {
