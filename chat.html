@@ -975,20 +975,7 @@
     <h3>新建 Chat</h3>
     <div class="field">
       <label>Chat 名称</label>
-      <input type="text" id="newRoomName" placeholder="例：外贸跟单助手调试">
-    </div>
-    <div class="field">
-      <label>所属行业</label>
-      <select id="newRoomIndustry">
-        <option value="算命">算命</option>
-        <option value="外贸">外贸</option>
-        <option value="健身">健身</option>
-        <option value="地产">地产</option>
-        <option value="教育">教育</option>
-        <option value="量化">量化</option>
-        <option value="医疗">医疗</option>
-        <option value="其他">其他</option>
-      </select>
+      <input type="text" id="newRoomName" placeholder="例：森山大道 san">
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeNewRoomModal()">取消</button>
@@ -1646,7 +1633,7 @@
 
   async function createRoom() {
     const name = document.getElementById('newRoomName').value.trim()
-    const industry = document.getElementById('newRoomIndustry').value
+    const industry = DEMO_INDUSTRY
     if (!name) { document.getElementById('newRoomName').focus(); return }
 
     const btn = document.getElementById('createRoomBtn')
