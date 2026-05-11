@@ -854,13 +854,12 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <!-- 第一行：房间名 + 邀请按钮 -->
+        <!-- 第一行：房间名 -->
         <div class="chat-head-row">
           <div class="chat-head-left">
             <span class="chat-room-name" id="chatRoomName">-</span>
             <span class="chat-room-industry" id="chatRoomIndustry">-</span>
           </div>
-          <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:3px 10px;border-radius:100px;background:var(--teal-50);color:var(--teal-600);font-size:11px;font-weight:500;border:0.5px solid var(--teal-100);cursor:pointer;font-family:inherit;">🔗 邀请</button>
         </div>
         <!-- 第二行：左侧 已用/上限 · % · 右侧 模型名(dot=连接状态) · 实时 -->
         <div class="chat-head-row">
@@ -1000,12 +999,7 @@
     if (!currentRoom) return
     const url = `${window.location.origin}/chat.html?room=${currentRoom.id}`
     navigator.clipboard.writeText(url).then(
-      () => {
-        const btn = document.getElementById('inviteBtn')
-        const orig = btn.textContent
-        btn.textContent = '✓ 已复制'
-        setTimeout(() => { btn.textContent = orig }, 1500)
-      },
+      () => showToast('已复制邀请链接'),
       () => prompt('复制失败，请手动复制以下链接：', url),
     )
   }
@@ -1190,9 +1184,6 @@
 
     document.getElementById('chatRoomName').textContent = room.name
     document.getElementById('chatRoomIndustry').textContent = room.industry
-
-    // 大咖侧显示「邀请」按钮（用来生成给小白的链接）
-    document.getElementById('inviteBtn').style.display = isExpert(room) ? '' : 'none'
 
     document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
 
