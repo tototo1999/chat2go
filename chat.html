@@ -270,6 +270,18 @@
     /* 模型名嵌在 AI status pill 里，加点 weight 突出 */
     #bridgeStatus #chatRoomModel { font-weight: 500; color: var(--text2); }
     #bridgeStatus.online #chatRoomModel { color: var(--teal-600); }
+    /* brain 运行时徽章：红底白字，紧凑 */
+    .brain-badge {
+      font-size: 9px;
+      font-weight: 700;
+      background: #DC2626;
+      color: #fff;
+      padding: 1px 5px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
+      text-transform: lowercase;
+      line-height: 1.4;
+    }
     .chat-status {
       display: flex;
       align-items: center;
@@ -887,6 +899,7 @@
           <div class="chat-status">
             <div class="status-item offline" id="bridgeStatus" title="AI 未连接">
               <div class="dot"></div>
+              <span class="brain-badge" id="brainBadge" title="当前 brain 运行时">hermes</span>
               <span id="chatRoomModel">AI</span>
             </div>
             <span class="sep">·</span>
