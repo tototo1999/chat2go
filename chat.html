@@ -296,9 +296,11 @@
       font-variant-numeric: tabular-nums;
     }
     .chat-metrics .sep { color: var(--border2); }
-    .chat-metrics .model { color: var(--text2); font-weight: 500; }
     .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
     .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
+    /* 模型名嵌在 AI status pill 里，加点 weight 突出 */
+    #bridgeStatus #chatRoomModel { font-weight: 500; color: var(--text2); }
+    #bridgeStatus.online #chatRoomModel { color: var(--teal-600); }
     .chat-status {
       display: flex;
       align-items: center;
@@ -896,19 +898,17 @@
           </div>
           <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:3px 10px;border-radius:100px;background:var(--teal-50);color:var(--teal-600);font-size:11px;font-weight:500;border:0.5px solid var(--teal-100);cursor:pointer;font-family:inherit;">🔗 邀请</button>
         </div>
-        <!-- 第二行：左侧 模型 · 已用/上限 · % · 右侧状态 -->
+        <!-- 第二行：左侧 已用/上限 · % · 右侧 模型名(dot=连接状态) · 实时 -->
         <div class="chat-head-row">
           <div class="chat-metrics">
-            <span class="model" id="chatRoomModel" title="当前 LLM 模型">—</span>
-            <span class="sep">·</span>
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
             <span class="sep">·</span>
             <span id="chatRoomCtx" title="context 占用百分比">0%</span>
           </div>
           <div class="chat-status">
-            <div class="status-item offline" id="bridgeStatus">
+            <div class="status-item offline" id="bridgeStatus" title="AI 未连接">
               <div class="dot"></div>
-              <span id="bridgeLabel">AI 未连接</span>
+              <span id="chatRoomModel">AI</span>
             </div>
             <span class="sep">·</span>
             <div class="status-item online">
@@ -1539,9 +1539,8 @@
 
   function setBridgeStatus(online) {
     const el = document.getElementById('bridgeStatus')
-    const label = document.getElementById('bridgeLabel')
     el.className = 'status-item ' + (online ? 'online' : 'offline')
-    label.textContent = online ? 'AI 已连接' : 'AI 未连接'
+    el.title = online ? 'AI 已连接' : 'AI 未连接'
   }
 
   function showTyping() {
