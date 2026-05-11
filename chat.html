@@ -309,9 +309,11 @@
     .presence-tab {
       display: inline-flex;
       align-items: center;
+      justify-content: space-between;
       gap: 4px;
       height: 22px;
-      padding: 0 8px;
+      min-width: 80px;
+      padding: 0 10px;
       border-radius: 999px;
       line-height: 1;
       color: var(--text);
@@ -1129,7 +1131,8 @@
   let realtimeChannel = null
   let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
   let currentDisplayName = '' // 自己的 display_name，用于消息头展示
-  let currentChannel = 'main'  // 当前消息频道: 'main' | 'expert_ai' | 'expert_user'
+  let currentChannel = 'main'  // 当前消息频道: 'main' | 'expert_user'
+  let unreadCounts = { main: 0, expert_user: 0 }  // 每个 channel 的未读计数（本会话）
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession()
@@ -1447,6 +1450,7 @@
   async function openRoom(room) {
     currentRoom = room
     currentChannel = 'main'
+    unreadCounts = { main: 0, expert_user: 0 }
 
     document.querySelectorAll('.room-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === room.id)
@@ -1475,9 +1479,19 @@
   async function switchChannel(ch) {
     if (!currentRoom || ch === currentChannel) return
     currentChannel = ch
+    unreadCounts[ch] = 0
     renderPresence()
+    updateUnreadBadge(ch)
     updateInputPlaceholder()
     await loadMessages(currentRoom.id)
+  }
+
+  function updateUnreadBadge(ch) {
+    const el = document.querySelector(`.unread[data-ch="${ch}"]`)
+    if (!el) return
+    const n = unreadCounts[ch] || 0
+    el.textContent = n > 99 ? '99+' : String(n)
+    el.classList.toggle('has', n > 0)
   }
 
   // 模型 context window 大小（tokens）。表外的模型走默认值 200K。
@@ -1603,9 +1617,10 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
-        // 只渲染当前 channel 的消息；AI 状态/成本仍按全局更新
+        // 只渲染当前 channel 的消息；其它 channel 累计未读计数
         const msgChannel = payload.new.channel || 'main'
         const inCurChannel = msgChannel === currentChannel
+        const isSelf = payload.new.user_id === currentUser?.id && payload.new.role !== 'ai'
         const exists = document.querySelector(`[data-msg-id="${payload.new.id}"]`)
         if (!exists) {
           if (payload.new.role === 'ai') {
@@ -1622,6 +1637,10 @@
           if (inCurChannel) {
             appendMessage(payload.new)
             scrollToBottom()
+          } else if (!isSelf) {
+            // 不在当前 channel + 不是自己发的 → 累计未读
+            unreadCounts[msgChannel] = (unreadCounts[msgChannel] || 0) + 1
+            updateUnreadBadge(msgChannel)
           }
         }
       })
@@ -1658,6 +1677,8 @@
         + `<span class="unread" data-ch="${t.ch}">0</span>`
         + `</div>`
     }).join('')
+    // 重渲染后把现有未读计数同步到 DOM
+    Object.keys(unreadCounts).forEach(updateUnreadBadge)
   }
 
   function appendMessage(msg) {
