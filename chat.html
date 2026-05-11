@@ -178,14 +178,36 @@
       padding: 0.75rem 0.75rem 1rem;
       flex-shrink: 0;
     }
+    .tips-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 4px 8px 4px;
+    }
     .tips-title {
       font-size: 10px;
       font-weight: 500;
       letter-spacing: 1.4px;
       text-transform: uppercase;
       color: var(--text3);
-      margin: 0 0 8px 4px;
     }
+    .tips-refresh {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      border-radius: 4px;
+      padding: 0;
+      transition: color .15s, transform .3s;
+    }
+    .tips-refresh:hover { color: var(--teal); }
+    .tips-refresh:active { transform: rotate(180deg); }
+    .tips-refresh i { font-size: 14px; }
     .tips-list {
       display: flex;
       flex-direction: column;
@@ -961,12 +983,13 @@
       <div class="skeleton skeleton-room"></div>
     </div>
     <div class="tips-section">
-      <div class="tips-title">Tips</div>
-      <div class="tips-list">
-        <button type="button" class="tip-item" onclick="useTip(this)">看今年流年运势</button>
-        <button type="button" class="tip-item" onclick="useTip(this)">帮我看八字格局</button>
-        <button type="button" class="tip-item" onclick="useTip(this)">紫微斗数排盘</button>
+      <div class="tips-header">
+        <div class="tips-title">Tips</div>
+        <button class="tips-refresh" onclick="refreshTips()" title="换一组提示">
+          <i class="ti ti-refresh"></i>
+        </button>
       </div>
+      <div class="tips-list" id="tipsList"></div>
     </div>
   </aside>
 
@@ -1780,6 +1803,40 @@
     // 光标移到末尾，方便继续追加
     input.setSelectionRange(text.length, text.length)
   }
+
+  // Tips 池子 + 换一组逻辑
+  const TIPS_POOL = [
+    '看今年流年运势',
+    '帮我看八字格局',
+    '紫微斗数排盘',
+    '问感情走势',
+    '财运分析',
+    '事业方向',
+    '今日运势',
+    '解一个梦',
+    '看子女缘',
+    '婚姻吉凶',
+    '看健康',
+    '问考试运',
+    '塔罗一抽',
+    '取个名字',
+    '问搬家时机',
+  ]
+  function refreshTips() {
+    const list = document.getElementById('tipsList')
+    if (!list) return
+    // 随机洗牌取前 3
+    const pool = TIPS_POOL.slice()
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[pool[i], pool[j]] = [pool[j], pool[i]]
+    }
+    list.innerHTML = pool.slice(0, 3)
+      .map(t => `<button type="button" class="tip-item" onclick="useTip(this)">${t}</button>`)
+      .join('')
+  }
+  // 初始渲染（init 之后调一次）
+  document.addEventListener('DOMContentLoaded', refreshTips)
 
   // ── 附件上传 ──
   async function onPasteImage(e) {
