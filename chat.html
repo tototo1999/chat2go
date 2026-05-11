@@ -1519,7 +1519,7 @@
       wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
       wrap.classList.toggle('danger', pct >= 85)
       const fill = document.getElementById('ctxBatteryFill')
-      if (fill) fill.style.width = `${Math.min(Math.max(pct, 0), 100)}%`
+      if (fill) fill.style.width = `${Math.min(Math.max(100 - pct, 0), 100)}%`
     } catch (e) { console.warn('[metrics] failed:', e) }
   }
 
