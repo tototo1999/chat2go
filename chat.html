@@ -63,8 +63,7 @@
       border-right: 0.5px solid var(--border);
     }
 
-    nav { background: #fff; }
-    .layout { background: var(--bg); }
+    /* 不再单独刷 #fff，统一用 var(--bg) #FAFAF8，跟 landing 的 main 底色一致 */
 
     /* ── NAV ── */
     nav {
@@ -72,7 +71,6 @@
       align-items: center;
       justify-content: space-between;
       padding: 18px 2rem;
-      background: #fff;
       border-bottom: 0.5px solid var(--border);
       flex-shrink: 0;
       z-index: 10;
@@ -121,7 +119,6 @@
       width: var(--sidebar);
       flex-shrink: 0;
       border-right: 0.5px solid var(--border);
-      background: #fff;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -254,7 +251,6 @@
       gap: 4px;
       border-bottom: 0.5px solid var(--border);
       flex-shrink: 0;
-      background: #fff;
     }
     .chat-head-row {
       display: flex;
@@ -466,7 +462,6 @@
     .input-area {
       padding: 10px 1rem;
       border-top: 0.5px solid var(--border);
-      background: #fff;
       flex-shrink: 0;
     }
     .input-wrap {
