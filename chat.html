@@ -338,16 +338,7 @@
       justify-content: space-between;
       gap: 8px;
     }
-    .chat-head-left { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-    .chat-room-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    /* 第二行：metrics + status，统一小字灰色 */
+    /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
       align-items: center;
@@ -998,13 +989,7 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <!-- 第一行：房间名 -->
-        <div class="chat-head-row">
-          <div class="chat-head-left">
-            <span class="chat-room-name" id="chatRoomName">-</span>
-          </div>
-        </div>
-        <!-- 第二行：左侧 已用/上限 · % · 右侧 模型名(dot=连接状态) · 实时 -->
+        <!-- 只保留 metrics + status，房间名 sidebar 已经高亮显示 -->
         <div class="chat-head-row">
           <div class="chat-metrics">
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
@@ -1412,8 +1397,6 @@
     document.querySelectorAll('.room-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === room.id)
     })
-
-    document.getElementById('chatRoomName').textContent = room.name
 
     document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
 
