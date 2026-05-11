@@ -154,6 +154,46 @@
     .rooms-list::-webkit-scrollbar { width: 4px; }
     .rooms-list::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 4px; }
 
+    /* Tips：sidebar 底部的 prompt 快捷入口 */
+    .tips-section {
+      border-top: 0.5px solid var(--border);
+      padding: 0.75rem 0.75rem 1rem;
+      flex-shrink: 0;
+    }
+    .tips-title {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin: 0 0 8px 4px;
+    }
+    .tips-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .tip-item {
+      text-align: left;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text2);
+      background: transparent;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tip-item:hover {
+      background: var(--teal-50);
+      color: var(--teal-600);
+      border-color: var(--teal-100);
+    }
+
     .room-item {
       padding: 10px 12px;
       border-radius: var(--radius);
@@ -897,6 +937,14 @@
       <div class="skeleton skeleton-room"></div>
       <div class="skeleton skeleton-room"></div>
       <div class="skeleton skeleton-room"></div>
+    </div>
+    <div class="tips-section">
+      <div class="tips-title">Tips</div>
+      <div class="tips-list">
+        <button type="button" class="tip-item" onclick="useTip(this)">看今年流年运势</button>
+        <button type="button" class="tip-item" onclick="useTip(this)">帮我看八字格局</button>
+        <button type="button" class="tip-item" onclick="useTip(this)">紫微斗数排盘</button>
+      </div>
     </div>
   </aside>
 
@@ -1697,6 +1745,18 @@
   function autoResize(el) {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
+
+  // 点 sidebar 底部 Tips → 把提示文字塞进输入框
+  function useTip(btn) {
+    const text = btn.textContent.trim()
+    const input = document.getElementById('msgInput')
+    if (!input) return
+    input.value = text
+    autoResize(input)
+    input.focus()
+    // 光标移到末尾，方便继续追加
+    input.setSelectionRange(text.length, text.length)
   }
 
   // ── 附件上传 ──
