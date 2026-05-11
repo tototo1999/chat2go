@@ -299,45 +299,38 @@
       justify-content: space-between;
       gap: 8px;
     }
-    /* 在线头像区 */
+    /* Channel 切换 tab（椭圆气泡，2 个：群 / 对方 DM） */
     .presence-row {
       display: flex;
       align-items: center;
-      gap: 4px;
-      min-height: 24px;
+      gap: 6px;
+      min-height: 22px;
     }
-    .presence-av {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      display: flex;
+    .presence-tab {
+      display: inline-flex;
       align-items: center;
-      justify-content: center;
+      height: 20px;
+      padding: 0 10px;
+      border-radius: 999px;
       font-size: 11px;
-      font-weight: 600;
-      color: #fff;
-      flex-shrink: 0;
+      font-weight: 500;
+      line-height: 1;
+      border: 1px solid currentColor;
+      background: transparent;
       cursor: pointer;
       user-select: none;
-      border: 1.5px solid var(--bg);
-      transition: transform .12s, box-shadow .12s;
+      white-space: nowrap;
+      transition: background .15s, color .15s, transform .12s;
     }
-    .presence-av:hover:not(.disabled) { transform: translateY(-1px); }
-    .presence-av.user   { background: #B8893A; }
-    .presence-av.expert { background: var(--purple-600); }
-    .presence-av.ai     { background: var(--teal); }
-    .presence-av + .presence-av { margin-left: -6px; }
-    /* 当前激活的 channel tab：双层 ring */
-    .presence-av.active {
-      box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px currentColor;
-      z-index: 1;
+    .presence-tab:hover { transform: translateY(-1px); }
+    .presence-tab.main         { color: var(--teal); }
+    .presence-tab.peer-expert  { color: var(--purple-600); }
+    .presence-tab.peer-user    { color: #B8893A; }
+    /* active = 实色填充 + 白字 */
+    .presence-tab.active {
+      background: currentColor;
     }
-    .presence-av.active.user   { color: #B8893A; }
-    .presence-av.active.expert { color: var(--purple-600); }
-    .presence-av.active.ai     { color: var(--teal); }
-    /* AI 头像始终是装饰性（不可点） */
-    .presence-av.decorative { cursor: default; }
-    .presence-av.decorative:hover { transform: none; }
+    .presence-tab.active > span { color: #fff; }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -1627,27 +1620,22 @@
   }
 
   function renderPresence(_state) {
-    // 头像行 = channel tab 切换器
-    // AI 永远装饰性（只在主窗参与，不可单独私聊）
-    // 大咖视角: [AI 装饰] [咖=主窗 →main]      [白 →expert_user]
-    // 小白视角: [AI 装饰] [咖 →expert_user]    [白=主窗 →main]
+    // 椭圆气泡 channel tab：只 2 个
+    // 大咖视角: [群（含 AI）]  [小白 DM]
+    // 小白视角: [群（含 AI）]  [大咖 DM]
     const row = document.getElementById('presenceRow')
     if (!row) return
-    const aiName = currentRoom?.ai_name || 'AI'
     const isExp = isExpert(currentRoom)
+    const aiName = currentRoom?.ai_name || 'AI'
     const tabs = [
-      { cls: 'ai decorative', label: 'AI', ch: null, title: `${aiName}（仅在主窗参与）` },
+      { cls: 'main', label: '群', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）` },
       isExp
-        ? { cls: 'expert', label: '咖', ch: 'main',        title: '主窗（三方共聊）' }
-        : { cls: 'expert', label: '咖', ch: 'expert_user', title: '与大咖私聊' },
-      isExp
-        ? { cls: 'user',   label: '白', ch: 'expert_user', title: '与小白私聊' }
-        : { cls: 'user',   label: '白', ch: 'main',        title: '主窗（三方共聊）' },
+        ? { cls: 'peer-user',   label: '小白', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
+        : { cls: 'peer-expert', label: '大咖', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
     ]
     row.innerHTML = tabs.map(t => {
-      const cls = `presence-av ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
-      const onclick = t.ch ? `onclick="switchChannel('${t.ch}')"` : ''
-      return `<div class="${cls}" ${onclick} title="${escHtml(t.title)}">${t.label}</div>`
+      const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
+      return `<div class="${cls}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}"><span>${t.label}</span></div>`
     }).join('')
   }
 
