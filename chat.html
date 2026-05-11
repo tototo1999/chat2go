@@ -106,6 +106,24 @@
       transition: all .15s;
     }
     .btn-logout:hover { background: var(--bg2); color: var(--text); }
+    /* nav 右上角图标按钮：仅图标，无文字 */
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0.5px solid var(--border2);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+      padding: 0;
+    }
+    .icon-btn:hover { background: var(--bg2); color: var(--text); }
+    .icon-btn i { font-size: 16px; }
 
     /* ── LAYOUT ── */
     .layout {
@@ -872,8 +890,12 @@
     <a href="/" class="logo">Chat<span>2GO</span></a>
   </div>
   <div class="nav-right">
-    <button class="btn-logout" id="settingsBtn" onclick="openSettings()" style="display:none;">⚙ 设置</button>
-    <button class="btn-logout" onclick="handleLogout()">退出</button>
+    <button class="icon-btn" id="settingsBtn" onclick="openSettings()" title="设置" style="display:none;">
+      <i class="ti ti-settings"></i>
+    </button>
+    <button class="icon-btn" onclick="handleLogout()" title="退出">
+      <i class="ti ti-logout"></i>
+    </button>
   </div>
 </nav>
 
@@ -930,7 +952,7 @@
   <aside class="sidebar">
     <div class="sidebar-head">
       <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
-        <i class="ti ti-plus"></i> 新建 Chat
+        <i class="ti ti-plus"></i> Chat
       </button>
     </div>
     <div class="rooms-list" id="roomsList">
