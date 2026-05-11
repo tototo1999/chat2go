@@ -67,7 +67,6 @@
     <div class="card">
       <div class="card-header">
         <div class="card-logo">Chat<span>2GO</span></div>
-        <div class="card-sub">登录后开始使用专属AI助手</div>
       </div>
 
       <div class="tabs">
@@ -88,16 +87,6 @@
           <input type="password" id="login-password" placeholder="输入密码" autocomplete="current-password">
         </div>
         <button class="submit-btn" onclick="handleLogin()">登录</button>
-
-        <div class="divider"><span>Demo 快捷登录</span></div>
-        <div style="display:flex;gap:8px;">
-          <button class="wechat-btn" style="flex:1;font-size:12px;padding:9px;" onclick="quickLogin('expert')">
-            👨‍🏫 大咖账号
-          </button>
-          <button class="wechat-btn" style="flex:1;font-size:12px;padding:9px;" onclick="quickLogin('xiaobai')">
-            🧑 小白账号
-          </button>
-        </div>
 
         <div class="divider"><span>或</span></div>
         <button class="wechat-btn" onclick="handleWechat()">
@@ -223,44 +212,6 @@
 
     function handleWechat() {
       showMsg('微信登录正在接入中，请先使用邮箱登录', 'info')
-    }
-
-    // Demo 快捷账号
-    const DEMO_ACCOUNTS = {
-      expert:  { email: 'lirui88888862@gmail.com', password: '123456' },
-      xiaobai: { email: '388@vip.163.com',         password: '123456' },
-    }
-
-    async function quickLogin(role) {
-      clearMsg()
-      const acc = DEMO_ACCOUNTS[role]
-      if (!acc) return
-      document.getElementById('login-email').value = acc.email
-      document.getElementById('login-password').value = acc.password
-      if (!window.supabase) { showMsg('Supabase SDK 未加载，请刷新', 'error'); return }
-
-      // 先尝试登录；失败则自动注册
-      showMsg('登录中…', 'info')
-      let { data, error } = await sb.auth.signInWithPassword(acc)
-      if (error && /Invalid login credentials/i.test(error.message)) {
-        showMsg('账号未注册，正在自动创建…', 'info')
-        const reg = await sb.auth.signUp({
-          ...acc,
-          options: { data: { role: role === 'expert' ? 'expert' : 'user' } }
-        })
-        if (reg.error) { showMsg('自动注册失败：' + reg.error.message, 'error'); return }
-        // 注册后再登录
-        const r2 = await sb.auth.signInWithPassword(acc)
-        if (r2.error) {
-          showMsg('注册成功但需要邮箱验证。请去 Supabase Dashboard → Auth 关掉 Confirm Email', 'error')
-          return
-        }
-        data = r2.data; error = null
-      } else if (error) {
-        showMsg('登录失败：' + error.message, 'error'); return
-      }
-      showMsg('登录成功！跳转中…', 'success')
-      setTimeout(() => { window.location.href = '/chat.html' }, 600)
     }
 
     // 已登录则跳转
