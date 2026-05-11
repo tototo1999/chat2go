@@ -106,6 +106,14 @@
       background: var(--bg2);
     }
     .expert-card:hover .expert-arrow { transform: translateX(4px); color: var(--teal); }
+    .expert-card.disabled {
+      cursor: default;
+      color: var(--text3);
+    }
+    .expert-card.disabled:hover { background: var(--bg); }
+    .expert-card.disabled .expert-arrow { display: none; }
+    .expert-card.disabled .expert-tag { opacity: 0.55; }
+    .expert-card.disabled .expert-name { opacity: 0.55; }
     .expert-tag {
       font-size: 11px;
       letter-spacing: 1.4px;
@@ -165,33 +173,26 @@
     <div class="tagline">真人大咖 × AI，<em>说清楚</em>你想要什么。</div>
 
     <div class="expert-grid">
-      <a class="expert-card" href="/login.html?expert=damisan">
-        <div class="expert-tag">算命师</div>
-        <div class="expert-name">大米 san</div>
-        <div class="expert-desc">紫微 · 八字 · 塔罗。看流年、问姻缘、解迷局。</div>
+      <a class="expert-card" href="/login.html?expert=moriyama">
+        <div class="expert-tag">fortune teller</div>
+        <div class="expert-name">森山大道 san</div>
         <div class="expert-arrow">→</div>
       </a>
 
-      <a class="expert-card" href="/login.html?expert=tony">
-        <div class="expert-tag">地产中介</div>
+      <div class="expert-card disabled">
+        <div class="expert-tag">real estate</div>
         <div class="expert-name">Tony 哥</div>
-        <div class="expert-desc">一线房产顾问。城市选筹、户型分析、谈价签约全流程陪跑。</div>
-        <div class="expert-arrow">→</div>
-      </a>
+      </div>
 
-      <a class="expert-card" href="/login.html?expert=davis">
-        <div class="expert-tag">运桔烧腊主理人</div>
+      <div class="expert-card disabled">
+        <div class="expert-tag">cantonese bbq</div>
         <div class="expert-name">戴维斯</div>
-        <div class="expert-desc">广式烧腊老饕。从食材选购到火候时机，把好味道讲明白。</div>
-        <div class="expert-arrow">→</div>
-      </a>
+      </div>
 
-      <a class="expert-card" href="/login.html?expert=daibai">
-        <div class="expert-tag">康复大咖</div>
+      <div class="expert-card disabled">
+        <div class="expert-tag">rehab</div>
         <div class="expert-name">大白老师</div>
-        <div class="expert-desc">康复科主治。颈腰肩、运动损伤、术后修复，对症给方案。</div>
-        <div class="expert-arrow">→</div>
-      </a>
+      </div>
     </div>
   </main>
 
