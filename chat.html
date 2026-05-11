@@ -309,12 +309,10 @@
     .presence-tab {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
       height: 22px;
-      padding: 0 10px 0 7px;
+      padding: 0 8px;
       border-radius: 999px;
-      font-size: 11px;
-      font-weight: 500;
       line-height: 1;
       color: var(--text);
       background: #fff;
@@ -334,26 +332,25 @@
     .presence-tab.peer-user    { --tab-c: #B8893A; }
     .presence-tab.active {
       border-color: var(--tab-c);
-      background: color-mix(in srgb, var(--tab-c) 10%, #fff);
+      background: color-mix(in srgb, var(--tab-c) 12%, #fff);
     }
-    .presence-tab.active .label { color: var(--tab-c); font-weight: 600; }
-    /* tab 内的小圆头像（DM tab 用） */
-    .presence-tab .ico {
-      width: 14px;
+    .presence-tab .ti { font-size: 14px; color: var(--tab-c); }
+    /* 未读数徽章：>0 显示，=0 隐藏；位置在 icon 右侧（gap 控制间距） */
+    .presence-tab .unread {
+      min-width: 14px;
       height: 14px;
-      border-radius: 50%;
-      display: inline-flex;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #DC2626;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      display: none;
       align-items: center;
       justify-content: center;
-      font-size: 8px;
-      font-weight: 700;
-      color: #fff;
-      background: var(--tab-c);
-      flex-shrink: 0;
+      box-sizing: border-box;
     }
-    /* 群 tab 内的 tabler 图标 */
-    .presence-tab .ti-users-group,
-    .presence-tab .ti-users { font-size: 13px; color: var(--tab-c); }
+    .presence-tab .unread.has { display: inline-flex; }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -1643,20 +1640,23 @@
   }
 
   function renderPresence(_state) {
-    // 白底胶囊 channel tab：2 个（群 + 对方 DM），参考 Gemini 风格
+    // 白底胶囊 channel tab：图标 only + 未读徽章位
     const row = document.getElementById('presenceRow')
     if (!row) return
     const isExp = isExpert(currentRoom)
     const aiName = currentRoom?.ai_name || 'AI'
     const tabs = [
-      { cls: 'main', icon: '<i class="ti ti-users"></i>', label: '群', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）` },
+      { cls: 'main',                       icon: 'ti-users',          ch: 'main',        title: `主窗（三方共聊，${aiName} 参与）` },
       isExp
-        ? { cls: 'peer-user',   icon: '<span class="ico">白</span>', label: '小白', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
-        : { cls: 'peer-expert', icon: '<span class="ico">咖</span>', label: '大咖', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
+        ? { cls: 'peer-user',   icon: 'ti-message-circle', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
+        : { cls: 'peer-expert', icon: 'ti-message-circle', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
     ]
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
-      return `<div class="${cls}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}">${t.icon}<span class="label">${t.label}</span></div>`
+      return `<div class="${cls}" data-ch="${t.ch}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}">`
+        + `<i class="ti ${t.icon}"></i>`
+        + `<span class="unread" data-ch="${t.ch}">0</span>`
+        + `</div>`
     }).join('')
   }
 
