@@ -335,12 +335,9 @@
     .presence-av.active.user   { color: #B8893A; }
     .presence-av.active.expert { color: var(--purple-600); }
     .presence-av.active.ai     { color: var(--teal); }
-    /* 小白看 AI tab：禁用 */
-    .presence-av.disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-      filter: grayscale(0.5);
-    }
+    /* AI 头像始终是装饰性（不可点） */
+    .presence-av.decorative { cursor: default; }
+    .presence-av.decorative:hover { transform: none; }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -1458,10 +1455,8 @@
   function updateInputPlaceholder() {
     const el = document.getElementById('msgInput')
     if (!el) return
-    const aiName = currentRoom?.ai_name || 'AI'
-    if (currentChannel === 'expert_ai')        el.placeholder = `与 ${aiName} 私聊…`
-    else if (currentChannel === 'expert_user') el.placeholder = isExpert(currentRoom) ? '与小白私聊（AI 不参与）…' : '与大咖私聊（AI 不参与）…'
-    else                                        el.placeholder = '主窗（三方共聊），AI 会在这里回应你…'
+    if (currentChannel === 'expert_user') el.placeholder = isExpert(currentRoom) ? '与小白私聊（AI 不参与）…' : '与大咖私聊（AI 不参与）…'
+    else                                  el.placeholder = '主窗（三方共聊），AI 会在这里回应你…'
   }
 
   async function switchChannel(ch) {
@@ -1633,28 +1628,25 @@
 
   function renderPresence(_state) {
     // 头像行 = channel tab 切换器
-    // 大咖视角: [AI →expert_ai] [咖=主窗 →main] [白 →expert_user]
-    // 小白视角: [AI 禁用]       [咖 →expert_user]       [白=主窗 →main]
+    // AI 永远装饰性（只在主窗参与，不可单独私聊）
+    // 大咖视角: [AI 装饰] [咖=主窗 →main]      [白 →expert_user]
+    // 小白视角: [AI 装饰] [咖 →expert_user]    [白=主窗 →main]
     const row = document.getElementById('presenceRow')
     if (!row) return
     const aiName = currentRoom?.ai_name || 'AI'
     const isExp = isExpert(currentRoom)
-    const tabs = isExp
-      ? [
-          { cls: 'ai',     label: 'AI', ch: 'expert_ai',   title: `${aiName} 私聊` },
-          { cls: 'expert', label: '咖', ch: 'main',        title: '主窗（三方共聊）' },
-          { cls: 'user',   label: '白', ch: 'expert_user', title: '与小白私聊' },
-        ]
-      : [
-          { cls: 'ai',     label: 'AI', ch: null,          title: '小白不能与 AI 私聊', disabled: true },
-          { cls: 'expert', label: '咖', ch: 'expert_user', title: '与大咖私聊' },
-          { cls: 'user',   label: '白', ch: 'main',        title: '主窗（三方共聊）' },
-        ]
+    const tabs = [
+      { cls: 'ai decorative', label: 'AI', ch: null, title: `${aiName}（仅在主窗参与）` },
+      isExp
+        ? { cls: 'expert', label: '咖', ch: 'main',        title: '主窗（三方共聊）' }
+        : { cls: 'expert', label: '咖', ch: 'expert_user', title: '与大咖私聊' },
+      isExp
+        ? { cls: 'user',   label: '白', ch: 'expert_user', title: '与小白私聊' }
+        : { cls: 'user',   label: '白', ch: 'main',        title: '主窗（三方共聊）' },
+    ]
     row.innerHTML = tabs.map(t => {
-      const cls = `presence-av ${t.cls}`
-        + (t.disabled ? ' disabled' : '')
-        + (t.ch === currentChannel ? ' active' : '')
-      const onclick = (t.disabled || !t.ch) ? '' : `onclick="switchChannel('${t.ch}')"`
+      const cls = `presence-av ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
+      const onclick = t.ch ? `onclick="switchChannel('${t.ch}')"` : ''
       return `<div class="${cls}" ${onclick} title="${escHtml(t.title)}">${t.label}</div>`
     }).join('')
   }
