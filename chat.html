@@ -1015,8 +1015,8 @@
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
             <span class="sep">·</span>
             <span class="ctx-pct" id="chatCtxWrap">
-              <span id="chatRoomCtx" title="context 占用百分比">0%</span>
-              <i class="ctx-battery" title="context 占用进度"><i id="ctxBatteryFill"></i></i>
+              <span id="chatRoomCtx" title="context 剩余百分比">100%</span>
+              <i class="ctx-battery" title="context 剩余电量"><i id="ctxBatteryFill"></i></i>
             </span>
           </div>
           <div class="chat-status">
@@ -1511,15 +1511,16 @@
         + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
         + `\n累计消费: ¥${cny.toFixed(2)}`
 
-      // 百分比 + 电池图标
+      // 剩余百分比 + 电池图标（语义对齐：显示「还剩多少」）
+      const remPct = Math.min(Math.max(100 - pct, 0), 100)
       const pctEl = document.getElementById('chatRoomCtx')
-      pctEl.textContent = `${pct.toFixed(0)}%`
-      pctEl.title = `context 占用 ${pct.toFixed(1)}%`
+      pctEl.textContent = `${remPct.toFixed(0)}%`
+      pctEl.title = `context 剩余 ${remPct.toFixed(1)}% · 已用 ${pct.toFixed(1)}%`
       const wrap = document.getElementById('chatCtxWrap')
       wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
       wrap.classList.toggle('danger', pct >= 85)
       const fill = document.getElementById('ctxBatteryFill')
-      if (fill) fill.style.width = `${Math.min(Math.max(100 - pct, 0), 100)}%`
+      if (fill) fill.style.width = `${remPct}%`
     } catch (e) { console.warn('[metrics] failed:', e) }
   }
 
