@@ -11,6 +11,7 @@ __pycache__/
 
 # 运行时日志（每次重启变化）
 logs/
+*.jsonl
 
 # macOS
 .DS_Store
