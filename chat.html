@@ -337,6 +337,43 @@
     .chat-metrics .sep { color: var(--border2); }
     .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
     .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
+    /* iPhone 风 context 电池图标 */
+    .ctx-pct {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ctx-battery {
+      position: relative;
+      display: inline-block;
+      width: 18px;
+      height: 9px;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      padding: 1px;
+      margin-right: 2px;
+      box-sizing: border-box;
+      font-style: normal;
+    }
+    .ctx-battery::after {
+      content: '';
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 4px;
+      background: currentColor;
+      border-radius: 0 1px 1px 0;
+    }
+    .ctx-battery > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: currentColor;
+      border-radius: 1px;
+      transition: width .25s ease;
+    }
     /* 模型名嵌在 AI status pill 里，加点 weight 突出 */
     #bridgeStatus #chatRoomModel { font-weight: 500; color: var(--text2); }
     #bridgeStatus.online #chatRoomModel { color: var(--teal-600); }
@@ -977,7 +1014,10 @@
           <div class="chat-metrics">
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
             <span class="sep">·</span>
-            <span id="chatRoomCtx" title="context 占用百分比">0%</span>
+            <span class="ctx-pct" id="chatCtxWrap">
+              <span id="chatRoomCtx" title="context 占用百分比">0%</span>
+              <i class="ctx-battery" title="context 占用进度"><i id="ctxBatteryFill"></i></i>
+            </span>
           </div>
           <div class="chat-status">
             <div class="status-item offline" id="bridgeStatus" title="AI 未连接">
@@ -1471,12 +1511,15 @@
         + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
         + `\n累计消费: ¥${cny.toFixed(2)}`
 
-      // 百分比
+      // 百分比 + 电池图标
       const pctEl = document.getElementById('chatRoomCtx')
       pctEl.textContent = `${pct.toFixed(0)}%`
       pctEl.title = `context 占用 ${pct.toFixed(1)}%`
-      pctEl.classList.toggle('warn',   pct >= 60 && pct < 85)
-      pctEl.classList.toggle('danger', pct >= 85)
+      const wrap = document.getElementById('chatCtxWrap')
+      wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
+      wrap.classList.toggle('danger', pct >= 85)
+      const fill = document.getElementById('ctxBatteryFill')
+      if (fill) fill.style.width = `${Math.min(Math.max(pct, 0), 100)}%`
     } catch (e) { console.warn('[metrics] failed:', e) }
   }
 
