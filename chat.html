@@ -163,6 +163,20 @@
     }
     .btn-new-room:hover { background: var(--teal-600); }
     .btn-new-room i { font-size: 15px; }
+    /* 小白模式：sidebar 顶部 Chat2GO logo（和顶部 nav .logo 同字体/字号/颜色规格）*/
+    .sidebar-brand {
+      width: 100%;
+      padding: 8px 12px;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .sidebar-brand span { color: var(--teal); }
 
     .rooms-list {
       flex: 1;
@@ -931,6 +945,9 @@
       <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
         <i class="ti ti-plus"></i> Chat
       </button>
+      <div class="sidebar-brand" id="sidebarBrand">
+        Chat<span>2GO</span>
+      </div>
     </div>
     <div class="rooms-list" id="roomsList">
       <div class="skeleton skeleton-room"></div>
@@ -1063,6 +1080,9 @@
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
         document.getElementById('newRoomBtn').style.display = ''
+        // 大咖时隐藏小白占位标签
+        const brand = document.getElementById('sidebarBrand')
+        if (brand) brand.style.display = 'none'
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
