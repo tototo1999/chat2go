@@ -317,14 +317,30 @@
       font-weight: 600;
       color: #fff;
       flex-shrink: 0;
-      cursor: default;
+      cursor: pointer;
       user-select: none;
       border: 1.5px solid var(--bg);
+      transition: transform .12s, box-shadow .12s;
     }
+    .presence-av:hover:not(.disabled) { transform: translateY(-1px); }
     .presence-av.user   { background: #B8893A; }
     .presence-av.expert { background: var(--purple-600); }
     .presence-av.ai     { background: var(--teal); }
     .presence-av + .presence-av { margin-left: -6px; }
+    /* 当前激活的 channel tab：双层 ring */
+    .presence-av.active {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px currentColor;
+      z-index: 1;
+    }
+    .presence-av.active.user   { color: #B8893A; }
+    .presence-av.active.expert { color: var(--purple-600); }
+    .presence-av.active.ai     { color: var(--teal); }
+    /* 小白看 AI tab：禁用 */
+    .presence-av.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -1103,6 +1119,7 @@
   let realtimeChannel = null
   let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
   let currentDisplayName = '' // 自己的 display_name，用于消息头展示
+  let currentChannel = 'main'  // 当前消息频道: 'main' | 'expert_ai' | 'expert_user'
 
   async function init() {
     const { data: { session } } = await sb.auth.getSession()
@@ -1419,21 +1436,40 @@
 
   async function openRoom(room) {
     currentRoom = room
+    currentChannel = 'main'
 
     document.querySelectorAll('.room-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === room.id)
     })
 
-    document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
+    updateInputPlaceholder()
 
     document.getElementById('welcomeState').style.display = 'none'
     const ac = document.getElementById('activeChat')
     ac.style.display = 'flex'
 
+    renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
     document.getElementById('msgInput').focus()
+  }
+
+  function updateInputPlaceholder() {
+    const el = document.getElementById('msgInput')
+    if (!el) return
+    const aiName = currentRoom?.ai_name || 'AI'
+    if (currentChannel === 'expert_ai')        el.placeholder = `与 ${aiName} 私聊…`
+    else if (currentChannel === 'expert_user') el.placeholder = isExpert(currentRoom) ? '与小白私聊（AI 不参与）…' : '与大咖私聊（AI 不参与）…'
+    else                                        el.placeholder = '主窗（三方共聊），AI 会在这里回应你…'
+  }
+
+  async function switchChannel(ch) {
+    if (!currentRoom || ch === currentChannel) return
+    currentChannel = ch
+    renderPresence()
+    updateInputPlaceholder()
+    await loadMessages(currentRoom.id)
   }
 
   // 模型 context window 大小（tokens）。表外的模型走默认值 200K。
@@ -1531,6 +1567,7 @@
       .from('messages')
       .select('*')
       .eq('room_id', roomId)
+      .eq('channel', currentChannel)
       .order('created_at', { ascending: true })
 
     if (error) { showToast('加载消息失败'); return }
@@ -1558,19 +1595,26 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
+        // 只渲染当前 channel 的消息；AI 状态/成本仍按全局更新
+        const msgChannel = payload.new.channel || 'main'
+        const inCurChannel = msgChannel === currentChannel
         const exists = document.querySelector(`[data-msg-id="${payload.new.id}"]`)
         if (!exists) {
           if (payload.new.role === 'ai') {
-            clearTimeout(typingTimer)
-            hideTyping()
+            if (inCurChannel) {
+              clearTimeout(typingTimer)
+              hideTyping()
+            }
             setBridgeStatus(true)
             lastAiMessageAt = Date.now()
             // AI 回复完成 → bridge 刚写完 model_usage 行 → 刷新成本徽章
             // 延迟 500ms 等 model_usage insert 落地
             setTimeout(() => loadRoomCost(roomId), 500)
           }
-          appendMessage(payload.new)
-          scrollToBottom()
+          if (inCurChannel) {
+            appendMessage(payload.new)
+            scrollToBottom()
+          }
         }
       })
       .on('presence', { event: 'sync' }, () => {
@@ -1587,28 +1631,32 @@
       })
   }
 
-  function renderPresence(state) {
+  function renderPresence(_state) {
+    // 头像行 = channel tab 切换器
+    // 大咖视角: [AI →expert_ai] [咖=主窗 →main] [白 →expert_user]
+    // 小白视角: [AI 禁用]       [咖 →expert_user]       [白=主窗 →main]
     const row = document.getElementById('presenceRow')
     if (!row) return
-    // 把每个 user_id 的最新一条 metadata 收下来
-    const users = []
-    for (const key of Object.keys(state || {})) {
-      const metas = state[key] || []
-      if (!metas.length) continue
-      const m = metas[metas.length - 1]
-      users.push(m)
-    }
-    // AI 永远展示（只要 bridge online；这里简单始终展示）
     const aiName = currentRoom?.ai_name || 'AI'
-    const html = []
-    html.push(`<div class="presence-av ai" title="${escHtml(aiName)}">AI</div>`)
-    for (const u of users) {
-      const label = u.role === 'expert' ? '咖' : '白'
-      const cls = u.role === 'expert' ? 'expert' : 'user'
-      const name = u.display_name || (u.role === 'expert' ? '大咖' : '小白')
-      html.push(`<div class="presence-av ${cls}" title="${escHtml(name)}">${label}</div>`)
-    }
-    row.innerHTML = html.join('')
+    const isExp = isExpert(currentRoom)
+    const tabs = isExp
+      ? [
+          { cls: 'ai',     label: 'AI', ch: 'expert_ai',   title: `${aiName} 私聊` },
+          { cls: 'expert', label: '咖', ch: 'main',        title: '主窗（三方共聊）' },
+          { cls: 'user',   label: '白', ch: 'expert_user', title: '与小白私聊' },
+        ]
+      : [
+          { cls: 'ai',     label: 'AI', ch: null,          title: '小白不能与 AI 私聊', disabled: true },
+          { cls: 'expert', label: '咖', ch: 'expert_user', title: '与大咖私聊' },
+          { cls: 'user',   label: '白', ch: 'main',        title: '主窗（三方共聊）' },
+        ]
+    row.innerHTML = tabs.map(t => {
+      const cls = `presence-av ${t.cls}`
+        + (t.disabled ? ' disabled' : '')
+        + (t.ch === currentChannel ? ' active' : '')
+      const onclick = (t.disabled || !t.ch) ? '' : `onclick="switchChannel('${t.ch}')"`
+      return `<div class="${cls}" ${onclick} title="${escHtml(t.title)}">${t.label}</div>`
+    }).join('')
   }
 
   function appendMessage(msg) {
@@ -1742,6 +1790,7 @@
       room_id: currentRoom.id,
       user_id: currentUser.id,
       role,
+      channel: currentChannel,
       content: finalContent,
       attachments
     }).select().single()
@@ -1762,13 +1811,15 @@
     appendMessage(msgData)
     scrollToBottom()
 
-    // 任何非 AI 角色发消息都触发 AI 响应
-    showTyping()
-    clearTimeout(typingTimer)
-    typingTimer = setTimeout(() => {
-      hideTyping()
-      setBridgeStatus(false)
-    }, 30000)
+    // AI 在 main / expert_ai 频道响应；expert_user 频道（大咖 ↔ 小白）AI 不参与
+    if (currentChannel !== 'expert_user') {
+      showTyping()
+      clearTimeout(typingTimer)
+      typingTimer = setTimeout(() => {
+        hideTyping()
+        setBridgeStatus(false)
+      }, 30000)
+    }
   }
 
   function setBridgeStatus(online) {
