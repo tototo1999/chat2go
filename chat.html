@@ -1480,6 +1480,9 @@
     if (!currentRoom || ch === currentChannel) return
     currentChannel = ch
     unreadCounts[ch] = 0
+    // 切换 channel 一并清掉残留的 typing 指示
+    clearTimeout(typingTimer)
+    hideTyping()
     renderPresence()
     updateUnreadBadge(ch)
     updateInputPlaceholder()
@@ -1624,10 +1627,9 @@
         const exists = document.querySelector(`[data-msg-id="${payload.new.id}"]`)
         if (!exists) {
           if (payload.new.role === 'ai') {
-            if (inCurChannel) {
-              clearTimeout(typingTimer)
-              hideTyping()
-            }
+            // typing 是全局 UI，任何 AI 消息到达都清掉（避免切 channel 残留）
+            clearTimeout(typingTimer)
+            hideTyping()
             setBridgeStatus(true)
             lastAiMessageAt = Date.now()
             // AI 回复完成 → bridge 刚写完 model_usage 行 → 刷新成本徽章
