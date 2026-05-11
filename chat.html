@@ -142,12 +142,16 @@
       overflow: hidden;
     }
     .sidebar-head {
-      padding: 1rem 1rem 0.75rem;
+      padding: 0 6px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
       border-bottom: 0.5px solid var(--border);
     }
     .btn-new-room {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 12px;
       font-size: 13px;
       font-family: inherit;
       font-weight: 500;
@@ -163,10 +167,10 @@
     }
     .btn-new-room:hover { background: var(--teal-600); }
     .btn-new-room i { font-size: 15px; }
-    /* 小白模式：sidebar 顶部 Chat 占位（外观和 .btn-new-room 一致，仅去掉 + 号、不可点）*/
+    /* 小白模式：sidebar 顶部 Chat 占位（尺寸对齐下方 .room-item，水平/垂直完全一致）*/
     .sidebar-brand {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 12px;
       font-size: 13px;
       font-family: inherit;
       font-weight: 500;
@@ -280,8 +284,11 @@
     /* chat-head：两行紧凑布局 */
     .chat-head {
       padding: 8px 1rem;
+      min-height: 60px;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      justify-content: center;
       gap: 4px;
       border-bottom: 0.5px solid var(--border);
       flex-shrink: 0;
