@@ -166,20 +166,43 @@
       border: 0.5px solid transparent;
       margin-bottom: 2px;
     }
+    .room-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     .room-item:hover { background: var(--bg2); }
     .room-item.active {
       background: var(--teal-50);
       border-color: var(--teal-100);
     }
     .room-name {
+      flex: 1;
       font-size: 13px;
       font-weight: 500;
-      margin-bottom: 3px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .room-item.active .room-name { color: var(--teal-800); }
+    /* 大咖删除按钮 */
+    .room-del {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, background .15s, color .15s;
+      font-family: inherit;
+    }
+    .room-item:hover .room-del { opacity: 1; }
+    .room-del:hover { background: #fee2e2; color: #991b1b; }
     .room-meta {
       font-size: 11px;
       color: var(--text3);
@@ -1090,6 +1113,27 @@
     const keyName = document.getElementById('newKeyName')
     if (keyName) keyName.value = ''
   }
+  async function deleteRoom(roomId, btnEl) {
+    const room = btnEl?.closest('.room-item')
+    const name = room?.querySelector('.room-name')?.textContent || '这个 Chat'
+    if (!confirm(`确定删除「${name}」？\n所有消息、计费记录都会一起删除，不可恢复。`)) return
+    try {
+      const { error } = await sb.from('rooms').delete().eq('id', roomId)
+      if (error) throw error
+      // 如果删的是当前打开的房间，清掉聊天面板
+      if (currentRoom?.id === roomId) {
+        currentRoom = null
+        document.getElementById('activeChat').style.display = 'none'
+        document.getElementById('welcomeState').style.display = ''
+      }
+      await loadRooms()
+      showToast('已删除')
+    } catch (e) {
+      console.warn('[delete room]', e)
+      showToast('删除失败：' + (e.message || e))
+    }
+  }
+
   async function editAIName() {
     if (!currentRoom || !isExpert(currentRoom)) return
     const cur = currentRoom.ai_name || ''
@@ -1257,8 +1301,10 @@
     const el = document.createElement('div')
     el.className = 'room-item'
     el.dataset.id = room.id
+    const canDelete = isExpert(room)
     el.innerHTML = `
       <div class="room-name">${escHtml(room.name)}</div>
+      ${canDelete ? `<button class="room-del" title="删除该 Chat" onclick="event.stopPropagation(); deleteRoom('${room.id}', this)">×</button>` : ''}
     `
     el.onclick = () => openRoom(room)
     list.appendChild(el)
