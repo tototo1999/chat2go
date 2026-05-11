@@ -1113,6 +1113,30 @@
     const keyName = document.getElementById('newKeyName')
     if (keyName) keyName.value = ''
   }
+  async function editAIName() {
+    if (!currentRoom || !isExpert(currentRoom)) return
+    const cur = currentRoom.ai_name || ''
+    const name = prompt('给本房间的 AI 助手起个名字（留空恢复默认）：', cur)
+    if (name === null) return
+    const newName = name.trim()
+    try {
+      const { error } = await sb.from('rooms')
+        .update({ ai_name: newName || null })
+        .eq('id', currentRoom.id)
+      if (error) throw error
+      currentRoom.ai_name = newName || null
+      const displayName = newName || 'AI 助手'
+      // 当前已渲染的 AI sender 全部刷新
+      document.querySelectorAll('.msg-sender.ai').forEach(el => {
+        el.textContent = displayName
+      })
+      showToast('AI 名字已更新')
+    } catch (e) {
+      console.warn('[ai_name save]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
+  }
+
   async function saveProfile() {
     const name = document.getElementById('profileDisplayName').value.trim()
     if (!name) { showToast('显示名不能为空'); return }
@@ -1437,9 +1461,12 @@
     const isOwn = msg.user_id === currentUser?.id
     const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
 
-    const roleLabels = { user: '小白', expert: '大咖', ai: 'AI 助手' }
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    const roleLabels = { user: '小白', expert: '大咖', ai: aiName }
     const roleLabel = roleLabels[role] || role
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
+    // 大咖可点 AI 头像编辑名字
+    const aiAvClick = (role === 'ai' && isExpert(currentRoom)) ? ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"' : ''
     // AI 消息永远显示「AI 助手」，不管谁的 user_id 写的；只有 user/expert 才用「我」判断
     const senderName = (role !== 'ai' && isOwn) ? (currentDisplayName || '我') : roleLabel
     const ts = formatTime(msg.created_at)
@@ -1486,7 +1513,7 @@
     const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
 
     el.innerHTML = `
-      <div class="msg-av ${role}">${avText}</div>
+      <div class="msg-av ${role}"${aiAvClick}>${avText}</div>
       <div class="msg-body">
         <div class="msg-meta">
           <span class="msg-sender ${role}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${senderName}</span>
