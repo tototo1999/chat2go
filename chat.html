@@ -338,6 +338,32 @@
       justify-content: space-between;
       gap: 8px;
     }
+    /* 在线头像区 */
+    .presence-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 24px;
+    }
+    .presence-av {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #fff;
+      flex-shrink: 0;
+      cursor: default;
+      user-select: none;
+      border: 1.5px solid var(--bg);
+    }
+    .presence-av.user   { background: #B8893A; }
+    .presence-av.expert { background: var(--purple-600); }
+    .presence-av.ai     { background: var(--teal); }
+    .presence-av + .presence-av { margin-left: -6px; }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -989,7 +1015,9 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <!-- 只保留 metrics + status，房间名 sidebar 已经高亮显示 -->
+        <!-- 在线头像 -->
+        <div class="presence-row" id="presenceRow"></div>
+        <!-- metrics + status -->
         <div class="chat-head-row">
           <div class="chat-metrics">
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
@@ -1521,7 +1549,7 @@
     if (realtimeChannel) sb.removeChannel(realtimeChannel)
 
     realtimeChannel = sb
-      .channel(`room-${roomId}`)
+      .channel(`room-${roomId}`, { config: { presence: { key: currentUser.id } } })
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -1543,7 +1571,42 @@
           scrollToBottom()
         }
       })
-      .subscribe()
+      .on('presence', { event: 'sync' }, () => {
+        renderPresence(realtimeChannel.presenceState())
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await realtimeChannel.track({
+            user_id: currentUser.id,
+            display_name: currentDisplayName || (currentUser.email || '').split('@')[0],
+            role: currentRole,
+          })
+        }
+      })
+  }
+
+  function renderPresence(state) {
+    const row = document.getElementById('presenceRow')
+    if (!row) return
+    // 把每个 user_id 的最新一条 metadata 收下来
+    const users = []
+    for (const key of Object.keys(state || {})) {
+      const metas = state[key] || []
+      if (!metas.length) continue
+      const m = metas[metas.length - 1]
+      users.push(m)
+    }
+    // AI 永远展示（只要 bridge online；这里简单始终展示）
+    const aiName = currentRoom?.ai_name || 'AI'
+    const html = []
+    html.push(`<div class="presence-av ai" title="${escHtml(aiName)}">AI</div>`)
+    for (const u of users) {
+      const label = u.role === 'expert' ? '咖' : '白'
+      const cls = u.role === 'expert' ? 'expert' : 'user'
+      const name = u.display_name || (u.role === 'expert' ? '大咖' : '小白')
+      html.push(`<div class="presence-av ${cls}" title="${escHtml(name)}">${label}</div>`)
+    }
+    row.innerHTML = html.join('')
   }
 
   function appendMessage(msg) {
