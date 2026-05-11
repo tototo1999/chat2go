@@ -296,7 +296,7 @@
       font-variant-numeric: tabular-nums;
     }
     .chat-metrics .sep { color: var(--border2); }
-    .chat-metrics .cost.has-cost { color: var(--teal-600); font-weight: 500; }
+    .chat-metrics .model { color: var(--text2); font-weight: 500; }
     .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
     .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
     .chat-status {
@@ -897,14 +897,14 @@
           </div>
           <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:3px 10px;border-radius:100px;background:var(--teal-50);color:var(--teal-600);font-size:11px;font-weight:500;border:0.5px solid var(--teal-100);cursor:pointer;font-family:inherit;">🔗 邀请</button>
         </div>
-        <!-- 第二行：左侧用量 / 右侧状态 -->
+        <!-- 第二行：左侧 模型 · 已用/上限 · % · 右侧状态 -->
         <div class="chat-head-row">
           <div class="chat-metrics">
-            <span class="cost" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</span>
+            <span class="model" id="chatRoomModel" title="当前 LLM 模型">—</span>
             <span class="sep">·</span>
-            <span id="chatRoomTokens" title="累计 token 用量">0 tok</span>
+            <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
             <span class="sep">·</span>
-            <span id="chatRoomCtx" title="当前 context 占用">0%</span>
+            <span id="chatRoomCtx" title="context 占用百分比">0%</span>
           </div>
           <div class="chat-status">
             <div class="status-item offline" id="bridgeStatus">
@@ -1269,6 +1269,15 @@
     return `${(n / 1_000_000).toFixed(2)}M`
   }
 
+  function shortModelName(model) {
+    if (!model) return '—'
+    let name = (model.split('/')[1] || model)
+      .replace(/^claude-/, '')
+      .replace(/(\d+)-(\d+)/g, '$1.$2')
+      .replace(/^gpt-/, 'GPT-')
+    return name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
+  }
+
   async function loadRoomCost(roomId) {
     // 并行拉 room_costs（汇总）+ 最近一条 model_usage（context 占用）
     const [rc, lu] = await Promise.all([
@@ -1284,42 +1293,40 @@
         .maybeSingle(),
     ])
 
-    // ── 1. 总账单 ¥X.XX ──
+    // 单次计算 context 占用（三档之和），同时驱动模型名 / 已用-上限 / 百分比
     try {
-      const cny = Number(rc.data?.total_charge_cny ?? 0)
-      const el = document.getElementById('chatRoomCost')
-      el.textContent = `¥${cny.toFixed(2)}`
-      el.classList.toggle('has-cost', cny > 0)
-    } catch (e) { console.warn('[cost] failed:', e) }
-
-    // ── 2. 累计 token 数 ──
-    try {
-      const inTok = Number(rc.data?.total_input_tokens ?? 0)
-      const outTok = Number(rc.data?.total_output_tokens ?? 0)
-      const total = inTok + outTok
-      const el = document.getElementById('chatRoomTokens')
-      el.textContent = `${formatTokens(total)} tok`
-      el.title = `input ${formatTokens(inTok)} + output ${formatTokens(outTok)} = ${total} tokens`
-    } catch (e) { console.warn('[tokens] failed:', e) }
-
-    // ── 3. 当前 context 占用 ──
-    try {
-      // hermes 用 prompt caching 时 input_tokens 只是 fresh 部分，
-      // 真正占 context 的是三档之和
       const used = Number(lu.data?.input_tokens ?? 0)
                  + Number(lu.data?.cache_creation_input_tokens ?? 0)
                  + Number(lu.data?.cache_read_input_tokens ?? 0)
       const model = lu.data?.model ?? ''
       const window = MODEL_CONTEXT_WINDOWS[model] || DEFAULT_CTX_WINDOW
       const pct = window > 0 ? (used / window) * 100 : 0
-      const el = document.getElementById('chatRoomCtx')
-      el.textContent = `${pct.toFixed(0)}%`
-      el.title = model
-        ? `${model.split('/')[1]}：${formatTokens(used)} / ${formatTokens(window)}`
-        : '尚未对话'
-      el.classList.toggle('warn',   pct >= 60 && pct < 85)
-      el.classList.toggle('danger', pct >= 85)
-    } catch (e) { console.warn('[ctx] failed:', e) }
+
+      // 累计 token（input+output）作为悬停详情
+      const inTok = Number(rc.data?.total_input_tokens ?? 0)
+      const outTok = Number(rc.data?.total_output_tokens ?? 0)
+      const totalIO = inTok + outTok
+      const cny = Number(rc.data?.total_charge_cny ?? 0)
+
+      // 模型名
+      const modelEl = document.getElementById('chatRoomModel')
+      modelEl.textContent = shortModelName(model)
+      modelEl.title = model || '尚未对话'
+
+      // 已用 / 上限
+      const tokensEl = document.getElementById('chatRoomTokens')
+      tokensEl.textContent = `${formatTokens(used)} / ${formatTokens(window)}`
+      tokensEl.title = `本轮 context: ${used.toLocaleString()} / ${window.toLocaleString()} tokens`
+        + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
+        + `\n累计消费: ¥${cny.toFixed(2)}`
+
+      // 百分比
+      const pctEl = document.getElementById('chatRoomCtx')
+      pctEl.textContent = `${pct.toFixed(0)}%`
+      pctEl.title = `context 占用 ${pct.toFixed(1)}%`
+      pctEl.classList.toggle('warn',   pct >= 60 && pct < 85)
+      pctEl.classList.toggle('danger', pct >= 85)
+    } catch (e) { console.warn('[metrics] failed:', e) }
   }
 
   async function loadMessages(roomId) {
