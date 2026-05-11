@@ -219,8 +219,8 @@
       text-overflow: ellipsis;
     }
     .room-item.active .room-name { color: var(--teal-800); }
-    /* 大咖删除按钮 */
-    .room-del {
+    /* 大咖 hover 按钮：邀请 + 删除 */
+    .room-del, .room-invite {
       flex-shrink: 0;
       width: 22px;
       height: 22px;
@@ -228,15 +228,21 @@
       border: none;
       background: transparent;
       color: var(--text3);
-      font-size: 16px;
+      font-size: 14px;
       line-height: 1;
       cursor: pointer;
       opacity: 0;
       transition: opacity .15s, background .15s, color .15s;
       font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
-    .room-item:hover .room-del { opacity: 1; }
-    .room-del:hover { background: #fee2e2; color: #991b1b; }
+    .room-item:hover .room-del,
+    .room-item:hover .room-invite { opacity: 1; }
+    .room-del { font-size: 16px; }
+    .room-del:hover    { background: #fee2e2; color: #991b1b; }
+    .room-invite:hover { background: var(--teal-50); color: var(--teal-600); }
     .room-meta {
       font-size: 11px;
       color: var(--text3);
@@ -1167,10 +1173,28 @@
 
     await loadRooms()
 
-    // 支持 ?room=<id> 直接进房间（小白邀请链接用）
+    // 支持 ?room=<id>&t=<token> 邀请链接：先用 token 加入再开房
+    // 或仅 ?room=<id>：直接尝试打开（要求是成员，否则 RLS 拒绝）
     const params = new URLSearchParams(window.location.search)
     const roomParam = params.get('room')
-    if (roomParam) {
+    const tokenParam = params.get('t')
+    if (tokenParam) {
+      try {
+        const { data: joinedRoomId, error } = await sb.rpc('join_room_by_token', { p_token: tokenParam })
+        if (error) {
+          console.warn('[invite] join failed:', error)
+          showToast('邀请链接无效')
+        } else if (joinedRoomId) {
+          await loadRooms()              // 刷新成员列表，新房间会出现
+          await openRoomById(joinedRoomId)
+          // 清掉 URL 上的 token，避免分享时泄露
+          history.replaceState({}, '', `${location.pathname}?room=${joinedRoomId}`)
+        }
+      } catch (e) {
+        console.warn('[invite] rpc threw:', e)
+        showToast('加入失败')
+      }
+    } else if (roomParam) {
       await openRoomById(roomParam)
     }
   }
@@ -1179,7 +1203,9 @@
 
   function copyInviteLink() {
     if (!currentRoom) return
-    const url = `${window.location.origin}/chat.html?room=${currentRoom.id}`
+    const token = currentRoom.invite_token
+    if (!token) { showToast('该房间无邀请凭证（需要重建）'); return }
+    const url = `${window.location.origin}/chat.html?room=${currentRoom.id}&t=${token}`
     navigator.clipboard.writeText(url).then(
       () => showToast('已复制邀请链接'),
       () => prompt('复制失败，请手动复制以下链接：', url),
@@ -1434,13 +1460,24 @@
     const el = document.createElement('div')
     el.className = 'room-item'
     el.dataset.id = room.id
-    const canDelete = isExpert(room)
+    const isOwner = isExpert(room)
     el.innerHTML = `
       <div class="room-name">${escHtml(room.name)}</div>
-      ${canDelete ? `<button class="room-del" title="删除该 Chat" onclick="event.stopPropagation(); deleteRoom('${room.id}', this)">×</button>` : ''}
+      ${isOwner ? `<button class="room-invite" title="复制邀请链接" onclick="event.stopPropagation(); copyInviteForRoom('${room.id}', this)"><i class="ti ti-share"></i></button>` : ''}
+      ${isOwner ? `<button class="room-del" title="删除该 Chat" onclick="event.stopPropagation(); deleteRoom('${room.id}', this)">×</button>` : ''}
     `
     el.onclick = () => openRoom(room)
     list.appendChild(el)
+  }
+
+  async function copyInviteForRoom(roomId, btnEl) {
+    const { data: room, error } = await sb.from('rooms').select('id,invite_token').eq('id', roomId).maybeSingle()
+    if (error || !room || !room.invite_token) { showToast('获取邀请凭证失败'); return }
+    const url = `${window.location.origin}/chat.html?room=${room.id}&t=${room.invite_token}`
+    navigator.clipboard.writeText(url).then(
+      () => showToast('已复制邀请链接'),
+      () => prompt('复制失败，请手动复制：', url),
+    )
   }
 
   function isExpert(room) {
