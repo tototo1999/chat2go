@@ -97,29 +97,6 @@
       border-radius: 100px;
     }
     .nav-right { display: flex; align-items: center; gap: 8px; }
-    .user-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border: 0.5px solid var(--border);
-      border-radius: 100px;
-      font-size: 11px;
-      color: var(--text2);
-      cursor: default;
-    }
-    .user-av {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--teal-50);
-      color: var(--teal-800);
-      font-size: 10px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
     .btn-logout {
       padding: 5px 11px;
       font-size: 11px;
@@ -153,14 +130,6 @@
     .sidebar-head {
       padding: 1rem 1rem 0.75rem;
       border-bottom: 0.5px solid var(--border);
-    }
-    .sidebar-title {
-      font-size: 11px;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: var(--text3);
-      font-weight: 500;
-      margin-bottom: 10px;
     }
     .btn-new-room {
       width: 100%;
@@ -821,10 +790,6 @@
     <a href="/" class="logo">Chat<span>2GO</span></a>
   </div>
   <div class="nav-right">
-    <div class="user-pill">
-      <div class="user-av" id="userAv">?</div>
-      <span id="userEmail">加载中...</span>
-    </div>
     <button class="btn-logout" id="settingsBtn" onclick="openSettings()" style="display:none;">⚙ 设置</button>
     <button class="btn-logout" onclick="handleLogout()">退出</button>
   </div>
@@ -869,7 +834,6 @@
 
   <aside class="sidebar">
     <div class="sidebar-head">
-      <div class="sidebar-title">Chat 列表</div>
       <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
         <i class="ti ti-plus"></i> 新建 Chat
       </button>
@@ -1005,8 +969,6 @@
     currentUser = session.user
 
     const email = currentUser.email
-    document.getElementById('userEmail').textContent = email
-    document.getElementById('userAv').textContent = email[0].toUpperCase()
 
     // 检查角色：大咖才显示设置按钮
     try {
