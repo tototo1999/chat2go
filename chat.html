@@ -980,6 +980,7 @@
     <div class="field">
       <label>所属行业</label>
       <select id="newRoomIndustry">
+        <option value="算命">算命</option>
         <option value="外贸">外贸</option>
         <option value="健身">健身</option>
         <option value="地产">地产</option>
@@ -1234,6 +1235,9 @@
     return Math.floor(diff/86400) + ' 天前'
   }
 
+  // demo 阶段：只放 fortune teller 这条线
+  const DEMO_INDUSTRY = '算命'
+
   async function loadRooms() {
     const list = document.getElementById('roomsList')
     list.innerHTML = ''
@@ -1244,6 +1248,7 @@
       const { data, error } = await sb
         .from('rooms').select('*')
         .eq('expert_id', currentUser.id)
+        .eq('industry', DEMO_INDUSTRY)
         .order('created_at', { ascending: false })
       if (error) { console.warn('[loadRooms expert] error:', error); return }
       rooms = data || []
@@ -1260,6 +1265,7 @@
         const { data, error } = await sb
           .from('rooms').select('*')
           .in('id', myRoomIds)
+          .eq('industry', DEMO_INDUSTRY)
           .order('created_at', { ascending: false })
         if (error) { console.warn('[loadRooms user] error:', error); return }
         rooms = data || []
