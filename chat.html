@@ -163,20 +163,22 @@
     }
     .btn-new-room:hover { background: var(--teal-600); }
     .btn-new-room i { font-size: 15px; }
-    /* 小白模式：sidebar 顶部 Chat2GO logo（和顶部 nav .logo 同字体/字号/颜色规格）*/
+    /* 小白模式：sidebar 顶部 Chat 占位（外观和 .btn-new-room 一致，仅去掉 + 号、不可点）*/
     .sidebar-brand {
       width: 100%;
       padding: 8px 12px;
-      font-family: 'Noto Serif SC', serif;
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: -0.3px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
       display: flex;
       align-items: center;
+      gap: 6px;
       box-sizing: border-box;
     }
-    .sidebar-brand span { color: var(--teal); }
 
     .rooms-list {
       flex: 1;
@@ -946,7 +948,7 @@
         <i class="ti ti-plus"></i> Chat
       </button>
       <div class="sidebar-brand" id="sidebarBrand">
-        Chat<span>2GO</span>
+        Chat
       </div>
     </div>
     <div class="rooms-list" id="roomsList">
