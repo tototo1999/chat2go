@@ -465,20 +465,20 @@
     }
 
     .input-area {
-      padding: 1rem 1.5rem;
+      padding: 10px 1rem;
       border-top: 0.5px solid var(--border);
       background: #fff;
       flex-shrink: 0;
     }
     .input-wrap {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: flex-end;
     }
     .input-box {
       flex: 1;
-      padding: 10px 14px;
-      font-size: 14px;
+      padding: 8px 12px;
+      font-size: 13px;
       font-family: inherit;
       border: 0.5px solid var(--border2);
       border-radius: var(--radius);
@@ -487,33 +487,34 @@
       resize: none;
       outline: none;
       transition: border-color .15s;
-      line-height: 1.6;
-      max-height: 140px;
-      min-height: 42px;
+      line-height: 1.5;
+      max-height: 120px;
+      min-height: 38px;
     }
     .input-box:focus { border-color: var(--teal); background: #fff; }
     .input-box::placeholder { color: var(--text3); }
+    /* GO 圆形红底按钮 */
     .send-btn {
-      padding: 10px 18px;
-      font-size: 14px;
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      font-size: 12px;
       font-family: inherit;
       font-weight: 700;
       letter-spacing: 0.5px;
       background: #DC2626;
       color: #fff;
       border: none;
-      border-radius: var(--radius);
+      border-radius: 50%;
       cursor: pointer;
-      transition: background .15s;
+      transition: background .15s, transform .1s;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
       flex-shrink: 0;
-      height: 42px;
-      min-width: 56px;
     }
     .send-btn:hover { background: #B91C1C; }
+    .send-btn:active { transform: scale(0.96); }
     .send-btn:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
 
     .input-hint {
@@ -524,8 +525,8 @@
 
     /* ── 附件 ── */
     .attach-btn, .voice-btn {
-      width: 38px;
-      height: 42px;
+      width: 34px;
+      height: 38px;
       flex-shrink: 0;
       background: transparent;
       border: 0.5px solid var(--border2);
@@ -538,7 +539,7 @@
       transition: all .15s;
     }
     .attach-btn:hover, .voice-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
-    .attach-btn i, .voice-btn i { font-size: 18px; }
+    .attach-btn i, .voice-btn i { font-size: 16px; }
 
     .voice-btn.recording {
       background: #FDE8E8;
