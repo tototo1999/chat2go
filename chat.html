@@ -299,7 +299,7 @@
       justify-content: space-between;
       gap: 8px;
     }
-    /* Channel 切换 tab（椭圆气泡，2 个：群 / 对方 DM） */
+    /* Channel 切换 tab：白底胶囊 + 图标 + 阴影（参考 Gemini 风格） */
     .presence-row {
       display: flex;
       align-items: center;
@@ -309,28 +309,51 @@
     .presence-tab {
       display: inline-flex;
       align-items: center;
-      height: 20px;
-      padding: 0 10px;
+      gap: 5px;
+      height: 22px;
+      padding: 0 10px 0 7px;
       border-radius: 999px;
       font-size: 11px;
       font-weight: 500;
       line-height: 1;
-      border: 1px solid currentColor;
-      background: transparent;
+      color: var(--text);
+      background: #fff;
+      border: 0.5px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
-      transition: background .15s, color .15s, transform .12s;
+      transition: transform .12s, box-shadow .15s, border-color .15s, background .15s;
     }
-    .presence-tab:hover { transform: translateY(-1px); }
-    .presence-tab.main         { color: var(--teal); }
-    .presence-tab.peer-expert  { color: var(--purple-600); }
-    .presence-tab.peer-user    { color: #B8893A; }
-    /* active = 实色填充 + 白字 */
+    .presence-tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    }
+    .presence-tab.main         { --tab-c: var(--teal); }
+    .presence-tab.peer-expert  { --tab-c: var(--purple-600); }
+    .presence-tab.peer-user    { --tab-c: #B8893A; }
     .presence-tab.active {
-      background: currentColor;
+      border-color: var(--tab-c);
+      background: color-mix(in srgb, var(--tab-c) 10%, #fff);
     }
-    .presence-tab.active > span { color: #fff; }
+    .presence-tab.active .label { color: var(--tab-c); font-weight: 600; }
+    /* tab 内的小圆头像（DM tab 用） */
+    .presence-tab .ico {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--tab-c);
+      flex-shrink: 0;
+    }
+    /* 群 tab 内的 tabler 图标 */
+    .presence-tab .ti-users-group,
+    .presence-tab .ti-users { font-size: 13px; color: var(--tab-c); }
     /* metrics + status, 统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -1620,22 +1643,20 @@
   }
 
   function renderPresence(_state) {
-    // 椭圆气泡 channel tab：只 2 个
-    // 大咖视角: [群（含 AI）]  [小白 DM]
-    // 小白视角: [群（含 AI）]  [大咖 DM]
+    // 白底胶囊 channel tab：2 个（群 + 对方 DM），参考 Gemini 风格
     const row = document.getElementById('presenceRow')
     if (!row) return
     const isExp = isExpert(currentRoom)
     const aiName = currentRoom?.ai_name || 'AI'
     const tabs = [
-      { cls: 'main', label: '群', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）` },
+      { cls: 'main', icon: '<i class="ti ti-users"></i>', label: '群', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）` },
       isExp
-        ? { cls: 'peer-user',   label: '小白', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
-        : { cls: 'peer-expert', label: '大咖', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
+        ? { cls: 'peer-user',   icon: '<span class="ico">白</span>', label: '小白', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
+        : { cls: 'peer-expert', icon: '<span class="ico">咖</span>', label: '大咖', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
     ]
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
-      return `<div class="${cls}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}"><span>${t.label}</span></div>`
+      return `<div class="${cls}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}">${t.icon}<span class="label">${t.label}</span></div>`
     }).join('')
   }
 
