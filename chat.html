@@ -1280,7 +1280,6 @@
     el.dataset.id = room.id
     el.innerHTML = `
       <div class="room-name">${escHtml(room.name)}</div>
-      <div class="room-meta"><div class="room-dot"></div>${escHtml(room.industry)}</div>
     `
     el.onclick = () => openRoom(room)
     list.appendChild(el)
