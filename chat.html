@@ -1085,13 +1085,20 @@
       currentRole === 'expert' ? '大咖设置' : '小白设置'
     // 邮箱（只读）
     document.getElementById('profileEmail').value = currentUser?.email || ''
-    // 拉当前 display_name
+    // 拉当前 display_name（并同步到全局 currentDisplayName，修复 init 时 fetch 失败的情况）
     try {
       const { data } = await sb.from('profiles')
         .select('display_name')
         .eq('user_id', currentUser.id)
         .maybeSingle()
-      document.getElementById('profileDisplayName').value = data?.display_name || ''
+      const dn = data?.display_name || ''
+      document.getElementById('profileDisplayName').value = dn
+      if (dn && dn !== currentDisplayName) {
+        currentDisplayName = dn
+        document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
+          if (el.textContent === '我') el.textContent = dn
+        })
+      }
     } catch (e) { console.warn('[profile load]', e) }
     // Agent Keys 仅大咖
     document.getElementById('agentKeysSection').style.display =
