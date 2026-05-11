@@ -249,12 +249,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .chat-room-industry {
-      font-size: 11px;
-      color: var(--text3);
-      flex-shrink: 0;
-    }
-    .chat-room-industry::before { content: '· '; }
     /* 第二行：metrics + status，统一小字灰色 */
     .chat-metrics {
       display: flex;
@@ -902,7 +896,6 @@
         <div class="chat-head-row">
           <div class="chat-head-left">
             <span class="chat-room-name" id="chatRoomName">-</span>
-            <span class="chat-room-industry" id="chatRoomIndustry">-</span>
           </div>
         </div>
         <!-- 第二行：左侧 已用/上限 · % · 右侧 模型名(dot=连接状态) · 实时 -->
@@ -1297,7 +1290,6 @@
     })
 
     document.getElementById('chatRoomName').textContent = room.name
-    document.getElementById('chatRoomIndustry').textContent = room.industry
 
     document.getElementById('msgInput').placeholder = '输入消息，AI 会在这里回应你…(可粘贴图片)'
 
