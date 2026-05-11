@@ -42,7 +42,7 @@
       --text3:   #888780;
       --radius:  8px;
       --radius-lg: 12px;
-      --sidebar: 180px;
+      --sidebar: 220px;
       --nav-h:   56px;
     }
 
@@ -61,7 +61,7 @@
     /* 锁定整体内容为竖立长方形布局，两侧灰色留白 */
     nav, .layout {
       width: 100%;
-      max-width: 660px;
+      max-width: 800px;
     }
     nav { background: #fff; box-shadow: 0 0 0 0.5px var(--border); }
     .layout { background: var(--bg); box-shadow: 0 0 0 0.5px var(--border); }
@@ -255,25 +255,66 @@
     .welcome h3 { font-size: 16px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
     .welcome p { font-size: 13px; line-height: 1.7; max-width: 300px; }
 
+    /* chat-head：两行紧凑布局 */
     .chat-head {
-      padding: 0 1rem;
-      height: 48px;
+      padding: 8px 1rem;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 4px;
       border-bottom: 0.5px solid var(--border);
       flex-shrink: 0;
       background: #fff;
     }
-    .chat-head-left { display: flex; align-items: center; gap: 8px; }
-    .chat-room-name { font-size: 13px; font-weight: 500; }
+    .chat-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .chat-head-left { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+    .chat-room-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .chat-room-industry {
-      padding: 2px 8px;
-      background: var(--bg2);
-      border-radius: 100px;
-      font-size: 10px;
+      font-size: 11px;
+      color: var(--text3);
+      flex-shrink: 0;
+    }
+    .chat-room-industry::before { content: '· '; }
+    /* 第二行：metrics + status，统一小字灰色 */
+    .chat-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text3);
+      font-variant-numeric: tabular-nums;
+    }
+    .chat-metrics .sep { color: var(--border2); }
+    .chat-metrics .cost.has-cost { color: var(--teal-600); font-weight: 500; }
+    .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
+    .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
       color: var(--text3);
     }
+    .status-item { display: flex; align-items: center; gap: 5px; }
+    .status-item .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-item.online .dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+    .status-item.offline .dot { background: var(--gray-400); }
     .online-count {
       font-size: 10px;
       color: var(--text3);
@@ -292,56 +333,6 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0.4; }
     }
-    .bridge-status {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 2px 8px;
-      border-radius: 100px;
-      font-size: 10px;
-      font-weight: 500;
-      transition: all .3s;
-    }
-    .bridge-status.online  { background: var(--teal-50);  color: var(--teal-600); }
-    .bridge-status.offline { background: var(--gray-50);  color: var(--gray-400); }
-    .bridge-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .bridge-status.online  .bridge-dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
-    .bridge-status.offline .bridge-dot { background: var(--gray-400); }
-
-    /* 计费徽章：本房间累计消费 */
-    .cost-badge {
-      padding: 2px 8px;
-      border-radius: 100px;
-      background: var(--gray-50);
-      color: var(--text2);
-      font-size: 10px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      cursor: help;
-      transition: all .3s;
-    }
-    .cost-badge.has-cost {
-      background: var(--teal-50);
-      color: var(--teal-600);
-    }
-    /* token 总量、context 占比徽章 */
-    .stat-badge {
-      padding: 2px 8px;
-      border-radius: 100px;
-      background: var(--gray-50);
-      color: var(--text3);
-      font-size: 10px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-      cursor: help;
-      transition: all .3s;
-    }
-    .stat-badge.warn   { background: #fef3c7; color: #92400e; }   /* 60-85% */
-    .stat-badge.danger { background: #fee2e2; color: #991b1b; }   /* >85% */
 
     /* ── 飞书风消息布局：左头像 + 右侧 名字+时间+气泡 ── */
     .messages {
@@ -897,22 +888,33 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <div class="chat-head-left">
-          <span class="chat-room-name" id="chatRoomName">-</span>
-          <span class="chat-room-industry" id="chatRoomIndustry">-</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:2px 8px;border-radius:100px;background:var(--gray-50);color:var(--text2);font-size:10px;font-weight:500;border:0.5px solid var(--border2);cursor:pointer;font-family:inherit;">🔗 邀请</button>
-          <div class="cost-badge" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</div>
-          <div class="stat-badge" id="chatRoomTokens" title="累计 token 用量（input + output）">0 tok</div>
-          <div class="stat-badge" id="chatRoomCtx" title="当前 context 占用">0%</div>
-          <div class="bridge-status offline" id="bridgeStatus">
-            <div class="bridge-dot"></div>
-            <span id="bridgeLabel">AI 未连接</span>
+        <!-- 第一行：房间名 + 邀请按钮 -->
+        <div class="chat-head-row">
+          <div class="chat-head-left">
+            <span class="chat-room-name" id="chatRoomName">-</span>
+            <span class="chat-room-industry" id="chatRoomIndustry">-</span>
           </div>
-          <div class="online-count">
-            <div class="online-dot"></div>
-            实时在线
+          <button id="inviteBtn" onclick="copyInviteLink()" title="复制邀请链接分享给小白" style="display:none;padding:3px 10px;border-radius:100px;background:var(--teal-50);color:var(--teal-600);font-size:11px;font-weight:500;border:0.5px solid var(--teal-100);cursor:pointer;font-family:inherit;">🔗 邀请</button>
+        </div>
+        <!-- 第二行：左侧用量 / 右侧状态 -->
+        <div class="chat-head-row">
+          <div class="chat-metrics">
+            <span class="cost" id="chatRoomCost" title="本房间累计消费（含服务费）">¥0.00</span>
+            <span class="sep">·</span>
+            <span id="chatRoomTokens" title="累计 token 用量">0 tok</span>
+            <span class="sep">·</span>
+            <span id="chatRoomCtx" title="当前 context 占用">0%</span>
+          </div>
+          <div class="chat-status">
+            <div class="status-item offline" id="bridgeStatus">
+              <div class="dot"></div>
+              <span id="bridgeLabel">AI 未连接</span>
+            </div>
+            <span class="sep">·</span>
+            <div class="status-item online">
+              <div class="dot"></div>
+              <span>实时</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1531,7 +1533,7 @@
   function setBridgeStatus(online) {
     const el = document.getElementById('bridgeStatus')
     const label = document.getElementById('bridgeLabel')
-    el.className = 'bridge-status ' + (online ? 'online' : 'offline')
+    el.className = 'status-item ' + (online ? 'online' : 'offline')
     label.textContent = online ? 'AI 已连接' : 'AI 未连接'
   }
 
