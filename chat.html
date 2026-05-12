@@ -240,7 +240,6 @@
     }
     .room-item:hover .room-del { opacity: 1; }
     .room-del:hover { background: #fee2e2; color: #991b1b; }
-    /* 大咖 待审 follow 已挪到 role-badge 弹层（见 .role-popup） */
     /* 小白：没有房间时显示「选大咖 follow」面板 */
     .follow-experts {
       padding: 1.5rem 1.25rem;
@@ -700,67 +699,6 @@
     }
     .role-badge:hover { background: var(--teal-600); }
     .role-badge:active { transform: scale(0.94); }
-    /* 待审 follow 数字气泡：右上角红圆 */
-    .role-badge-count {
-      position: absolute;
-      top: -2px;
-      right: -4px;
-      min-width: 16px;
-      height: 16px;
-      padding: 0 4px;
-      border-radius: 999px;
-      background: #DC2626;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      border: 1.5px solid var(--bg);
-      pointer-events: none;
-    }
-    .role-badge-count.has { display: inline-flex; }
-    /* 待审 follow 弹层：从 role-badge 上方弹出 */
-    .role-popup {
-      position: absolute;
-      bottom: calc(100% + 8px);
-      left: 0;
-      min-width: 240px;
-      max-width: 320px;
-      background: #fff;
-      border: 0.5px solid var(--border);
-      border-radius: 10px;
-      box-shadow: 0 6px 20px rgba(0,0,0,.12);
-      padding: 8px 10px;
-      display: none;
-      z-index: 50;
-    }
-    .role-popup.show { display: block; }
-    .role-popup-title { font-size: 11px; color: var(--text3); letter-spacing: .3px; margin-bottom: 6px; }
-    .role-popup-empty { color: var(--text3); font-size: 12px; padding: 4px 0; }
-    .role-popup-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 0;
-      border-bottom: 0.5px dashed var(--border);
-      font-size: 12px;
-    }
-    .role-popup-item:last-child { border-bottom: none; }
-    .role-popup-who { flex: 1; color: var(--text2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .role-popup-btn {
-      padding: 3px 8px;
-      font-size: 11px;
-      border-radius: 4px;
-      border: 0.5px solid var(--border2);
-      background: #fff;
-      cursor: pointer;
-      transition: background .15s, color .15s;
-    }
-    .role-popup-btn.ok { color: var(--teal-600); border-color: var(--teal); }
-    .role-popup-btn.ok:hover { background: var(--teal); color: #fff; }
-    .role-popup-btn.no:hover { background: #fee2e2; color: #991b1b; }
     .attach-btn, .voice-btn {
       width: 34px;
       height: 38px;
@@ -1180,8 +1118,6 @@
         <div class="input-wrap">
           <div class="role-badge-wrap">
             <div class="role-badge" id="roleBadge" title="你的身份" onclick="onRoleBadgeClick()">—</div>
-            <span class="role-badge-count" id="roleBadgeCount">0</span>
-            <div class="role-popup" id="rolePopup"></div>
           </div>
           <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
             <i class="ti ti-paperclip"></i>
@@ -1261,7 +1197,7 @@
       const badge = document.getElementById('roleBadge')
       if (badge) {
         badge.textContent = currentRole === 'expert' ? '咖' : '白'
-        badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
+        badge.title = (currentRole === 'expert' ? '大咖' : '小白') + ' · 点击修改资料'
       }
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
@@ -1277,12 +1213,8 @@
 
     await loadRooms()
 
-    // 大咖：拉待审 follow 请求 + 订阅 realtime
-    if (currentRole === 'expert') {
-      await loadFollowRequests()
-      subscribeFollowRequests()
-    } else {
-      // 小白：订阅 room_members 变动（被大咖通过时自动刷新房间列表）
+    // 小白：订阅 room_members 变动（兜底，正常路径是 follow_expert 即时返回）
+    if (currentRole !== 'expert') {
       subscribeMyMemberships()
     }
 
@@ -1358,8 +1290,13 @@
     const name = room?.querySelector('.room-name')?.textContent || '这个 Chat'
     if (!confirm(`确定删除「${name}」？\n所有消息、计费记录都会一起删除，不可恢复。`)) return
     try {
-      const { error } = await sb.from('rooms').delete().eq('id', roomId)
+      // .select() 让 PostgREST 返回被删的行，能区分「RLS 拦截」vs「真的删了」
+      const { data, error } = await sb.from('rooms').delete().eq('id', roomId).select()
       if (error) throw error
+      if (!data || data.length === 0) {
+        showToast('删除失败：没有权限（RLS 拦截）或房间已不存在')
+        return
+      }
       // 如果删的是当前打开的房间，清掉聊天面板
       if (currentRoom?.id === roomId) {
         currentRoom = null
@@ -1394,6 +1331,33 @@
       showToast('AI 名字已更新')
     } catch (e) {
       console.warn('[ai_name save]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
+  }
+
+  // 点自己头像快捷改显示名
+  async function editMyName() {
+    if (!currentUser) return
+    const cur = currentDisplayName || ''
+    const input = prompt('修改我的显示名：', cur)
+    if (input === null) return
+    const name = input.trim()
+    if (!name) { showToast('显示名不能为空'); return }
+    if (name === cur) return
+    try {
+      const { error } = await sb.from('profiles')
+        .update({ display_name: name })
+        .eq('user_id', currentUser.id)
+      if (error) throw error
+      currentDisplayName = name
+      document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
+        el.textContent = name
+      })
+      const modalInput = document.getElementById('profileDisplayName')
+      if (modalInput) modalInput.value = name
+      showToast('显示名已更新')
+    } catch (e) {
+      console.warn('[editMyName]', e)
       showToast('保存失败：' + (e.message || e))
     }
   }
@@ -1554,92 +1518,10 @@
     if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
   }
 
-  // ── 大咖：拉待审 follow 请求，渲染到 role-badge 弹层 ──
-  let pendingFollowChannel = null
-  async function loadFollowRequests() {
-    const { data, error } = await sb
-      .from('follow_requests')
-      .select('id, user_id, created_at')
-      .eq('expert_id', currentUser.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-    if (error) { console.warn('[follow] load failed:', error); return }
-    const items = data || []
-    // 更新数字气泡
-    const countEl = document.getElementById('roleBadgeCount')
-    if (countEl) {
-      countEl.textContent = items.length > 99 ? '99+' : String(items.length)
-      countEl.classList.toggle('has', items.length > 0)
-    }
-    // 渲染弹层内容
-    renderFollowPopup(items)
-  }
+  // role-badge 点击：统一开 settings
+  function onRoleBadgeClick() { openSettings() }
 
-  function renderFollowPopup(items) {
-    const popup = document.getElementById('rolePopup')
-    if (!popup) return
-    if (items.length === 0) {
-      popup.innerHTML = `<div class="role-popup-title">待审 follow</div><div class="role-popup-empty">暂无</div>`
-      return
-    }
-    const rows = items.map(it => `
-      <div class="role-popup-item" data-id="${it.id}">
-        <div class="role-popup-who" title="${escHtml(it.user_id)}">${escHtml(it.user_id.slice(0, 8))}…</div>
-        <button class="role-popup-btn ok" onclick="approveFollow('${it.id}', this)">通过</button>
-        <button class="role-popup-btn no" onclick="rejectFollow('${it.id}', this)">拒绝</button>
-      </div>
-    `).join('')
-    popup.innerHTML = `<div class="role-popup-title">待审 follow · ${items.length}</div>${rows}`
-  }
-
-  // role-badge 点击：大咖打开/关闭待审 follow 弹层；小白开 settings
-  function onRoleBadgeClick() {
-    if (currentRole === 'expert') {
-      const popup = document.getElementById('rolePopup')
-      if (!popup) return
-      popup.classList.toggle('show')
-      // 打开时刷新一次最新数据
-      if (popup.classList.contains('show')) loadFollowRequests()
-    } else {
-      openSettings()
-    }
-  }
-
-  // 点击弹层外部关闭
-  document.addEventListener('click', (e) => {
-    const popup = document.getElementById('rolePopup')
-    if (!popup || !popup.classList.contains('show')) return
-    if (e.target.closest('.role-badge-wrap')) return
-    popup.classList.remove('show')
-  })
-
-  async function approveFollow(reqId, btnEl) {
-    btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').update({ status: 'approved' }).eq('id', reqId)
-    if (error) { showToast('通过失败：' + error.message); btnEl.disabled = false; return }
-    showToast('已通过 follow')
-    await loadFollowRequests()
-  }
-
-  async function rejectFollow(reqId, btnEl) {
-    btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').update({ status: 'rejected' }).eq('id', reqId)
-    if (error) { showToast('拒绝失败：' + error.message); btnEl.disabled = false; return }
-    await loadFollowRequests()
-  }
-
-  function subscribeFollowRequests() {
-    if (pendingFollowChannel) sb.removeChannel(pendingFollowChannel)
-    pendingFollowChannel = sb
-      .channel(`follow-requests-${currentUser.id}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'follow_requests',
-        filter: `expert_id=eq.${currentUser.id}`,
-      }, () => loadFollowRequests())
-      .subscribe()
-  }
-
-  // ── 小白：订阅自己的 room_members 变动（被通过时拿到房间）──
+  // ── 小白：订阅自己的 room_members 变动（兜底）──
   let myMembershipChannel = null
   function subscribeMyMemberships() {
     if (myMembershipChannel) sb.removeChannel(myMembershipChannel)
@@ -1649,7 +1531,6 @@
         event: 'INSERT', schema: 'public', table: 'room_members',
         filter: `user_id=eq.${currentUser.id}`,
       }, async () => {
-        showToast('大咖通过了你的 follow，正在进入…')
         await loadRooms()
       })
       .subscribe()
@@ -1658,26 +1539,22 @@
   // ── 小白：没有房 → 列出可 follow 的大咖 ──
   async function renderFollowExpertsPanel() {
     const list = document.getElementById('roomsList')
-    const [expertsResp, requestsResp] = await Promise.all([
+    const [expertsResp, followsResp] = await Promise.all([
       sb.from('profiles').select('user_id, display_name').eq('role', 'expert'),
-      sb.from('follow_requests').select('expert_id, status').eq('user_id', currentUser.id),
+      sb.from('follow_requests').select('expert_id').eq('user_id', currentUser.id).eq('status', 'approved'),
     ])
     const experts = expertsResp.data || []
-    const requests = requestsResp.data || []
-    const pendingMap = {}
-    requests.forEach(r => { pendingMap[r.expert_id] = r.status })
+    const followedSet = new Set((followsResp.data || []).map(r => r.expert_id))
 
     if (experts.length === 0) {
       list.innerHTML = `<div class="follow-experts"><div class="follow-experts-title">暂无大咖</div></div>`
       return
     }
     const rows = experts.map(e => {
-      const status = pendingMap[e.user_id]
       const label = e.display_name || e.user_id.slice(0, 8) + '…'
-      let btn = `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
-      if (status === 'pending')  btn = `<button class="expert-row-btn pending" disabled>等待审核</button>`
-      if (status === 'rejected') btn = `<button class="expert-row-btn pending" disabled>已被拒绝</button>`
-      if (status === 'approved') btn = `<button class="expert-row-btn pending" disabled>已通过</button>`
+      const btn = followedSet.has(e.user_id)
+        ? `<button class="expert-row-btn pending" disabled>已 follow</button>`
+        : `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
       return `
         <div class="expert-row">
           <div class="expert-row-name">${escHtml(label)}</div>
@@ -1687,25 +1564,23 @@
     list.innerHTML = `
       <div class="follow-experts">
         <div class="follow-experts-title">选位大咖</div>
-        <div class="follow-experts-sub">发起 follow 请求，大咖通过后进入对话</div>
+        <div class="follow-experts-sub">Follow 后立即进入大咖的聊天室</div>
         ${rows}
       </div>`
   }
 
   async function requestFollow(expertId, btnEl) {
     btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').insert({
-      expert_id: expertId,
-      user_id: currentUser.id,
-    })
+    const { error } = await sb.rpc('follow_expert', { p_expert_id: expertId })
     if (error) {
-      showToast('发起 follow 失败：' + error.message)
+      showToast('Follow 失败：' + error.message)
       btnEl.disabled = false
       return
     }
-    showToast('已发起 follow，等待大咖审核')
-    btnEl.textContent = '等待审核'
+    showToast('已 follow，正在进入大咖的聊天室…')
+    btnEl.textContent = '已 follow'
     btnEl.classList.add('pending')
+    await loadRooms()
   }
 
   function renderRoomItem(room) {
@@ -1975,8 +1850,12 @@
     const roleLabels = { user: '小白', expert: '大咖', ai: aiName }
     const roleLabel = roleLabels[role] || role
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
-    // 大咖可点 AI 头像编辑名字
-    const aiAvClick = (role === 'ai' && isExpert(currentRoom)) ? ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"' : ''
+    // 大咖可点 AI 头像编辑名字；自己的头像（小白/大咖）点击改自己显示名
+    const avClick = (role === 'ai' && isExpert(currentRoom))
+      ? ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"'
+      : (isOwn && role !== 'ai')
+        ? ' onclick="editMyName()" title="点击修改我的显示名" style="cursor:pointer;"'
+        : ''
     // AI 消息永远显示「AI 助手」，不管谁的 user_id 写的；只有 user/expert 才用「我」判断
     const senderName = (role !== 'ai' && isOwn) ? (currentDisplayName || '我') : roleLabel
     const ts = formatTime(msg.created_at)
@@ -2023,7 +1902,7 @@
     const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
 
     el.innerHTML = `
-      <div class="msg-av ${role}"${aiAvClick}>${avText}</div>
+      <div class="msg-av ${role}"${avClick}>${avText}</div>
       <div class="msg-body">
         <div class="msg-meta">
           <span class="msg-sender ${role}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${senderName}</span>
