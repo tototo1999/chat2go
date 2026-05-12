@@ -1,58 +1,19 @@
--- 小白 follow 即生效：跳过审批，直接加入大咖唯一的房间。
--- 旧 follow_requests 表保留以记录关注关系，但 status 立即为 'approved'。
--- 新 RPC follow_expert(p_expert_id) 原子完成：写/升级 follow_requests + 加入 room_members。
+-- 小白 follow 即生效（简化版）：
+-- 直接放 RLS 让小白自助 INSERT room_members，并开放 rooms SELECT 让小白能查到大咖的房。
+-- 不再使用 RPC（避免 SQL Editor 对 dollar quote 的兼容性问题）。
 
--- 1) follow_expert RPC（SECURITY DEFINER 绕开 RLS 写 room_members）
-CREATE OR REPLACE FUNCTION follow_expert(p_expert_id uuid)
-RETURNS uuid AS $$
-DECLARE
-  v_user_id uuid := auth.uid();
-  v_room_id uuid;
-  v_existing int;
-BEGIN
-  IF v_user_id IS NULL THEN
-    RAISE EXCEPTION 'must be authenticated';
-  END IF;
-  IF v_user_id = p_expert_id THEN
-    RAISE EXCEPTION 'cannot follow yourself';
-  END IF;
+-- 1) room_members INSERT：允许任何登录用户把自己加进任意房间
+CREATE POLICY "小白可自助加入房间" ON room_members
+  FOR INSERT TO authenticated
+  WITH CHECK (user_id = auth.uid());
 
-  SELECT id INTO v_room_id FROM rooms WHERE expert_id = p_expert_id LIMIT 1;
+-- 2) rooms SELECT：放开给所有登录用户（小白要能查到 expert 的 room_id 才能加入）
+DROP POLICY IF EXISTS "成员可读rooms" ON rooms;
+CREATE POLICY "登录用户可读rooms" ON rooms
+  FOR SELECT TO authenticated
+  USING (true);
 
-  -- 已有任意状态的记录：升级为 approved
-  UPDATE follow_requests
-     SET status = 'approved', decided_at = now()
-   WHERE expert_id = p_expert_id
-     AND user_id = v_user_id
-     AND status <> 'approved';
-
-  -- 没有任何记录：插一条 approved
-  SELECT count(*) INTO v_existing
-    FROM follow_requests
-   WHERE expert_id = p_expert_id AND user_id = v_user_id;
-  IF v_existing = 0 THEN
-    INSERT INTO follow_requests (expert_id, user_id, status, decided_at)
-      VALUES (p_expert_id, v_user_id, 'approved', now());
-  END IF;
-
-  -- 加入大咖房间
-  IF v_room_id IS NOT NULL THEN
-    INSERT INTO room_members (room_id, user_id)
-      VALUES (v_room_id, v_user_id)
-      ON CONFLICT DO NOTHING;
-  END IF;
-
-  RETURN v_room_id;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-GRANT EXECUTE ON FUNCTION follow_expert(uuid) TO authenticated;
-
--- 2) 历史 pending 一次性 approve，并把已 approved 的小白补齐 room_members
-UPDATE follow_requests
-   SET status = 'approved', decided_at = COALESCE(decided_at, now())
- WHERE status = 'pending';
-
+-- 3) 兜底：把已 approved 的 follow_requests 同步到 room_members（防止历史脏数据）
 INSERT INTO room_members (room_id, user_id)
 SELECT r.id, fr.user_id
   FROM follow_requests fr
