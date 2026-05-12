@@ -1320,6 +1320,11 @@
         console.warn('[openRoomById] not found:', roomId, error)
         return
       }
+      // 大咖只能打开自己的房；外来 ?room= 链接忽略
+      if (currentRole === 'expert' && room.expert_id !== currentUser?.id) {
+        console.warn('[openRoomById] expert blocked from foreign room:', roomId)
+        return
+      }
       // 小白通过链接来的房间：如果还不在列表里，临时塞进列表
       const list = document.getElementById('roomsList')
       if (!list.querySelector(`[data-id="${room.id}"]`)) {
@@ -1652,6 +1657,8 @@
   }
 
   function renderRoomItem(room) {
+    // 大咖只看自己 owned 的房：拒绝渲染外来房（兜底 openRoomById 等旁路）
+    if (currentRole === 'expert' && room.expert_id !== currentUser?.id) return
     const list = document.getElementById('roomsList')
     const empty = list.querySelector('.rooms-empty')
     if (empty) empty.remove()
