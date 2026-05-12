@@ -94,10 +94,14 @@
           <input type="password" id="reg-password" placeholder="至少8位" autocomplete="new-password">
         </div>
         <div class="field">
+          <label>昵称</label>
+          <input type="text" id="reg-nickname" placeholder="随便起一个" autocomplete="nickname">
+        </div>
+        <div class="field">
           <label>你的角色</label>
           <select id="reg-role" style="padding:10px 12px;font-size:14px;font-family:inherit;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);outline:none;">
-            <option value="user">小白用户 · 找大咖用AI</option>
-            <option value="expert">行业大咖 · 入驻赚收益</option>
+            <option value="user">小白</option>
+            <option value="expert">大咖</option>
           </select>
         </div>
         <button class="submit-btn" onclick="handleRegister()">注册账号</button>
@@ -161,31 +165,31 @@
       if (!window.supabase) { showMsg('Supabase SDK 未加载，请刷新页面或检查网络', 'error'); return }
       const email = document.getElementById('reg-email').value.trim()
       const password = document.getElementById('reg-password').value
+      const nickname = document.getElementById('reg-nickname').value.trim()
       const role = document.getElementById('reg-role').value
       if (!email || !password) { showMsg('请填写邮箱和密码', 'error'); return }
       if (password.length < 6) { showMsg('密码至少6位', 'error'); return }
+      if (!nickname) { showMsg('请填写昵称', 'error'); return }
       const btn = document.querySelector('#form-register .submit-btn')
       btn.disabled = true; btn.textContent = '注册中...'
       try {
-        // 大咖 → onboarding；小白 → chat
         const target = role === 'expert' ? '/onboarding.html' : '/chat.html'
         const { data, error } = await sb.auth.signUp({
           email, password,
           options: {
-            data: { role },
+            data: { role, nickname },
             emailRedirectTo: `${window.location.origin}${target}`,
           },
         })
         btn.disabled = false; btn.textContent = '注册账号'
         if (error) { showMsg('注册失败：' + error.message, 'error'); return }
-        if (data.session) {
-          // 大咖注册 → 入住引导页；小白 → 直接进 Chat
-          const target = role === 'expert' ? '/onboarding.html' : '/chat.html'
-          showMsg('注册成功！正在跳转...', 'success')
-          setTimeout(() => { window.location.href = target }, 800)
-        } else {
-          showMsg('注册成功！请查收邮件完成验证后再登录。', 'success')
+        // 不走邮箱验证：注册成功后直接登录跳转
+        if (!data.session) {
+          const r = await sb.auth.signInWithPassword({ email, password })
+          if (r.error) { showMsg('注册成功，但自动登录失败：' + r.error.message, 'error'); return }
         }
+        showMsg('注册成功！正在跳转...', 'success')
+        setTimeout(() => { window.location.href = target }, 800)
       } catch (e) {
         btn.disabled = false; btn.textContent = '注册账号'
         showMsg('注册异常：' + (e?.message || e), 'error')
