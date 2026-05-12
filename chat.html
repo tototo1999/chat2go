@@ -1231,9 +1231,7 @@
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
         // 大咖固定 1 个房，不需要 + Chat 按钮
-        // 大咖时隐藏小白占位标签
-        const brand = document.getElementById('sidebarBrand')
-        if (brand) brand.style.display = 'none'
+        // sidebarBrand 「Chat」占位标签对两边角色都保留（视觉一致）
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
