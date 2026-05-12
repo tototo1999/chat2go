@@ -169,6 +169,22 @@
       transition: transform .2s, color .2s;
       margin-top: 1rem;
     }
+    .expert-follow-btn {
+      align-self: flex-end;
+      margin-top: 1rem;
+      padding: 8px 22px;
+      background: var(--teal);
+      color: #fff;
+      border: 0;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+    .expert-follow-btn:hover { background: var(--teal-dark, #0f8a6f); }
+    .expert-follow-btn:disabled { opacity: 0.6; cursor: default; }
 
     footer {
       padding: 1.5rem 2rem;
@@ -201,18 +217,12 @@
   <main>
     <div class="tagline">真人大咖 × AI，<em>这就带你飞</em></div>
 
-    <!-- 已登录小白：真大咖列表（动态注入） -->
-    <div id="realExpertsSection" style="display:none; margin-bottom:2rem;">
-      <div style="font-size:13px; color:var(--text3); letter-spacing:.5px; margin-bottom:0.75rem;">选位大咖，进入对话</div>
-      <div id="realExpertsList" style="display:flex; flex-direction:column; gap:8px;"></div>
-    </div>
-
     <div class="expert-grid">
-      <a class="expert-card" href="/login.html?expert=moriyama">
+      <div class="expert-card">
         <div class="expert-tag">fortune teller</div>
         <div class="expert-name">森山大道 san</div>
-        <div class="expert-arrow">→</div>
-      </a>
+        <button class="expert-follow-btn" onclick="followExpert('fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0', this)">Follow</button>
+      </div>
 
       <div class="expert-card disabled">
         <div class="expert-tag">real estate</div>
@@ -254,30 +264,8 @@
           + `<span>进入 Chat</span>`
           + `</a>`
           + `<button class="btn-logout" onclick="handleLogout()">退出</button>`
-        await renderRealExperts(session.user)
       }
       right.style.visibility = 'visible'
-    }
-
-    async function renderRealExperts(user) {
-      // 仅小白显示真大咖 Follow 区域
-      const { data: profile } = await sb.from('profiles')
-        .select('role').eq('user_id', user.id).maybeSingle()
-      if (profile?.role === 'expert') return
-
-      const { data: experts } = await sb.from('profiles')
-        .select('user_id, display_name').eq('role', 'expert')
-      if (!experts || experts.length === 0) return
-
-      const list = document.getElementById('realExpertsList')
-      list.innerHTML = experts.map(e => {
-        const label = (e.display_name || e.user_id.slice(0, 8) + '…').replace(/</g, '&lt;')
-        return `<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--bg2); border:0.5px solid var(--border);">
-          <span style="font-family:'Noto Serif SC',serif; font-size:17px;">${label}</span>
-          <button onclick="followExpert('${e.user_id}', this)" style="padding:7px 18px; background:var(--teal); color:#fff; border:0; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;">Follow</button>
-        </div>`
-      }).join('')
-      document.getElementById('realExpertsSection').style.display = ''
     }
 
     async function followExpert(expertId, btnEl) {
