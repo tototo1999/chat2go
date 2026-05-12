@@ -1199,8 +1199,6 @@
         <div class="input-wrap">
           <div class="role-badge-wrap">
             <div class="role-badge" id="roleBadge" title="你的身份" onclick="onRoleBadgeClick()">—</div>
-            <span class="role-badge-count" id="roleBadgeCount">0</span>
-            <div class="role-popup" id="rolePopup"></div>
           </div>
           <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
             <i class="ti ti-paperclip"></i>
@@ -1299,14 +1297,8 @@
 
     await loadRooms()
 
-    // 大咖：拉待审 follow 请求 + 订阅 realtime
-    if (currentRole === 'expert') {
-      await loadFollowRequests()
-      subscribeFollowRequests()
-    } else {
-      // 小白：订阅 room_members 变动（被大咖通过时自动刷新房间列表）
-      subscribeMyMemberships()
-    }
+    // 小白：订阅 room_members 变动（用于其它入口加入的房间也能同步）
+    if (currentRole !== 'expert') subscribeMyMemberships()
 
     // 仅 ?room=<id>：直接尝试打开（要求是成员，否则 RLS 静默拒绝）
     const params = new URLSearchParams(window.location.search)
@@ -1581,92 +1573,12 @@
     if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
   }
 
-  // ── 大咖：拉待审 follow 请求，渲染到 role-badge 弹层 ──
-  let pendingFollowChannel = null
-  async function loadFollowRequests() {
-    const { data, error } = await sb
-      .from('follow_requests')
-      .select('id, user_id, created_at')
-      .eq('expert_id', currentUser.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true })
-    if (error) { console.warn('[follow] load failed:', error); return }
-    const items = data || []
-    // 更新数字气泡
-    const countEl = document.getElementById('roleBadgeCount')
-    if (countEl) {
-      countEl.textContent = items.length > 99 ? '99+' : String(items.length)
-      countEl.classList.toggle('has', items.length > 0)
-    }
-    // 渲染弹层内容
-    renderFollowPopup(items)
-  }
-
-  function renderFollowPopup(items) {
-    const popup = document.getElementById('rolePopup')
-    if (!popup) return
-    if (items.length === 0) {
-      popup.innerHTML = `<div class="role-popup-title">待审 follow</div><div class="role-popup-empty">暂无</div>`
-      return
-    }
-    const rows = items.map(it => `
-      <div class="role-popup-item" data-id="${it.id}">
-        <div class="role-popup-who" title="${escHtml(it.user_id)}">${escHtml(it.user_id.slice(0, 8))}…</div>
-        <button class="role-popup-btn ok" onclick="approveFollow('${it.id}', this)">通过</button>
-        <button class="role-popup-btn no" onclick="rejectFollow('${it.id}', this)">拒绝</button>
-      </div>
-    `).join('')
-    popup.innerHTML = `<div class="role-popup-title">待审 follow · ${items.length}</div>${rows}`
-  }
-
-  // role-badge 点击：大咖打开/关闭待审 follow 弹层；小白开 settings
+  // role-badge 点击：直接开 settings（待审 follow 流程已废弃）
   function onRoleBadgeClick() {
-    if (currentRole === 'expert') {
-      const popup = document.getElementById('rolePopup')
-      if (!popup) return
-      popup.classList.toggle('show')
-      // 打开时刷新一次最新数据
-      if (popup.classList.contains('show')) loadFollowRequests()
-    } else {
-      openSettings()
-    }
+    openSettings()
   }
 
-  // 点击弹层外部关闭
-  document.addEventListener('click', (e) => {
-    const popup = document.getElementById('rolePopup')
-    if (!popup || !popup.classList.contains('show')) return
-    if (e.target.closest('.role-badge-wrap')) return
-    popup.classList.remove('show')
-  })
-
-  async function approveFollow(reqId, btnEl) {
-    btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').update({ status: 'approved' }).eq('id', reqId)
-    if (error) { showToast('通过失败：' + error.message); btnEl.disabled = false; return }
-    showToast('已通过 follow')
-    await loadFollowRequests()
-  }
-
-  async function rejectFollow(reqId, btnEl) {
-    btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').update({ status: 'rejected' }).eq('id', reqId)
-    if (error) { showToast('拒绝失败：' + error.message); btnEl.disabled = false; return }
-    await loadFollowRequests()
-  }
-
-  function subscribeFollowRequests() {
-    if (pendingFollowChannel) sb.removeChannel(pendingFollowChannel)
-    pendingFollowChannel = sb
-      .channel(`follow-requests-${currentUser.id}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'follow_requests',
-        filter: `expert_id=eq.${currentUser.id}`,
-      }, () => loadFollowRequests())
-      .subscribe()
-  }
-
-  // ── 小白：订阅自己的 room_members 变动（被通过时拿到房间）──
+  // ── 小白：订阅自己的 room_members 变动（兜底同步其它入口加入的房间）──
   let myMembershipChannel = null
   function subscribeMyMemberships() {
     if (myMembershipChannel) sb.removeChannel(myMembershipChannel)
@@ -1676,7 +1588,6 @@
         event: 'INSERT', schema: 'public', table: 'room_members',
         filter: `user_id=eq.${currentUser.id}`,
       }, async () => {
-        showToast('大咖通过了你的 follow，正在进入…')
         await loadRooms()
       })
       .subscribe()
@@ -1701,10 +1612,9 @@
     const rows = experts.map(e => {
       const status = pendingMap[e.user_id]
       const label = e.display_name || e.user_id.slice(0, 8) + '…'
-      let btn = `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
-      if (status === 'pending')  btn = `<button class="expert-row-btn pending" disabled>等待审核</button>`
-      if (status === 'rejected') btn = `<button class="expert-row-btn pending" disabled>已被拒绝</button>`
-      if (status === 'approved') btn = `<button class="expert-row-btn pending" disabled>已通过</button>`
+      const btn = status === 'approved'
+        ? `<button class="expert-row-btn pending" disabled>已加入</button>`
+        : `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
       return `
         <div class="expert-row">
           <div class="expert-row-name">${escHtml(label)}</div>
@@ -1714,25 +1624,22 @@
     list.innerHTML = `
       <div class="follow-experts">
         <div class="follow-experts-title">选位大咖</div>
-        <div class="follow-experts-sub">发起 follow 请求，大咖通过后进入对话</div>
+        <div class="follow-experts-sub">选一位大咖，进入对话</div>
         ${rows}
       </div>`
   }
 
   async function requestFollow(expertId, btnEl) {
     btnEl.disabled = true
-    const { error } = await sb.from('follow_requests').insert({
-      expert_id: expertId,
-      user_id: currentUser.id,
-    })
+    const { data: roomId, error } = await sb.rpc('follow_expert', { p_expert_id: expertId })
     if (error) {
-      showToast('发起 follow 失败：' + error.message)
+      showToast('Follow 失败：' + error.message)
       btnEl.disabled = false
       return
     }
-    showToast('已发起 follow，等待大咖审核')
-    btnEl.textContent = '等待审核'
-    btnEl.classList.add('pending')
+    showToast('已加入大咖的 Chat')
+    await loadRooms()
+    if (roomId) await openRoomById(roomId)
   }
 
   function renderRoomItem(room) {
