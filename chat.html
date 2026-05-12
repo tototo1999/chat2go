@@ -1472,7 +1472,13 @@
 
   async function copyInviteForRoom(roomId, btnEl) {
     const { data: room, error } = await sb.from('rooms').select('id,invite_token').eq('id', roomId).maybeSingle()
-    if (error || !room || !room.invite_token) { showToast('获取邀请凭证失败'); return }
+    if (error) {
+      console.warn('[invite] select failed', error)
+      showToast('获取邀请凭证失败：' + (error.message || error.code || '未知'))
+      return
+    }
+    if (!room) { showToast('获取邀请凭证失败：房间不存在或无权读取'); return }
+    if (!room.invite_token) { showToast('获取邀请凭证失败：invite_token 列缺失（migration 未应用？）'); return }
     const url = `${window.location.origin}/chat.html?room=${room.id}&t=${room.invite_token}`
     navigator.clipboard.writeText(url).then(
       () => showToast('已复制邀请链接'),
