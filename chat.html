@@ -240,40 +240,7 @@
     }
     .room-item:hover .room-del { opacity: 1; }
     .room-del:hover { background: #fee2e2; color: #991b1b; }
-    /* 大咖 sidebar 待审 follow 请求 */
-    .follow-panel {
-      border-top: 0.5px solid var(--border);
-      padding: 10px 12px;
-      font-size: 12px;
-    }
-    .follow-panel-title {
-      color: var(--text3);
-      letter-spacing: 0.3px;
-      margin-bottom: 6px;
-      font-size: 11px;
-    }
-    .follow-panel-empty { color: var(--text3); font-size: 11px; opacity: 0.7; }
-    .follow-req-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 0;
-      border-bottom: 0.5px dashed var(--border);
-    }
-    .follow-req-item:last-child { border-bottom: none; }
-    .follow-req-who { flex: 1; color: var(--text2); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .follow-req-btn {
-      padding: 3px 8px;
-      font-size: 11px;
-      border-radius: 4px;
-      border: 0.5px solid var(--border2);
-      background: #fff;
-      cursor: pointer;
-      transition: background .15s;
-    }
-    .follow-req-btn.ok    { color: var(--teal-600); border-color: var(--teal); }
-    .follow-req-btn.ok:hover    { background: var(--teal); color: #fff; }
-    .follow-req-btn.no:hover    { background: #fee2e2; color: #991b1b; }
+    /* 大咖 待审 follow 已挪到 role-badge 弹层（见 .role-popup） */
     /* 小白：没有房间时显示「选大咖 follow」面板 */
     .follow-experts {
       padding: 1.5rem 1.25rem;
@@ -714,6 +681,7 @@
 
     /* ── 附件 ── */
     /* 用户身份徽章：白(小白) / 咖(大咖)，teal 圆底白字，点击进入资料设置 */
+    .role-badge-wrap { position: relative; flex-shrink: 0; }
     .role-badge {
       width: 38px;
       height: 38px;
@@ -732,6 +700,67 @@
     }
     .role-badge:hover { background: var(--teal-600); }
     .role-badge:active { transform: scale(0.94); }
+    /* 待审 follow 数字气泡：右上角红圆 */
+    .role-badge-count {
+      position: absolute;
+      top: -2px;
+      right: -4px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #DC2626;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border: 1.5px solid var(--bg);
+      pointer-events: none;
+    }
+    .role-badge-count.has { display: inline-flex; }
+    /* 待审 follow 弹层：从 role-badge 上方弹出 */
+    .role-popup {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      min-width: 240px;
+      max-width: 320px;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      padding: 8px 10px;
+      display: none;
+      z-index: 50;
+    }
+    .role-popup.show { display: block; }
+    .role-popup-title { font-size: 11px; color: var(--text3); letter-spacing: .3px; margin-bottom: 6px; }
+    .role-popup-empty { color: var(--text3); font-size: 12px; padding: 4px 0; }
+    .role-popup-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 0;
+      border-bottom: 0.5px dashed var(--border);
+      font-size: 12px;
+    }
+    .role-popup-item:last-child { border-bottom: none; }
+    .role-popup-who { flex: 1; color: var(--text2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .role-popup-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: #fff;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .role-popup-btn.ok { color: var(--teal-600); border-color: var(--teal); }
+    .role-popup-btn.ok:hover { background: var(--teal); color: #fff; }
+    .role-popup-btn.no:hover { background: #fee2e2; color: #991b1b; }
     .attach-btn, .voice-btn {
       width: 34px;
       height: 38px;
@@ -1147,7 +1176,11 @@
         <div class="attach-preview" id="attachPreview"></div>
 
         <div class="input-wrap">
-          <div class="role-badge" id="roleBadge" title="你的身份（点击修改资料）" onclick="openSettings()">—</div>
+          <div class="role-badge-wrap">
+            <div class="role-badge" id="roleBadge" title="你的身份" onclick="onRoleBadgeClick()">—</div>
+            <span class="role-badge-count" id="roleBadgeCount">0</span>
+            <div class="role-popup" id="rolePopup"></div>
+          </div>
           <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
             <i class="ti ti-paperclip"></i>
           </button>
@@ -1226,7 +1259,7 @@
       const badge = document.getElementById('roleBadge')
       if (badge) {
         badge.textContent = currentRole === 'expert' ? '咖' : '白'
-        badge.title = currentRole === 'expert' ? '你的身份：大咖' : '你的身份：小白'
+        badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
       }
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
@@ -1519,7 +1552,7 @@
     if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
   }
 
-  // ── 大咖：拉待审 follow 请求 + 渲染 ──
+  // ── 大咖：拉待审 follow 请求，渲染到 role-badge 弹层 ──
   let pendingFollowChannel = null
   async function loadFollowRequests() {
     const { data, error } = await sb
@@ -1529,31 +1562,54 @@
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
     if (error) { console.warn('[follow] load failed:', error); return }
-    renderFollowPanel(data || [])
+    const items = data || []
+    // 更新数字气泡
+    const countEl = document.getElementById('roleBadgeCount')
+    if (countEl) {
+      countEl.textContent = items.length > 99 ? '99+' : String(items.length)
+      countEl.classList.toggle('has', items.length > 0)
+    }
+    // 渲染弹层内容
+    renderFollowPopup(items)
   }
 
-  function renderFollowPanel(items) {
-    const sidebar = document.querySelector('.sidebar')
-    let panel = document.getElementById('followPanel')
-    if (!panel) {
-      panel = document.createElement('div')
-      panel.id = 'followPanel'
-      panel.className = 'follow-panel'
-      sidebar.appendChild(panel)
-    }
+  function renderFollowPopup(items) {
+    const popup = document.getElementById('rolePopup')
+    if (!popup) return
     if (items.length === 0) {
-      panel.innerHTML = `<div class="follow-panel-title">待审 follow</div><div class="follow-panel-empty">暂无</div>`
+      popup.innerHTML = `<div class="role-popup-title">待审 follow</div><div class="role-popup-empty">暂无</div>`
       return
     }
     const rows = items.map(it => `
-      <div class="follow-req-item" data-id="${it.id}">
-        <div class="follow-req-who" title="${escHtml(it.user_id)}">${escHtml(it.user_id.slice(0, 8))}…</div>
-        <button class="follow-req-btn ok" onclick="approveFollow('${it.id}', this)">通过</button>
-        <button class="follow-req-btn no" onclick="rejectFollow('${it.id}', this)">拒绝</button>
+      <div class="role-popup-item" data-id="${it.id}">
+        <div class="role-popup-who" title="${escHtml(it.user_id)}">${escHtml(it.user_id.slice(0, 8))}…</div>
+        <button class="role-popup-btn ok" onclick="approveFollow('${it.id}', this)">通过</button>
+        <button class="role-popup-btn no" onclick="rejectFollow('${it.id}', this)">拒绝</button>
       </div>
     `).join('')
-    panel.innerHTML = `<div class="follow-panel-title">待审 follow · ${items.length}</div>${rows}`
+    popup.innerHTML = `<div class="role-popup-title">待审 follow · ${items.length}</div>${rows}`
   }
+
+  // role-badge 点击：大咖打开/关闭待审 follow 弹层；小白开 settings
+  function onRoleBadgeClick() {
+    if (currentRole === 'expert') {
+      const popup = document.getElementById('rolePopup')
+      if (!popup) return
+      popup.classList.toggle('show')
+      // 打开时刷新一次最新数据
+      if (popup.classList.contains('show')) loadFollowRequests()
+    } else {
+      openSettings()
+    }
+  }
+
+  // 点击弹层外部关闭
+  document.addEventListener('click', (e) => {
+    const popup = document.getElementById('rolePopup')
+    if (!popup || !popup.classList.contains('show')) return
+    if (e.target.closest('.role-badge-wrap')) return
+    popup.classList.remove('show')
+  })
 
   async function approveFollow(reqId, btnEl) {
     btnEl.disabled = true
