@@ -1471,19 +1471,17 @@
 
     let rooms = []
     if (currentRole === 'expert') {
-      // 大咖：只看自己 owned 的房间
+      // 大咖：自己 owned 的房（理论上只有 1 个）
       const { data, error } = await sb
         .from('rooms').select('*')
         .eq('expert_id', currentUser.id)
-        .eq('industry', DEMO_INDUSTRY)
         .order('created_at', { ascending: false })
       if (error) { console.warn('[loadRooms expert] error:', error); return }
       rooms = data || []
     } else {
-      // 小白：demo 阶段直接看所有「算命」房间（不再要求先发过消息）
+      // 小白：RLS 已经限定为成员才可读，直接拉就行
       const { data, error } = await sb
         .from('rooms').select('*')
-        .eq('industry', DEMO_INDUSTRY)
         .order('created_at', { ascending: false })
       if (error) { console.warn('[loadRooms user] error:', error); return }
       rooms = data || []
