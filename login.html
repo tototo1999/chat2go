@@ -173,7 +173,7 @@
       const btn = document.querySelector('#form-register .submit-btn')
       btn.disabled = true; btn.textContent = '注册中...'
       try {
-        const target = role === 'expert' ? '/onboarding.html' : '/chat.html'
+        const target = role === 'expert' ? '/onboarding.html' : '/'
         const { data, error } = await sb.auth.signUp({
           email, password,
           options: {

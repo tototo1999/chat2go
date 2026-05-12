@@ -201,6 +201,12 @@
   <main>
     <div class="tagline">真人大咖 × AI，<em>这就带你飞</em></div>
 
+    <!-- 已登录小白：真大咖列表（动态注入） -->
+    <div id="realExpertsSection" style="display:none; margin-bottom:2rem;">
+      <div style="font-size:13px; color:var(--text3); letter-spacing:.5px; margin-bottom:0.75rem;">选位大咖，进入对话</div>
+      <div id="realExpertsList" style="display:flex; flex-direction:column; gap:8px;"></div>
+    </div>
+
     <div class="expert-grid">
       <a class="expert-card" href="/login.html?expert=moriyama">
         <div class="expert-tag">fortune teller</div>
@@ -248,8 +254,45 @@
           + `<span>进入 Chat</span>`
           + `</a>`
           + `<button class="btn-logout" onclick="handleLogout()">退出</button>`
+        await renderRealExperts(session.user)
       }
       right.style.visibility = 'visible'
+    }
+
+    async function renderRealExperts(user) {
+      // 仅小白显示真大咖 Follow 区域
+      const { data: profile } = await sb.from('profiles')
+        .select('role').eq('user_id', user.id).maybeSingle()
+      if (profile?.role === 'expert') return
+
+      const { data: experts } = await sb.from('profiles')
+        .select('user_id, display_name').eq('role', 'expert')
+      if (!experts || experts.length === 0) return
+
+      const list = document.getElementById('realExpertsList')
+      list.innerHTML = experts.map(e => {
+        const label = (e.display_name || e.user_id.slice(0, 8) + '…').replace(/</g, '&lt;')
+        return `<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--bg2); border:0.5px solid var(--border);">
+          <span style="font-family:'Noto Serif SC',serif; font-size:17px;">${label}</span>
+          <button onclick="followExpert('${e.user_id}', this)" style="padding:7px 18px; background:var(--teal); color:#fff; border:0; border-radius:999px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;">Follow</button>
+        </div>`
+      }).join('')
+      document.getElementById('realExpertsSection').style.display = ''
+    }
+
+    async function followExpert(expertId, btnEl) {
+      btnEl.disabled = true
+      btnEl.textContent = '...'
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) { location.href = '/login.html'; return }
+      const { data: room, error: e1 } = await sb
+        .from('rooms').select('id').eq('expert_id', expertId).limit(1).maybeSingle()
+      if (e1 || !room) { alert('找不到大咖的 Chat'); btnEl.disabled = false; btnEl.textContent = 'Follow'; return }
+      const { error: e2 } = await sb.from('room_members').insert({
+        room_id: room.id, user_id: session.user.id,
+      })
+      if (e2 && e2.code !== '23505') { alert('加入失败：' + e2.message); btnEl.disabled = false; btnEl.textContent = 'Follow'; return }
+      location.href = `/chat.html?room=${room.id}`
     }
 
     async function handleLogout() {
