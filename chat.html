@@ -219,8 +219,8 @@
       text-overflow: ellipsis;
     }
     .room-item.active .room-name { color: var(--teal-800); }
-    /* 大咖 hover 按钮：邀请 + 删除 */
-    .room-del, .room-invite {
+    /* 大咖 hover 删除按钮 */
+    .room-del {
       flex-shrink: 0;
       width: 22px;
       height: 22px;
@@ -228,7 +228,7 @@
       border: none;
       background: transparent;
       color: var(--text3);
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1;
       cursor: pointer;
       opacity: 0;
@@ -238,11 +238,77 @@
       align-items: center;
       justify-content: center;
     }
-    .room-item:hover .room-del,
-    .room-item:hover .room-invite { opacity: 1; }
-    .room-del { font-size: 16px; }
-    .room-del:hover    { background: #fee2e2; color: #991b1b; }
-    .room-invite:hover { background: var(--teal-50); color: var(--teal-600); }
+    .room-item:hover .room-del { opacity: 1; }
+    .room-del:hover { background: #fee2e2; color: #991b1b; }
+    /* 大咖 sidebar 待审 follow 请求 */
+    .follow-panel {
+      border-top: 0.5px solid var(--border);
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+    .follow-panel-title {
+      color: var(--text3);
+      letter-spacing: 0.3px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+    .follow-panel-empty { color: var(--text3); font-size: 11px; opacity: 0.7; }
+    .follow-req-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 0;
+      border-bottom: 0.5px dashed var(--border);
+    }
+    .follow-req-item:last-child { border-bottom: none; }
+    .follow-req-who { flex: 1; color: var(--text2); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .follow-req-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: #fff;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .follow-req-btn.ok    { color: var(--teal-600); border-color: var(--teal); }
+    .follow-req-btn.ok:hover    { background: var(--teal); color: #fff; }
+    .follow-req-btn.no:hover    { background: #fee2e2; color: #991b1b; }
+    /* 小白：没有房间时显示「选大咖 follow」面板 */
+    .follow-experts {
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+    }
+    .follow-experts-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .follow-experts-sub { font-size: 12px; color: var(--text3); margin-bottom: 1rem; }
+    .expert-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .expert-row-name { flex: 1; text-align: left; font-size: 13px; color: var(--text); }
+    .expert-row-btn {
+      padding: 5px 12px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 0.5px solid var(--teal);
+      background: var(--teal);
+      color: #fff;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .expert-row-btn:hover { background: var(--teal-600); }
+    .expert-row-btn.pending { background: transparent; color: var(--text3); border-color: var(--border2); cursor: default; }
     .room-meta {
       font-size: 11px;
       color: var(--text3);
@@ -1164,35 +1230,34 @@
       }
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
-        document.getElementById('newRoomBtn').style.display = ''
+        // 大咖固定 1 个房，不需要 + Chat 按钮
         // 大咖时隐藏小白占位标签
         const brand = document.getElementById('sidebarBrand')
         if (brand) brand.style.display = 'none'
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
+    // 大咖：没有房就自动建一个（每个大咖固定 1 个房）
+    if (currentRole === 'expert') {
+      await ensureExpertRoom()
+    }
+
     await loadRooms()
 
-    // 支持 ?room=<id>&t=<token> 邀请链接：先用 token 加入再开房
-    // 或仅 ?room=<id>：直接尝试打开（要求是成员，否则 RLS 拒绝）
+    // 大咖：拉待审 follow 请求 + 订阅 realtime
+    if (currentRole === 'expert') {
+      await loadFollowRequests()
+      subscribeFollowRequests()
+    } else {
+      // 小白：订阅 room_members 变动（被大咖通过时自动刷新房间列表）
+      subscribeMyMemberships()
+    }
+
+    // 仅 ?room=<id>：直接尝试打开（要求是成员，否则 RLS 静默拒绝）
     const params = new URLSearchParams(window.location.search)
     const roomParam = params.get('room')
-    const tokenParam = params.get('t')
-    if (tokenParam) {
-      try {
-        const { data: joinedRoomId, error } = await sb.rpc('join_room_by_token', { p_token: tokenParam })
-        if (error) {
-          console.warn('[invite] join failed:', error)
-          showToast('邀请链接无效')
-        } else if (joinedRoomId) {
-          await loadRooms()              // 刷新成员列表，新房间会出现
-          await openRoomById(joinedRoomId)
-          // 清掉 URL 上的 token，避免分享时泄露
-          history.replaceState({}, '', `${location.pathname}?room=${joinedRoomId}`)
-        }
-      } catch (e) {
-        console.warn('[invite] rpc threw:', e)
-        showToast('加入失败')
+    if (roomParam) {
+      await openRoomById(roomParam)
       }
     } else if (roomParam) {
       await openRoomById(roomParam)
@@ -1201,16 +1266,7 @@
 
   let currentRole = 'user'  // 'user' | 'expert'
 
-  function copyInviteLink() {
-    if (!currentRoom) return
-    const token = currentRoom.invite_token
-    if (!token) { showToast('该房间无邀请凭证（需要重建）'); return }
-    const url = `${window.location.origin}/chat.html?room=${currentRoom.id}&t=${token}`
-    navigator.clipboard.writeText(url).then(
-      () => showToast('已复制邀请链接'),
-      () => prompt('复制失败，请手动复制以下链接：', url),
-    )
-  }
+  // (invite-token 流程已废弃，统一用 follow/approve 模型)
 
   async function openRoomById(roomId) {
     try {
@@ -1437,10 +1493,12 @@
     }
 
     if (rooms.length === 0) {
-      const hint = currentRole === 'expert'
-        ? '点击上方按钮新建 Chat'
-        : '暂无可进入的 Chat'
-      list.innerHTML = `<div class="rooms-empty">${hint}</div>`
+      if (currentRole === 'expert') {
+        list.innerHTML = `<div class="rooms-empty">还没有 Chat（自动创建中…）</div>`
+      } else {
+        // 小白：没房 → 显示「选大咖 follow」面板
+        await renderFollowExpertsPanel()
+      }
       return
     }
 
@@ -1450,6 +1508,153 @@
     if (!currentRoom && rooms.length > 0) {
       openRoom(rooms[0])
     }
+  }
+
+  // ── 大咖：首次登录自动建一个房（每个大咖固定 1 个）──
+  async function ensureExpertRoom() {
+    const { data: existing, error } = await sb
+      .from('rooms').select('id').eq('expert_id', currentUser.id).limit(1)
+    if (error) { console.warn('[ensureExpertRoom] check failed:', error); return }
+    if (existing && existing.length > 0) return
+    const name = (currentDisplayName ? `${currentDisplayName} 的 Chat` : '我的 Chat')
+    const { error: insErr } = await sb.from('rooms').insert({
+      expert_id: currentUser.id,
+      name,
+      industry: DEMO_INDUSTRY,
+      status: 'active',
+    })
+    if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
+  }
+
+  // ── 大咖：拉待审 follow 请求 + 渲染 ──
+  let pendingFollowChannel = null
+  async function loadFollowRequests() {
+    const { data, error } = await sb
+      .from('follow_requests')
+      .select('id, user_id, created_at')
+      .eq('expert_id', currentUser.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true })
+    if (error) { console.warn('[follow] load failed:', error); return }
+    renderFollowPanel(data || [])
+  }
+
+  function renderFollowPanel(items) {
+    const sidebar = document.querySelector('.sidebar')
+    let panel = document.getElementById('followPanel')
+    if (!panel) {
+      panel = document.createElement('div')
+      panel.id = 'followPanel'
+      panel.className = 'follow-panel'
+      sidebar.appendChild(panel)
+    }
+    if (items.length === 0) {
+      panel.innerHTML = `<div class="follow-panel-title">待审 follow</div><div class="follow-panel-empty">暂无</div>`
+      return
+    }
+    const rows = items.map(it => `
+      <div class="follow-req-item" data-id="${it.id}">
+        <div class="follow-req-who" title="${escHtml(it.user_id)}">${escHtml(it.user_id.slice(0, 8))}…</div>
+        <button class="follow-req-btn ok" onclick="approveFollow('${it.id}', this)">通过</button>
+        <button class="follow-req-btn no" onclick="rejectFollow('${it.id}', this)">拒绝</button>
+      </div>
+    `).join('')
+    panel.innerHTML = `<div class="follow-panel-title">待审 follow · ${items.length}</div>${rows}`
+  }
+
+  async function approveFollow(reqId, btnEl) {
+    btnEl.disabled = true
+    const { error } = await sb.from('follow_requests').update({ status: 'approved' }).eq('id', reqId)
+    if (error) { showToast('通过失败：' + error.message); btnEl.disabled = false; return }
+    showToast('已通过 follow')
+    await loadFollowRequests()
+  }
+
+  async function rejectFollow(reqId, btnEl) {
+    btnEl.disabled = true
+    const { error } = await sb.from('follow_requests').update({ status: 'rejected' }).eq('id', reqId)
+    if (error) { showToast('拒绝失败：' + error.message); btnEl.disabled = false; return }
+    await loadFollowRequests()
+  }
+
+  function subscribeFollowRequests() {
+    if (pendingFollowChannel) sb.removeChannel(pendingFollowChannel)
+    pendingFollowChannel = sb
+      .channel(`follow-requests-${currentUser.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'follow_requests',
+        filter: `expert_id=eq.${currentUser.id}`,
+      }, () => loadFollowRequests())
+      .subscribe()
+  }
+
+  // ── 小白：订阅自己的 room_members 变动（被通过时拿到房间）──
+  let myMembershipChannel = null
+  function subscribeMyMemberships() {
+    if (myMembershipChannel) sb.removeChannel(myMembershipChannel)
+    myMembershipChannel = sb
+      .channel(`my-memberships-${currentUser.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'room_members',
+        filter: `user_id=eq.${currentUser.id}`,
+      }, async () => {
+        showToast('大咖通过了你的 follow，正在进入…')
+        await loadRooms()
+      })
+      .subscribe()
+  }
+
+  // ── 小白：没有房 → 列出可 follow 的大咖 ──
+  async function renderFollowExpertsPanel() {
+    const list = document.getElementById('roomsList')
+    const [expertsResp, requestsResp] = await Promise.all([
+      sb.from('profiles').select('user_id, display_name').eq('role', 'expert'),
+      sb.from('follow_requests').select('expert_id, status').eq('user_id', currentUser.id),
+    ])
+    const experts = expertsResp.data || []
+    const requests = requestsResp.data || []
+    const pendingMap = {}
+    requests.forEach(r => { pendingMap[r.expert_id] = r.status })
+
+    if (experts.length === 0) {
+      list.innerHTML = `<div class="follow-experts"><div class="follow-experts-title">暂无大咖</div></div>`
+      return
+    }
+    const rows = experts.map(e => {
+      const status = pendingMap[e.user_id]
+      const label = e.display_name || e.user_id.slice(0, 8) + '…'
+      let btn = `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
+      if (status === 'pending')  btn = `<button class="expert-row-btn pending" disabled>等待审核</button>`
+      if (status === 'rejected') btn = `<button class="expert-row-btn pending" disabled>已被拒绝</button>`
+      if (status === 'approved') btn = `<button class="expert-row-btn pending" disabled>已通过</button>`
+      return `
+        <div class="expert-row">
+          <div class="expert-row-name">${escHtml(label)}</div>
+          ${btn}
+        </div>`
+    }).join('')
+    list.innerHTML = `
+      <div class="follow-experts">
+        <div class="follow-experts-title">选位大咖</div>
+        <div class="follow-experts-sub">发起 follow 请求，大咖通过后进入对话</div>
+        ${rows}
+      </div>`
+  }
+
+  async function requestFollow(expertId, btnEl) {
+    btnEl.disabled = true
+    const { error } = await sb.from('follow_requests').insert({
+      expert_id: expertId,
+      user_id: currentUser.id,
+    })
+    if (error) {
+      showToast('发起 follow 失败：' + error.message)
+      btnEl.disabled = false
+      return
+    }
+    showToast('已发起 follow，等待大咖审核')
+    btnEl.textContent = '等待审核'
+    btnEl.classList.add('pending')
   }
 
   function renderRoomItem(room) {
@@ -1463,27 +1668,10 @@
     const isOwner = isExpert(room)
     el.innerHTML = `
       <div class="room-name">${escHtml(room.name)}</div>
-      ${isOwner ? `<button class="room-invite" title="复制邀请链接" onclick="event.stopPropagation(); copyInviteForRoom('${room.id}', this)"><i class="ti ti-share"></i></button>` : ''}
       ${isOwner ? `<button class="room-del" title="删除该 Chat" onclick="event.stopPropagation(); deleteRoom('${room.id}', this)">×</button>` : ''}
     `
     el.onclick = () => openRoom(room)
     list.appendChild(el)
-  }
-
-  async function copyInviteForRoom(roomId, btnEl) {
-    const { data: room, error } = await sb.from('rooms').select('id,invite_token').eq('id', roomId).maybeSingle()
-    if (error) {
-      console.warn('[invite] select failed', error)
-      showToast('获取邀请凭证失败：' + (error.message || error.code || '未知'))
-      return
-    }
-    if (!room) { showToast('获取邀请凭证失败：房间不存在或无权读取'); return }
-    if (!room.invite_token) { showToast('获取邀请凭证失败：invite_token 列缺失（migration 未应用？）'); return }
-    const url = `${window.location.origin}/chat.html?room=${room.id}&t=${room.invite_token}`
-    navigator.clipboard.writeText(url).then(
-      () => showToast('已复制邀请链接'),
-      () => prompt('复制失败，请手动复制：', url),
-    )
   }
 
   function isExpert(room) {
