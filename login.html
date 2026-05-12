@@ -39,12 +39,6 @@
     .submit-btn { padding: 12px; font-size: 14px; font-family: inherit; font-weight: 500; border: none; border-radius: var(--radius); background: var(--teal); color: #fff; cursor: pointer; transition: background .15s; margin-top: 4px; }
     .submit-btn:hover { background: var(--teal-600); }
     .submit-btn:disabled { background: var(--text3); cursor: not-allowed; }
-    .divider { display: flex; align-items: center; gap: 12px; margin: 4px 0; }
-    .divider::before, .divider::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
-    .divider span { font-size: 12px; color: var(--text3); }
-    .wechat-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; font-size: 14px; font-family: inherit; font-weight: 500; border: 0.5px solid var(--border2); border-radius: var(--radius); background: #fff; color: var(--text); cursor: pointer; transition: background .15s; }
-    .wechat-btn:hover { background: var(--bg2); }
-    .wechat-icon { width: 20px; height: 20px; background: #07C160; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; flex-shrink: 0; }
     .msg { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; display: none; }
     .msg.success { background: var(--teal-50); color: var(--teal-600); display: block; }
     .msg.error { background: #FDE8E8; color: #9B1C1C; display: block; }
@@ -87,12 +81,6 @@
           <input type="password" id="login-password" placeholder="输入密码" autocomplete="current-password">
         </div>
         <button class="submit-btn" onclick="handleLogin()">登录</button>
-
-        <div class="divider"><span>或</span></div>
-        <button class="wechat-btn" onclick="handleWechat()">
-          <div class="wechat-icon">微</div>
-          微信登录（即将开放）
-        </button>
       </div>
 
       <!-- 注册表单 -->
@@ -113,11 +101,6 @@
           </select>
         </div>
         <button class="submit-btn" onclick="handleRegister()">注册账号</button>
-        <div class="divider"><span>或</span></div>
-        <button class="wechat-btn" onclick="handleWechat()">
-          <div class="wechat-icon">微</div>
-          微信登录（即将开放）
-        </button>
       </div>
 
       <div class="footer-note">
@@ -208,10 +191,6 @@
         showMsg('注册异常：' + (e?.message || e), 'error')
         console.error('handleRegister error:', e)
       }
-    }
-
-    function handleWechat() {
-      showMsg('微信登录正在接入中，请先使用邮箱登录', 'info')
     }
 
     // 已登录则跳转
