@@ -90,13 +90,11 @@ CREATE POLICY "成员可发消息" ON messages
     AND EXISTS (SELECT 1 FROM room_members WHERE room_id = messages.room_id AND user_id = auth.uid())
   );
 
--- 9) room_members 读取：本人或房主可读
-CREATE POLICY "成员或房主可读成员表" ON room_members
+-- 9) room_members 读取：仅本人（避免和 rooms SELECT 互相 EXISTS 触发 RLS 递归）
+--    owner 看所有成员的需求以后用 SECURITY DEFINER RPC 解决。
+CREATE POLICY "成员可读成员表" ON room_members
   FOR SELECT TO authenticated
-  USING (
-    user_id = auth.uid() OR
-    EXISTS (SELECT 1 FROM rooms WHERE rooms.id = room_members.room_id AND rooms.expert_id = auth.uid())
-  );
+  USING (user_id = auth.uid());
 
 -- 10) 房主可踢人（DELETE 自己房的成员，但不能踢自己）
 CREATE POLICY "房主可踢成员" ON room_members
