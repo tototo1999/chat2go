@@ -190,39 +190,58 @@
       border-bottom: 0.5px solid var(--border);
     }
     .todo-head {
-      padding: 8px 12px;
+      padding: 7px 12px;
       background: var(--teal-50);
       border: 0.5px solid var(--teal-100);
       border-radius: var(--radius);
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: var(--text);
     }
+    .todo-group { margin-top: 5px; }
     .todo-pill {
-      margin-top: 6px;
-      padding: 7px 12px;
+      padding: 5px 10px;
       border-radius: 999px;
       background: var(--bg);
       border: 0.5px solid var(--border);
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--text);
       cursor: pointer;
       transition: background .15s, color .15s;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       user-select: none;
     }
     .todo-pill:hover { background: var(--teal-50); }
+    .todo-pill .todo-toggle {
+      width: 15px; height: 15px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: transparent;
+      color: var(--text2);
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: inherit;
+      padding: 0;
+      transition: transform .18s, background .15s, color .15s;
+    }
+    .todo-pill .todo-toggle:hover { background: var(--teal-50); color: var(--teal-600); }
+    .todo-group.expanded .todo-pill .todo-toggle { transform: rotate(45deg); color: var(--teal-600); }
     .todo-pill .check {
-      width: 14px; height: 14px;
+      width: 13px; height: 13px;
       border-radius: 3px;
       border: 1px solid var(--border2);
       flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1;
       color: transparent;
       transition: background .15s, border-color .15s, color .15s;
@@ -230,6 +249,48 @@
     .todo-pill.done { color: var(--text3); }
     .todo-pill.done .todo-text { text-decoration: line-through; }
     .todo-pill.done .check {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+    /* 子目录 */
+    .todo-children {
+      display: none;
+      padding: 4px 0 2px 22px;
+    }
+    .todo-group.expanded .todo-children { display: block; }
+    .todo-sub {
+      padding: 4px 10px;
+      margin-top: 3px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s, color .15s;
+    }
+    .todo-sub:hover { background: var(--teal-50); }
+    .todo-sub .check {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      line-height: 1;
+      color: transparent;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .todo-sub.done { color: var(--text3); }
+    .todo-sub.done .todo-text { text-decoration: line-through; }
+    .todo-sub.done .check {
       background: var(--teal);
       border-color: var(--teal);
       color: #fff;
@@ -1213,17 +1274,59 @@
     </div>
     <div class="todo-section">
       <div class="todo-head">Todo list</div>
-      <div class="todo-pill" data-todo="who" onclick="toggleTodo(this)">
-        <span class="check">&#10003;</span>
-        <span class="todo-text">我是谁？</span>
+      <div class="todo-group" data-group="who">
+        <div class="todo-pill" data-todo="who" onclick="onTodoPillClick(event, this)">
+          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="check">&#10003;</span>
+          <span class="todo-text">我是谁？</span>
+        </div>
+        <div class="todo-children">
+          <div class="todo-sub" data-todo="who.name" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">名字</span>
+          </div>
+          <div class="todo-sub" data-todo="who.role" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">角色</span>
+          </div>
+          <div class="todo-sub" data-todo="who.style" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">偏好</span>
+          </div>
+        </div>
       </div>
-      <div class="todo-pill" data-todo="from" onclick="toggleTodo(this)">
-        <span class="check">&#10003;</span>
-        <span class="todo-text">我从哪里来？</span>
+      <div class="todo-group" data-group="from">
+        <div class="todo-pill" data-todo="from" onclick="onTodoPillClick(event, this)">
+          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="check">&#10003;</span>
+          <span class="todo-text">我从哪里来？</span>
+        </div>
+        <div class="todo-children">
+          <div class="todo-sub" data-todo="from.bg" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">背景</span>
+          </div>
+          <div class="todo-sub" data-todo="from.exp" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">经历</span>
+          </div>
+          <div class="todo-sub" data-todo="from.win" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">成就</span>
+          </div>
+        </div>
       </div>
-      <div class="todo-pill" data-todo="to" onclick="toggleTodo(this)">
-        <span class="check">&#10003;</span>
-        <span class="todo-text">我要去哪里？</span>
+      <div class="todo-group" data-group="to">
+        <div class="todo-pill" data-todo="to" onclick="onTodoPillClick(event, this)">
+          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="check">&#10003;</span>
+          <span class="todo-text">我要去哪里？</span>
+        </div>
+        <div class="todo-children">
+          <div class="todo-sub" data-todo="to.goal" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">目标</span>
+          </div>
+          <div class="todo-sub" data-todo="to.plan" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">计划</span>
+          </div>
+          <div class="todo-sub" data-todo="to.dream" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">愿景</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="rooms-list" id="roomsList">
@@ -1899,18 +2002,40 @@
   }
   const DEFAULT_CTX_WINDOW = 200000
 
-  // Sidebar todo list — 状态存 localStorage
+  // Sidebar todo list — done 状态 + group 展开都存 localStorage
   function toggleTodo(el) {
     const key = el.dataset.todo
+    if (!key) return
     const done = !el.classList.contains('done')
     el.classList.toggle('done', done)
     try { localStorage.setItem('c2g_todo_' + key, done ? '1' : '0') } catch (e) {}
   }
+  function toggleTodoGroup(btn) {
+    const group = btn.closest('.todo-group')
+    const expanded = group.classList.toggle('expanded')
+    try { localStorage.setItem('c2g_todog_' + group.dataset.group, expanded ? '1' : '0') } catch (e) {}
+  }
+  // 父胶囊：点 ✅ 区域 → toggle done；点其他地方（文字/空白） → 展开/收起
+  function onTodoPillClick(ev, pill) {
+    if (ev.target.classList.contains('check')) {
+      toggleTodo(pill)
+    } else {
+      const btn = pill.querySelector('.todo-toggle')
+      if (btn) toggleTodoGroup(btn)
+    }
+  }
   function restoreTodos() {
-    document.querySelectorAll('.todo-pill').forEach(el => {
+    document.querySelectorAll('.todo-pill, .todo-sub').forEach(el => {
       try {
         if (localStorage.getItem('c2g_todo_' + el.dataset.todo) === '1') {
           el.classList.add('done')
+        }
+      } catch (e) {}
+    })
+    document.querySelectorAll('.todo-group').forEach(g => {
+      try {
+        if (localStorage.getItem('c2g_todog_' + g.dataset.group) === '1') {
+          g.classList.add('expanded')
         }
       } catch (e) {}
     })
