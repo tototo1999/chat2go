@@ -718,6 +718,15 @@
     .msg-rate-btn.down:hover { background: #FECACA; }
     .msg-rate-btn.up.active   { background: var(--teal); color: #fff; border-color: var(--teal); }
     .msg-rate-btn.down.active { background: #DC2626;     color: #fff; border-color: #DC2626; }
+    .msg-rate-btn.quote {
+      background: var(--bg2);
+      color: var(--text2);
+      border-color: var(--border);
+      letter-spacing: 1px;
+      font-size: 13px;
+      padding-bottom: 5px;
+    }
+    .msg-rate-btn.quote:hover { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
 
     .msg-bubble {
       padding: 9px 13px;
@@ -2281,11 +2290,17 @@
     // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
     const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
 
+    const quoteSender = escHtml(senderName).replace(/'/g, "&#39;")
+    const quoteBtnHtml = `<button class="msg-rate-btn quote" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${quoteSender}')">&#8230;</button>`
     const rateBarHtml = role === 'ai' ? `
       <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
         <button class="msg-rate-btn up" title="这条回答对" onclick="rateMessage(this, '${msg.id}', 'up')">&#10003;</button>
         <button class="msg-rate-btn down" title="这条回答错" onclick="rateMessage(this, '${msg.id}', 'down')">&#10005;</button>
-      </div>` : ''
+        ${quoteBtnHtml}
+      </div>` : `
+      <div class="msg-rate-bar">
+        ${quoteBtnHtml}
+      </div>`
 
     el.innerHTML = `
       <div class="msg-av ${role}"${aiAvClick}>${avText}</div>
@@ -2296,9 +2311,6 @@
           <div class="msg-actions">
             <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
               <i class="ti ti-copy"></i>
-            </button>
-            <button class="msg-action-btn" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${escHtml(senderName).replace(/'/g, "&#39;")}')">
-              <i class="ti ti-quote"></i>
             </button>
           </div>
         </div>
