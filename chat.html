@@ -149,31 +149,14 @@
       box-sizing: border-box;
       border-bottom: 0.5px solid var(--border);
     }
-    .btn-new-room {
+    /* sidebar 顶部：当前聊天室标题（极简版，无新建按钮） */
+    .sidebar-room-title {
       width: 100%;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-family: inherit;
-      font-weight: 500;
-      background: var(--teal);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: background .15s;
-    }
-    .btn-new-room:hover { background: var(--teal-600); }
-    .btn-new-room i { font-size: 15px; }
-    /* 小白模式：sidebar 顶部 Chat 占位（尺寸对齐下方 .room-item，水平/垂直完全一致）*/
-    .sidebar-brand {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-family: inherit;
-      font-weight: 500;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 600;
+      letter-spacing: -0.2px;
       background: var(--teal);
       color: #fff;
       border: none;
@@ -182,6 +165,9 @@
       align-items: center;
       gap: 6px;
       box-sizing: border-box;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Todo list section（在 + Chat 下方） */
@@ -1265,12 +1251,7 @@
 
   <aside class="sidebar">
     <div class="sidebar-head">
-      <button class="btn-new-room" id="newRoomBtn" onclick="openNewRoomModal()" style="display:none;">
-        <i class="ti ti-plus"></i> Chat
-      </button>
-      <div class="sidebar-brand" id="sidebarBrand">
-        Chat
-      </div>
+      <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
     </div>
     <div class="todo-section">
       <div class="todo-head">Todo list</div>
@@ -1474,11 +1455,6 @@
       }
       if (currentRole === 'expert') {
         document.getElementById('settingsBtn').style.display = ''
-        // 大咖可建多个 Chat，显示 + Chat 按钮
-        const btn = document.getElementById('newRoomBtn')
-        if (btn) btn.style.display = ''
-        const brand = document.getElementById('sidebarBrand')
-        if (brand) brand.style.display = 'none'
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
@@ -1947,6 +1923,17 @@
     document.querySelectorAll('.room-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === room.id)
     })
+
+    // sidebar 顶部显示当前聊天室对应大咖的 display_name（与首页卡片一致）
+    try {
+      const titleEl = document.getElementById('sidebarRoomTitle')
+      if (titleEl && room.expert_id) {
+        const { data } = await sb.from('profiles')
+          .select('display_name').eq('user_id', room.expert_id).maybeSingle()
+        const name = (data?.display_name || '').trim()
+        if (name) titleEl.textContent = name
+      }
+    } catch (e) { console.warn('[sidebar title]', e) }
 
     updateInputPlaceholder()
 
