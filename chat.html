@@ -2371,6 +2371,8 @@
     autoResize(input)
     // 清空语音识别的累积缓存，防止录音中发送后旧文本被 onresult 写回
     voiceTextBefore = ''
+    // 把当前为止的所有 result 都标记为「已发」，后续 onresult 跳过它们（防 interim→final 延迟写回）
+    voiceSkipBeforeIdx = voiceLastResultsLen
 
     const sendBtn = document.getElementById('sendBtn')
     sendBtn.disabled = true
