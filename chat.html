@@ -2355,6 +2355,9 @@
   ]
   function pickPhrase(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
+  // 记录上次 rate 自动 prepend 的字符串，便于下次 rate（切换 ✓/✗ 或取消）时先剥掉
+  let lastRatePrepend = ''
+
   function buildQuoteBlock(b64, sender) {
     let text = ''
     try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
@@ -2375,19 +2378,26 @@
     } catch (e) {}
     bar.querySelectorAll('.msg-rate-btn').forEach(b => b.classList.remove('active'))
     if (next) bar.querySelector('.msg-rate-btn.' + next)?.classList.add('active')
-    // 仅"激活"时（不是取消）自动 prepend 判断 + 引用到输入框
-    if (next && b64 && sender) {
-      const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
-      const quote = buildQuoteBlock(b64, sender)
-      const input = document.getElementById('msgInput')
-      if (input) {
+    // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
+    const input = document.getElementById('msgInput')
+    if (input) {
+      if (lastRatePrepend && input.value.startsWith(lastRatePrepend)) {
+        input.value = input.value.slice(lastRatePrepend.length)
+      }
+      if (next && b64 && sender) {
+        const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
+        const quote = buildQuoteBlock(b64, sender)
         const block = `${phrase}\n\n${quote}\n\n`
         input.value = block + (input.value || '')
+        lastRatePrepend = block
         autoResize(input)
         input.focus()
         const pos = block.length
         try { input.setSelectionRange(pos, pos) } catch (e) {}
         input.scrollTop = 0
+      } else {
+        lastRatePrepend = ''
+        autoResize(input)
       }
     }
   }
@@ -2440,6 +2450,7 @@
 
     input.value = ''
     autoResize(input)
+    lastRatePrepend = ''
     // 清空语音识别的累积缓存，防止录音中发送后旧文本被 onresult 写回
     voiceTextBefore = ''
     // 把当前为止的所有 result 都标记为「已发」，后续 onresult 跳过它们（防 interim→final 延迟写回）
