@@ -734,6 +734,32 @@
     .msg-rate-btn.quote svg { display: block; }
     .msg-rate-btn.quote:hover { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
 
+    /* 微信风引用卡片：消息气泡下方一个紧凑灰条 */
+    .msg-quote-card {
+      margin-top: 4px;
+      padding: 7px 10px;
+      background: var(--bg2);
+      border-radius: 6px;
+      border-left: 3px solid var(--border2);
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.45;
+      max-width: 320px;
+      align-self: flex-start;
+      cursor: default;
+    }
+    .msg-quote-card .qsender {
+      color: var(--text);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+    .msg-quote-card .qbody {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
     .msg-bubble {
       padding: 9px 13px;
       border-radius: 6px;
@@ -2282,6 +2308,23 @@
       </div>` : ''
 
     const isPlaceholderMsg = attachments.length > 0 && /^\[发送了 \d+ 个文件\]$/.test(msg.content)
+
+    // 微信风：抽出尾部 markdown 引用块，渲染成气泡下的灰色卡片（只对非 markdown 消息做）
+    let displayContent = msg.content || ''
+    let quoteCardHtml = ''
+    if (!isMarkdown) {
+      const QUOTE_TRAILER_RE = /\n\n> \*\*(.+?)\*\*：\n((?:>.*(?:\n|$))+)\s*$/
+      const m = displayContent.match(QUOTE_TRAILER_RE)
+      if (m) {
+        displayContent = displayContent.slice(0, m.index).trimEnd()
+        const qSender = m[1]
+        const lines = m[2].split('\n').map(l => l.replace(/^>\s?/, '')).filter(s => s !== '')
+        let preview = lines.join(' ').replace(/\s+/g, ' ').trim()
+        if (preview.length > 120) preview = preview.slice(0, 120) + '…'
+        quoteCardHtml = `<div class="msg-quote-card"><span class="qsender">${escHtml(qSender)}：</span><span class="qbody">${escHtml(preview)}</span></div>`
+      }
+    }
+
     const bubbleHtml = isMarkdown
       ? `<div class="msg-bubble markdown" style="padding:0;background:transparent;border:none;">
            <div class="md-body" id="md-${msg.id}">${marked.parse(msg.content)}</div>
@@ -2294,7 +2337,9 @@
          </div>`
       : (isPlaceholderMsg
           ? ''  // 纯文件消息不显示气泡，只显示附件卡片
-          : `<div class="msg-bubble ${role}">${escHtml(msg.content)}</div>`)
+          : (displayContent
+              ? `<div class="msg-bubble ${role}">${escHtml(displayContent)}</div>`
+              : ''))
 
     // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
     const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
@@ -2324,6 +2369,7 @@
           </div>
         </div>
         ${bubbleHtml}
+        ${quoteCardHtml}
         ${attachHtml}
         ${rateBarHtml}
       </div>
@@ -2760,12 +2806,16 @@
   function quoteMessage(b64, sender) {
     const input = document.getElementById('msgInput')
     if (!input) return
-    const block = buildQuoteBlock(b64, sender) + '\n\n'
-    input.value = block + (input.value || '')
+    const QUOTE_TRAILER_RE = /\n\n> \*\*(.+?)\*\*：\n((?:>.*(?:\n|$))+)\s*$/
+    // 先剥掉已有的引用尾，避免叠加多个 quote
+    let cur = input.value || ''
+    cur = cur.replace(QUOTE_TRAILER_RE, '').replace(/\s+$/, '')
+    const trailer = '\n\n' + buildQuoteBlock(b64, sender)
+    input.value = cur + trailer
     autoResize(input)
     input.focus()
-    const pos = block.length
-    try { input.setSelectionRange(pos, pos) } catch (e) {}
+    // 光标停到输入框开头，方便直接打字
+    try { input.setSelectionRange(0, 0) } catch (e) {}
     input.scrollTop = 0
   }
 
