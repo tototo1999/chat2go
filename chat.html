@@ -2384,10 +2384,9 @@
       if (lastRatePrepend && input.value.startsWith(lastRatePrepend)) {
         input.value = input.value.slice(lastRatePrepend.length)
       }
-      if (next && b64 && sender) {
+      if (next) {
         const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
-        const quote = buildQuoteBlock(b64, sender)
-        const block = `${phrase}\n\n${quote}\n\n`
+        const block = `${phrase}\n\n`
         input.value = block + (input.value || '')
         lastRatePrepend = block
         autoResize(input)
