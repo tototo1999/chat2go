@@ -2369,6 +2369,8 @@
 
     input.value = ''
     autoResize(input)
+    // 清空语音识别的累积缓存，防止录音中发送后旧文本被 onresult 写回
+    voiceTextBefore = ''
 
     const sendBtn = document.getElementById('sendBtn')
     sendBtn.disabled = true
