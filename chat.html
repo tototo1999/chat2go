@@ -714,17 +714,16 @@
     /* AI 消息底部 ✓ / ✗ 评价按钮 */
     .msg-rate-bar {
       display: flex;
-      gap: 6px;
-      margin-top: 6px;
+      gap: 8px;
+      margin-top: 8px;
     }
     .msg-rate-btn {
-      width: 22px; height: 22px;
-      border: 0.5px solid var(--border);
-      background: var(--bg);
-      color: var(--text3);
+      width: 26px; height: 26px;
+      border: 0.5px solid transparent;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 13px;
+      font-weight: 600;
       line-height: 1;
       display: inline-flex;
       align-items: center;
@@ -733,9 +732,12 @@
       font-family: inherit;
       padding: 0;
     }
-    .msg-rate-btn:hover { background: var(--bg2); color: var(--text); }
-    .msg-rate-btn.up.active { background: var(--teal); border-color: var(--teal); color: #fff; }
-    .msg-rate-btn.down.active { background: #DC2626; border-color: #DC2626; color: #fff; }
+    .msg-rate-btn.up   { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
+    .msg-rate-btn.down { background: #FEE2E2;        color: #DC2626;          border-color: #FECACA; }
+    .msg-rate-btn.up:hover   { background: var(--teal-100); }
+    .msg-rate-btn.down:hover { background: #FECACA; }
+    .msg-rate-btn.up.active   { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .msg-rate-btn.down.active { background: #DC2626;     color: #fff; border-color: #DC2626; }
 
     .msg-bubble {
       padding: 9px 13px;
