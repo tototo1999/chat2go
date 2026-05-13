@@ -227,7 +227,7 @@
     }
     .todo-group.expanded .todo-children { display: block; }
     .todo-sub {
-      padding: 4px 8px 4px 12px;
+      padding: 4px 10px;
       margin-top: 3px;
       border-radius: 999px;
       background: var(--bg);
@@ -237,34 +237,31 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      cursor: pointer;
       user-select: none;
       transition: background .15s, color .15s;
     }
     .todo-sub:hover { background: var(--teal-50); }
-    .todo-sub .todo-text { flex: 1; }
-    /* sub 行内的 ✓ / ✗（样式与 AI 聊天的 .msg-rate-btn 同色，尺寸更紧凑） */
-    .todo-sub-rate { display: flex; gap: 4px; flex-shrink: 0; }
-    .todo-rate-btn {
-      width: 18px; height: 18px;
-      border: 0.5px solid transparent;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 9px;
-      font-weight: 600;
-      line-height: 1;
+    .todo-sub .check {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      flex-shrink: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: all .15s;
-      font-family: inherit;
-      padding: 0;
+      font-size: 9px;
+      line-height: 1;
+      color: transparent;
+      transition: background .15s, border-color .15s, color .15s;
     }
-    .todo-rate-btn.up   { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
-    .todo-rate-btn.down { background: #FEE2E2;        color: #DC2626;          border-color: #FECACA; }
-    .todo-rate-btn.up:hover   { background: var(--teal-100); }
-    .todo-rate-btn.down:hover { background: #FECACA; }
-    .todo-rate-btn.up.active   { background: var(--teal); color: #fff; border-color: var(--teal); }
-    .todo-rate-btn.down.active { background: #DC2626;     color: #fff; border-color: #DC2626; }
+    .todo-sub.done { color: var(--text3); }
+    .todo-sub.done .todo-text { text-decoration: line-through; }
+    .todo-sub.done .check {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
 
     .rooms-list {
       flex: 1;
@@ -701,11 +698,11 @@
       margin-top: 8px;
     }
     .msg-rate-btn {
-      width: 26px; height: 26px;
+      width: 24px; height: 24px;
       border: 0.5px solid transparent;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 10px;
       font-weight: 600;
       line-height: 1;
       display: inline-flex;
@@ -1273,26 +1270,14 @@
           <span class="todo-text">我是谁？</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="who.wuxing">
-            <span class="todo-text">五行</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'who.wuxing','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'who.wuxing','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="who.wuxing" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">五行</span>
           </div>
-          <div class="todo-sub" data-todo="who.qiangruo">
-            <span class="todo-text">强弱</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'who.qiangruo','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'who.qiangruo','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="who.qiangruo" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">强弱</span>
           </div>
-          <div class="todo-sub" data-todo="who.duicuo">
-            <span class="todo-text">对错</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'who.duicuo','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'who.duicuo','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="who.duicuo" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">对错</span>
           </div>
         </div>
       </div>
@@ -1302,26 +1287,14 @@
           <span class="todo-text">我从哪里来？</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="from.guoqu">
-            <span class="todo-text">过去</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'from.guoqu','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'from.guoqu','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="from.guoqu" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">过去</span>
           </div>
-          <div class="todo-sub" data-todo="from.sange">
-            <span class="todo-text">三个</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'from.sange','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'from.sange','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="from.sange" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">三个</span>
           </div>
-          <div class="todo-sub" data-todo="from.jiedian">
-            <span class="todo-text">节点</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'from.jiedian','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'from.jiedian','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="from.jiedian" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">节点</span>
           </div>
         </div>
       </div>
@@ -1331,26 +1304,14 @@
           <span class="todo-text">我要去哪里？</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="to.weilai">
-            <span class="todo-text">未来</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'to.weilai','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'to.weilai','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="to.weilai" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">未来</span>
           </div>
-          <div class="todo-sub" data-todo="to.sange">
-            <span class="todo-text">三个</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'to.sange','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'to.sange','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="to.sange" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">三个</span>
           </div>
-          <div class="todo-sub" data-todo="to.jiedian">
-            <span class="todo-text">节点</span>
-            <div class="todo-sub-rate">
-              <button type="button" class="todo-rate-btn up" title="对" onclick="rateTodoSub(this,'to.jiedian','up')">&#10003;</button>
-              <button type="button" class="todo-rate-btn down" title="错" onclick="rateTodoSub(this,'to.jiedian','down')">&#10005;</button>
-            </div>
+          <div class="todo-sub" data-todo="to.jiedian" onclick="toggleTodo(this)">
+            <span class="check">&#10003;</span><span class="todo-text">节点</span>
           </div>
         </div>
       </div>
@@ -2047,25 +2008,19 @@
   }
   const DEFAULT_CTX_WINDOW = 200000
 
-  // Sidebar todo list — group 展开 + 子项 ✓/✗ 评价都存 localStorage
+  // Sidebar todo list — group 展开 + 子项 done 都存 localStorage
   function toggleTodoGroup(elOrBtn) {
     const group = elOrBtn.closest('.todo-group')
     if (!group) return
     const expanded = group.classList.toggle('expanded')
     try { localStorage.setItem('c2g_todog_' + group.dataset.group, expanded ? '1' : '0') } catch (e) {}
   }
-  function rateTodoSub(btn, key, val) {
-    const sub = btn.closest('.todo-sub')
-    if (!sub) return
-    let cur = ''
-    try { cur = localStorage.getItem('c2g_todorate_' + key) || '' } catch (e) {}
-    const next = (cur === val) ? '' : val   // 再点同一个 → 取消
-    try {
-      if (next) localStorage.setItem('c2g_todorate_' + key, next)
-      else localStorage.removeItem('c2g_todorate_' + key)
-    } catch (e) {}
-    sub.querySelectorAll('.todo-rate-btn').forEach(b => b.classList.remove('active'))
-    if (next) sub.querySelector('.todo-rate-btn.' + next)?.classList.add('active')
+  function toggleTodo(el) {
+    const key = el.dataset.todo
+    if (!key) return
+    const done = !el.classList.contains('done')
+    el.classList.toggle('done', done)
+    try { localStorage.setItem('c2g_todo_' + key, done ? '1' : '0') } catch (e) {}
   }
   function restoreTodos() {
     document.querySelectorAll('.todo-group').forEach(g => {
@@ -2077,9 +2032,8 @@
     })
     document.querySelectorAll('.todo-sub').forEach(sub => {
       try {
-        const v = localStorage.getItem('c2g_todorate_' + sub.dataset.todo)
-        if (v === 'up' || v === 'down') {
-          sub.querySelector('.todo-rate-btn.' + v)?.classList.add('active')
+        if (localStorage.getItem('c2g_todo_' + sub.dataset.todo) === '1') {
+          sub.classList.add('done')
         }
       } catch (e) {}
     })
