@@ -702,9 +702,8 @@
       border: 0.5px solid transparent;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 900;
-      -webkit-text-stroke: 0.6px currentColor;
+      font-size: 11px;
+      font-weight: 600;
       line-height: 1;
       display: inline-flex;
       align-items: center;
@@ -2284,8 +2283,8 @@
 
     const rateBarHtml = role === 'ai' ? `
       <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
-        <button class="msg-rate-btn up" title="这条回答对" onclick="rateMessage(this, '${msg.id}', 'up')">&#10004;</button>
-        <button class="msg-rate-btn down" title="这条回答错" onclick="rateMessage(this, '${msg.id}', 'down')">&#10006;</button>
+        <button class="msg-rate-btn up" title="这条回答对" onclick="rateMessage(this, '${msg.id}', 'up')">&#10003;</button>
+        <button class="msg-rate-btn down" title="这条回答错" onclick="rateMessage(this, '${msg.id}', 'down')">&#10005;</button>
       </div>` : ''
 
     el.innerHTML = `
