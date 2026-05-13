@@ -169,22 +169,89 @@
       transition: transform .2s, color .2s;
       margin-top: 1rem;
     }
-    .expert-follow-btn {
+    /* follow 胶囊：左半 ♥（关注） + 右半数字（看 follower 列表） */
+    .follow-pill {
       align-self: flex-end;
       margin-top: 1rem;
-      padding: 8px 22px;
+      display: inline-flex;
+      align-items: stretch;
       background: var(--teal);
       color: #fff;
-      border: 0;
       border-radius: 999px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
+      overflow: hidden;
       font-family: inherit;
+      font-size: 13px;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    .follow-pill button {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      padding: 7px 12px;
+      font: inherit;
+      cursor: pointer;
       transition: background .15s;
     }
-    .expert-follow-btn:hover { background: var(--teal-dark, #0f8a6f); }
-    .expert-follow-btn:disabled { opacity: 0.6; cursor: default; }
+    .follow-pill button:hover { background: rgba(255,255,255,.18); }
+    .follow-pill button:disabled { opacity: 0.6; cursor: default; }
+    .follow-pill .pf-heart { font-size: 14px; }
+    .follow-pill .pf-divider {
+      width: 0.5px;
+      background: rgba(255,255,255,.32);
+      align-self: stretch;
+    }
+    .follow-pill .pf-count { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+
+    /* follower list modal */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.32);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 50;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: var(--bg);
+      border-radius: 12px;
+      width: min(380px, 92vw);
+      max-height: 70vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+      border: 0.5px solid var(--border);
+    }
+    .modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 0.5px solid var(--border);
+      font-family: 'Noto Serif SC', serif;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .modal-close {
+      background: none; border: 0; cursor: pointer;
+      color: var(--text3); font-size: 18px; line-height: 1;
+      padding: 4px 8px;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { overflow-y: auto; padding: 8px 0; }
+    .follower-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px;
+      font-size: 13px;
+    }
+    .follower-row:hover { background: var(--bg2); }
+    .follower-av {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--teal-50);
+      color: var(--teal-600);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+    }
+    .follower-name { flex: 1; color: var(--text); }
+    .follower-empty { padding: 24px 18px; color: var(--text3); text-align: center; font-size: 13px; }
 
     footer {
       padding: 1.5rem 2rem;
@@ -218,10 +285,14 @@
     <div class="tagline">真人大咖 × AI，<em>这就带你飞</em></div>
 
     <div class="expert-grid">
-      <div class="expert-card">
+      <div class="expert-card" data-expert-id="fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0">
         <div class="expert-tag">fortune teller</div>
         <div class="expert-name">森山大道 san</div>
-        <button class="expert-follow-btn" onclick="followExpert('fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0', this)">Follow</button>
+        <div class="follow-pill" data-pill>
+          <button type="button" class="pf-heart" title="关注大咖" onclick="followExpert(this)">&#9829;</button>
+          <span class="pf-divider"></span>
+          <button type="button" class="pf-count" title="查看 followers" onclick="openFollowers(this)">·</button>
+        </div>
       </div>
 
       <div class="expert-card disabled">
@@ -244,6 +315,16 @@
   <footer>
     © 2026 Chat2GO
   </footer>
+
+  <div class="modal-backdrop" id="followersModal" onclick="if(event.target===this)closeFollowers()">
+    <div class="modal-card">
+      <div class="modal-head">
+        <span>Followers</span>
+        <button class="modal-close" onclick="closeFollowers()">×</button>
+      </div>
+      <div class="modal-body" id="followersBody"></div>
+    </div>
+  </div>
 
   <script src="/vendor/supabase.js"
           onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
@@ -268,19 +349,63 @@
       right.style.visibility = 'visible'
     }
 
-    async function followExpert(expertId, btnEl) {
+    function expertIdFromEl(el) {
+      return el.closest('.expert-card')?.dataset.expertId
+    }
+
+    async function followExpert(btnEl) {
+      const expertId = expertIdFromEl(btnEl)
+      if (!expertId) return
       btnEl.disabled = true
+      const original = btnEl.innerHTML
       btnEl.textContent = '...'
       const { data: { session } } = await sb.auth.getSession()
       if (!session) { location.href = '/login.html'; return }
       const { data: room, error: e1 } = await sb
         .from('rooms').select('id').eq('expert_id', expertId).limit(1).maybeSingle()
-      if (e1 || !room) { alert('找不到大咖的 Chat'); btnEl.disabled = false; btnEl.textContent = 'Follow'; return }
+      if (e1 || !room) { alert('找不到大咖的 Chat'); btnEl.disabled = false; btnEl.innerHTML = original; return }
       const { error: e2 } = await sb.from('room_members').insert({
         room_id: room.id, user_id: session.user.id,
       })
-      if (e2 && e2.code !== '23505') { alert('加入失败：' + e2.message); btnEl.disabled = false; btnEl.textContent = 'Follow'; return }
+      if (e2 && e2.code !== '23505') { alert('加入失败：' + e2.message); btnEl.disabled = false; btnEl.innerHTML = original; return }
       location.href = `/chat.html?room=${room.id}`
+    }
+
+    async function loadFollowerCounts() {
+      const cards = document.querySelectorAll('.expert-card[data-expert-id]')
+      await Promise.all([...cards].map(async card => {
+        const expertId = card.dataset.expertId
+        const countEl = card.querySelector('.pf-count')
+        if (!countEl) return
+        const { data, error } = await sb.rpc('get_expert_follower_count', { p_expert_id: expertId })
+        countEl.textContent = error ? '·' : (data ?? 0)
+      }))
+    }
+
+    async function openFollowers(btnEl) {
+      const expertId = expertIdFromEl(btnEl)
+      if (!expertId) return
+      const modal = document.getElementById('followersModal')
+      const body = document.getElementById('followersBody')
+      body.innerHTML = '<div class="follower-empty">加载中…</div>'
+      modal.classList.add('open')
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) {
+        body.innerHTML = '<div class="follower-empty">登录后可查看 follower 列表<br><br><a href="/login.html" style="color:var(--teal)">去登录</a></div>'
+        return
+      }
+      const { data, error } = await sb.rpc('get_expert_followers', { p_expert_id: expertId })
+      if (error) { body.innerHTML = `<div class="follower-empty">加载失败：${error.message}</div>`; return }
+      if (!data || !data.length) { body.innerHTML = '<div class="follower-empty">还没有 follower</div>'; return }
+      body.innerHTML = data.map(f => {
+        const name = (f.display_name || '小白').replace(/</g, '&lt;')
+        const initial = (f.display_name || '?').charAt(0).toUpperCase()
+        return `<div class="follower-row"><span class="follower-av">${initial}</span><span class="follower-name">${name}</span></div>`
+      }).join('')
+    }
+
+    function closeFollowers() {
+      document.getElementById('followersModal').classList.remove('open')
     }
 
     async function handleLogout() {
@@ -289,6 +414,7 @@
     }
 
     renderNav()
+    loadFollowerCounts()
   </script>
 </body>
 </html>

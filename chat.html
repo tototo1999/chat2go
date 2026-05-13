@@ -283,18 +283,33 @@
       background: #fff;
     }
     .expert-row-name { flex: 1; text-align: left; font-size: 13px; color: var(--text); }
-    .expert-row-btn {
-      padding: 5px 12px;
-      font-size: 12px;
-      border-radius: 999px;
-      border: 0.5px solid var(--teal);
+    /* follow 胶囊：左 ♥ 右数字，统一与落地页 */
+    .follow-pill {
+      display: inline-flex;
+      align-items: stretch;
       background: var(--teal);
       color: #fff;
+      border-radius: 999px;
+      overflow: hidden;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .follow-pill button {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      padding: 5px 9px;
+      font: inherit;
       cursor: pointer;
       transition: background .15s;
     }
-    .expert-row-btn:hover { background: var(--teal-600); }
-    .expert-row-btn.pending { background: transparent; color: var(--text3); border-color: var(--border2); cursor: default; }
+    .follow-pill button:hover { background: rgba(255,255,255,.18); }
+    .follow-pill button:disabled { opacity: .6; cursor: default; }
+    .follow-pill .pf-heart { font-size: 13px; }
+    .follow-pill .pf-divider { width: 0.5px; background: rgba(255,255,255,.32); }
+    .follow-pill .pf-count { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+    .follow-pill.joined { background: transparent; color: var(--text3); border: 0.5px solid var(--border2); }
+    .follow-pill.joined .pf-divider { background: var(--border); }
     .room-meta {
       font-size: 11px;
       color: var(--text3);
@@ -1243,6 +1258,17 @@
   </div>
 </div>
 
+<!-- Followers list modal -->
+<div class="modal-overlay" id="followersListModal" onclick="closeFollowersListChat(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Followers</span>
+      <button onclick="closeFollowersListChat()" style="background:none;border:0;font-size:18px;color:var(--text3);cursor:pointer;">×</button>
+    </h3>
+    <div id="followersListBody" style="max-height:60vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1617,13 +1643,22 @@
     const rows = experts.map(e => {
       const status = pendingMap[e.user_id]
       const label = e.display_name || e.user_id.slice(0, 8) + '…'
-      const btn = status === 'approved'
-        ? `<button class="expert-row-btn pending" disabled>已加入</button>`
-        : `<button class="expert-row-btn" onclick="requestFollow('${e.user_id}', this)">Follow</button>`
+      const joined = status === 'approved'
+      const pill = joined
+        ? `<div class="follow-pill joined" data-expert="${e.user_id}">
+             <button class="pf-heart" disabled title="已加入">&#9829;</button>
+             <span class="pf-divider"></span>
+             <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
+           </div>`
+        : `<div class="follow-pill" data-expert="${e.user_id}">
+             <button class="pf-heart" title="关注大咖" onclick="requestFollow('${e.user_id}', this)">&#9829;</button>
+             <span class="pf-divider"></span>
+             <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
+           </div>`
       return `
         <div class="expert-row">
           <div class="expert-row-name">${escHtml(label)}</div>
-          ${btn}
+          ${pill}
         </div>`
     }).join('')
     list.innerHTML = `
@@ -1632,6 +1667,34 @@
         <div class="follow-experts-sub">选一位大咖，进入对话</div>
         ${rows}
       </div>`
+    // 异步填充每个大咖的 follower 数
+    experts.forEach(async e => {
+      const { data } = await sb.rpc('get_expert_follower_count', { p_expert_id: e.user_id })
+      const el = list.querySelector(`.follow-pill[data-expert="${e.user_id}"] .pf-count`)
+      if (el) el.textContent = data ?? 0
+    })
+  }
+
+  async function openFollowersListChat(expertId, btnEl) {
+    const modal = document.getElementById('followersListModal')
+    const body = document.getElementById('followersListBody')
+    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">加载中…</div>'
+    modal.classList.add('show')
+    const { data, error } = await sb.rpc('get_expert_followers', { p_expert_id: expertId })
+    if (error) { body.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">加载失败：${escHtml(error.message)}</div>`; return }
+    if (!data || !data.length) { body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">还没有 follower</div>'; return }
+    body.innerHTML = data.map(f => {
+      const name = escHtml(f.display_name || '小白')
+      const initial = (f.display_name || '?').charAt(0).toUpperCase()
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;font-size:13px;border-bottom:0.5px solid var(--border);">
+        <span style="width:28px;height:28px;border-radius:50%;background:var(--teal-50);color:var(--teal-600);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">${escHtml(initial)}</span>
+        <span style="flex:1;color:var(--text);">${name}</span>
+      </div>`
+    }).join('')
+  }
+  function closeFollowersListChat(e) {
+    if (e && e.target !== document.getElementById('followersListModal')) return
+    document.getElementById('followersListModal').classList.remove('show')
   }
 
   async function requestFollow(expertId, btnEl) {
