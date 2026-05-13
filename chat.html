@@ -184,6 +184,57 @@
       box-sizing: border-box;
     }
 
+    /* Todo list section（在 + Chat 下方） */
+    .todo-section {
+      padding: 6px;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .todo-head {
+      padding: 8px 12px;
+      background: var(--teal-50);
+      border: 0.5px solid var(--teal-100);
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .todo-pill {
+      margin-top: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      user-select: none;
+    }
+    .todo-pill:hover { background: var(--teal-50); }
+    .todo-pill .check {
+      width: 14px; height: 14px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      line-height: 1;
+      color: transparent;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .todo-pill.done { color: var(--text3); }
+    .todo-pill.done .todo-text { text-decoration: line-through; }
+    .todo-pill.done .check {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+
     .rooms-list {
       flex: 1;
       overflow-y: auto;
@@ -1160,6 +1211,21 @@
         Chat
       </div>
     </div>
+    <div class="todo-section">
+      <div class="todo-head">Todo list</div>
+      <div class="todo-pill" data-todo="who" onclick="toggleTodo(this)">
+        <span class="check">&#10003;</span>
+        <span class="todo-text">我是谁？</span>
+      </div>
+      <div class="todo-pill" data-todo="from" onclick="toggleTodo(this)">
+        <span class="check">&#10003;</span>
+        <span class="todo-text">我从哪里来？</span>
+      </div>
+      <div class="todo-pill" data-todo="to" onclick="toggleTodo(this)">
+        <span class="check">&#10003;</span>
+        <span class="todo-text">我要去哪里？</span>
+      </div>
+    </div>
     <div class="rooms-list" id="roomsList">
       <div class="skeleton skeleton-room"></div>
       <div class="skeleton skeleton-room"></div>
@@ -1832,6 +1898,24 @@
     'gemini/gemini-2-pro':         2000000,
   }
   const DEFAULT_CTX_WINDOW = 200000
+
+  // Sidebar todo list — 状态存 localStorage
+  function toggleTodo(el) {
+    const key = el.dataset.todo
+    const done = !el.classList.contains('done')
+    el.classList.toggle('done', done)
+    try { localStorage.setItem('c2g_todo_' + key, done ? '1' : '0') } catch (e) {}
+  }
+  function restoreTodos() {
+    document.querySelectorAll('.todo-pill').forEach(el => {
+      try {
+        if (localStorage.getItem('c2g_todo_' + el.dataset.todo) === '1') {
+          el.classList.add('done')
+        }
+      } catch (e) {}
+    })
+  }
+  restoreTodos()
 
   function formatTokens(n) {
     n = Number(n) || 0
