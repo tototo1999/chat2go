@@ -1374,9 +1374,6 @@
           <input type="file" id="fileInput" multiple style="display:none"
                  accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml,image/*"
                  onchange="onFilePick(event)">
-          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
-            <i class="ti ti-microphone"></i>
-          </button>
           <textarea
             class="input-box"
             id="msgInput"
@@ -1386,6 +1383,9 @@
             oninput="autoResize(this)"
             onpaste="onPasteImage(event)"
           ></textarea>
+          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
+            <i class="ti ti-microphone"></i>
+          </button>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">
             GO
           </button>
@@ -2600,7 +2600,9 @@
   // ── 语音输入 ──
   let recognition = null
   let isRecording = false
-  let voiceTextBefore = ''   // 开始录音前输入框已有的内容
+  let voiceTextBefore = ''       // 开始录音前输入框已有的内容
+  let voiceLastResultsLen = 0    // 上次 onresult 看到的 results.length（发送时用作分水岭）
+  let voiceSkipBeforeIdx = 0     // 任何 < 这个 idx 的 result 都视为「已发过」，跳过
 
   function getRecognition() {
     if (recognition) return recognition
@@ -2612,9 +2614,11 @@
     recognition.interimResults = true   // 边说边出文字
 
     recognition.onresult = (event) => {
+      voiceLastResultsLen = event.results.length
       let finalText = ''
       let interimText = ''
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      const startIdx = Math.max(event.resultIndex, voiceSkipBeforeIdx)
+      for (let i = startIdx; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript
         if (event.results[i].isFinal) finalText += transcript
         else interimText += transcript
