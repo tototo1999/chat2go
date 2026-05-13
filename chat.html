@@ -482,13 +482,20 @@
       box-shadow: 0 2px 5px rgba(0,0,0,.1);
     }
     .presence-tab.main         { --tab-c: var(--teal); }
-    .presence-tab.peer-expert  { --tab-c: var(--purple-600); }
-    .presence-tab.peer-user    { --tab-c: #B8893A; }
+    .presence-tab.peer-expert  { --tab-c: #7C3AED; }
+    .presence-tab.peer-user    { --tab-c: #EA580C; }
+    /* 单聊胶囊默认就带一点 tint，更突出 */
+    .presence-tab.peer-expert,
+    .presence-tab.peer-user {
+      background: color-mix(in srgb, var(--tab-c) 7%, #fff);
+      border-color: color-mix(in srgb, var(--tab-c) 28%, var(--border));
+    }
     .presence-tab.active {
       border-color: var(--tab-c);
-      background: color-mix(in srgb, var(--tab-c) 12%, #fff);
+      background: color-mix(in srgb, var(--tab-c) 14%, #fff);
     }
     .presence-tab .ti { font-size: 16px; color: var(--tab-c); }
+    .presence-tab svg.tab-icon { color: var(--tab-c); display: block; }
     /* 未读数徽章：>0 显示，=0 隐藏；位置在 icon 右侧（gap 控制间距） */
     .presence-tab .unread {
       min-width: 14px;
@@ -2215,16 +2222,19 @@
     if (!row) return
     const isExp = isExpert(currentRoom)
     const aiName = currentRoom?.ai_name || 'AI'
+    // 群聊：原 ti-users 风格 + 第三个人头 → 手写 SVG 3 头
+    const groupIconSvg = `<svg class="tab-icon" width="20" height="16" viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="2.4"/><circle cx="13" cy="4" r="2.8"/><circle cx="21" cy="5" r="2.4"/><path d="M1 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 9 13.8V15"/><path d="M8.4 15v-1.4A3 3 0 0 1 11.4 10.6h3.2a3 3 0 0 1 3 3V15"/><path d="M17 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 25 13.8V15"/></svg>`
     const tabs = [
-      { cls: 'main',                       icon: 'ti-users-group',    ch: 'main',        title: `主窗（三方共聊，${aiName} 参与）` },
+      { cls: 'main',                                                   ch: 'main',        title: `主窗（三方共聊，${aiName} 参与）`, iconHtml: groupIconSvg },
       isExp
         ? { cls: 'peer-user',   icon: 'ti-user', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
         : { cls: 'peer-expert', icon: 'ti-user', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
     ]
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
+      const iconHtml = t.iconHtml || `<i class="ti ${t.icon}"></i>`
       return `<div class="${cls}" data-ch="${t.ch}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}">`
-        + `<i class="ti ${t.icon}"></i>`
+        + iconHtml
         + `<span class="unread" data-ch="${t.ch}">0</span>`
         + `</div>`
     }).join('')
