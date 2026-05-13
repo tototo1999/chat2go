@@ -711,6 +711,32 @@
     .msg-action-btn:hover { background: var(--bg2); color: var(--text); }
     .msg-action-btn.copied { color: var(--teal); }
 
+    /* AI 消息底部 ✓ / ✗ 评价按钮 */
+    .msg-rate-bar {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .msg-rate-btn {
+      width: 22px; height: 22px;
+      border: 0.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text3);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      font-family: inherit;
+      padding: 0;
+    }
+    .msg-rate-btn:hover { background: var(--bg2); color: var(--text); }
+    .msg-rate-btn.up.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .msg-rate-btn.down.active { background: #DC2626; border-color: #DC2626; color: #fff; }
+
     .msg-bubble {
       padding: 9px 13px;
       border-radius: 6px;
@@ -2284,6 +2310,12 @@
     // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
     const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
 
+    const rateBarHtml = role === 'ai' ? `
+      <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
+        <button class="msg-rate-btn up" title="这条回答对" onclick="rateMessage(this, '${msg.id}', 'up')">&#10003;</button>
+        <button class="msg-rate-btn down" title="这条回答错" onclick="rateMessage(this, '${msg.id}', 'down')">&#10005;</button>
+      </div>` : ''
+
     el.innerHTML = `
       <div class="msg-av ${role}"${aiAvClick}>${avText}</div>
       <div class="msg-body">
@@ -2298,9 +2330,31 @@
         </div>
         ${bubbleHtml}
         ${attachHtml}
+        ${rateBarHtml}
       </div>
     `
     list.appendChild(el)
+    if (role === 'ai') applyRateState(msg.id, el)
+  }
+
+  function rateMessage(btn, msgId, val) {
+    const bar = btn.closest('.msg-rate-bar')
+    if (!bar) return
+    const cur = (() => { try { return localStorage.getItem('c2g_rate_' + msgId) || '' } catch (e) { return '' } })()
+    const next = (cur === val) ? '' : val  // 再点取消
+    try {
+      if (next) localStorage.setItem('c2g_rate_' + msgId, next)
+      else localStorage.removeItem('c2g_rate_' + msgId)
+    } catch (e) {}
+    bar.querySelectorAll('.msg-rate-btn').forEach(b => b.classList.remove('active'))
+    if (next) bar.querySelector('.msg-rate-btn.' + next)?.classList.add('active')
+  }
+  function applyRateState(msgId, container) {
+    let v = ''
+    try { v = localStorage.getItem('c2g_rate_' + msgId) || '' } catch (e) {}
+    if (!v) return
+    const btn = container.querySelector('.msg-rate-btn.' + v)
+    if (btn) btn.classList.add('active')
   }
 
   function looksLikeMarkdown(text) {
