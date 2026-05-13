@@ -220,14 +220,6 @@ as $body$
 begin
   if not is_admin() then raise exception 'unauthorized'; end if;
   return query
-  with last_use as (
-    select expert_id,
-           max(created_at) as last_seen_at,
-           count(*) filter (where created_at > now() - interval '24 hours') as msgs_24h,
-           coalesce(sum(cost_usd) filter (where created_at > now() - interval '24 hours'), 0) as cost_usd_24h
-      from model_usage
-     group by expert_id
-  )
   select
     p.user_id,
     u.email::text,
@@ -238,7 +230,14 @@ begin
     coalesce(l.cost_usd_24h, 0)::numeric
   from profiles p
   join auth.users u on u.id = p.user_id
-  left join last_use l on l.expert_id = p.user_id
+  left join (
+    select mu.expert_id as eid,
+           max(mu.created_at) as last_seen_at,
+           count(*) filter (where mu.created_at > now() - interval '24 hours') as msgs_24h,
+           coalesce(sum(mu.cost_usd) filter (where mu.created_at > now() - interval '24 hours'), 0) as cost_usd_24h
+      from model_usage mu
+     group by mu.expert_id
+  ) l on l.eid = p.user_id
   where p.role = 'expert'
   order by l.last_seen_at desc nulls last;
 end;
