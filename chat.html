@@ -2297,6 +2297,9 @@
             <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
               <i class="ti ti-copy"></i>
             </button>
+            <button class="msg-action-btn" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${escHtml(senderName).replace(/'/g, "&#39;")}')">
+              <i class="ti ti-quote"></i>
+            </button>
           </div>
         </div>
         ${bubbleHtml}
@@ -2674,6 +2677,25 @@
     if (recognition) {
       try { recognition.stop() } catch(e) {}
     }
+  }
+
+  function quoteMessage(b64, sender) {
+    let text = ''
+    try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
+    // 仅取前 4 行作为预览，过长用 … 收尾
+    const lines = text.split('\n').slice(0, 4)
+    let preview = lines.map(l => '> ' + l).join('\n')
+    if (text.split('\n').length > 4 || text.length > 200) preview += '\n> …'
+    const input = document.getElementById('msgInput')
+    const header = `> **${sender}**：`
+    const block = `${header}\n${preview}\n\n`
+    input.value = block + (input.value || '')
+    autoResize(input)
+    input.focus()
+    // 把光标放到块末尾
+    const pos = block.length
+    try { input.setSelectionRange(pos, pos) } catch (e) {}
+    input.scrollTop = 0
   }
 
   async function copyMessage(btn, b64) {
