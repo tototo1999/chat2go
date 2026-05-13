@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Admin · Chat2GO</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:    #1D9E75;
+      --teal-50: #E1F5EE;
+      --teal-100:#B6E3D2;
+      --teal-600:#0F6E56;
+      --bg:      #FAFAF8;
+      --bg2:     #DDDCD6;
+      --border:  rgba(60,58,54,0.12);
+      --border2: rgba(60,58,54,0.22);
+      --text:    #1a1a18;
+      --text2:   #5f5e5a;
+      --text3:   #888780;
+      --gray-50: #f4f3ee;
+      --gray-100:#eae8e0;
+      --radius:  6px;
+      --red:     #DC2626;
+      --red-50:  #FEE2E2;
+      --amber:   #F59E0B;
+    }
+    html { background: var(--bg2); }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px;
+      border-bottom: 0.5px solid var(--border);
+      background: #fff;
+    }
+    .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 20px; font-weight: 600; letter-spacing: -0.3px;
+      text-decoration: none; color: var(--text);
+    }
+    .logo span { color: var(--teal); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .admin-badge {
+      padding: 3px 10px; font-size: 11px; font-weight: 600;
+      background: #1a1a18; color: #fff; border-radius: 999px; letter-spacing: 0.5px;
+    }
+    .nav-email { font-size: 12px; color: var(--text2); }
+    .btn {
+      padding: 6px 12px; font-size: 12px; font-family: inherit;
+      border: 0.5px solid var(--border2); border-radius: var(--radius);
+      background: transparent; color: var(--text2); cursor: pointer; transition: all .15s;
+    }
+    .btn:hover { background: var(--bg2); color: var(--text); }
+    .btn-primary { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .btn-primary:hover { background: var(--teal-600); }
+    .btn-danger { color: var(--red); border-color: rgba(220,38,38,.3); }
+    .btn-danger:hover { background: var(--red-50); color: var(--red); }
+    .btn-mini { padding: 3px 8px; font-size: 11px; }
+
+    .layout {
+      display: grid; grid-template-columns: 200px 1fr;
+      max-width: 1280px; margin: 0 auto;
+      min-height: calc(100vh - 53px);
+    }
+    aside {
+      border-right: 0.5px solid var(--border);
+      padding: 16px 8px; background: #fff;
+    }
+    .tab-btn {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 9px 12px;
+      font-family: inherit; font-size: 13px; font-weight: 500;
+      color: var(--text2);
+      background: transparent; border: 0; border-radius: var(--radius);
+      cursor: pointer; text-align: left; transition: all .15s;
+    }
+    .tab-btn:hover { background: var(--bg2); color: var(--text); }
+    .tab-btn.active { background: var(--teal-50); color: var(--teal-600); }
+    .tab-btn .ic { font-size: 14px; }
+
+    main { padding: 28px 28px 48px; overflow-x: auto; }
+    .page-title {
+      font-family: 'Noto Serif SC', serif; font-size: 24px; font-weight: 600;
+      letter-spacing: -0.4px; margin-bottom: 4px;
+    }
+    .page-sub { font-size: 12px; color: var(--text3); margin-bottom: 22px; }
+
+    /* dashboard cards */
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px; margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff; border: 0.5px solid var(--border); border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .stat-card .label {
+      font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .stat-card .value {
+      font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 600; line-height: 1.2;
+      color: var(--text);
+    }
+    .stat-card .delta {
+      font-size: 11px; color: var(--text2); margin-top: 6px;
+    }
+    .stat-card .delta strong { color: var(--teal-600); font-weight: 600; }
+
+    .panel {
+      background: #fff; border: 0.5px solid var(--border); border-radius: 10px;
+      padding: 16px 18px; margin-bottom: 16px;
+    }
+    .panel h3 {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* table */
+    .toolbar {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 12px;
+    }
+    .toolbar input[type="search"] {
+      flex: 1; max-width: 320px;
+      padding: 7px 12px; font-size: 13px; font-family: inherit;
+      border: 0.5px solid var(--border2); border-radius: var(--radius);
+      background: var(--bg); color: var(--text); outline: none;
+    }
+    .toolbar input[type="search"]:focus { border-color: var(--teal); }
+    .pager {
+      display: flex; gap: 6px; align-items: center; margin-left: auto; font-size: 12px; color: var(--text3);
+    }
+
+    table.tbl {
+      width: 100%; border-collapse: collapse; font-size: 12px;
+    }
+    table.tbl th, table.tbl td {
+      padding: 9px 10px; text-align: left; border-bottom: 0.5px solid var(--border);
+    }
+    table.tbl th {
+      font-weight: 500; color: var(--text3); background: var(--bg);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    table.tbl tr:hover td { background: var(--bg); }
+    table.tbl td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; font-size: 10px; font-weight: 600;
+      border-radius: 999px; letter-spacing: 0.3px;
+    }
+    .pill.user   { background: #FFF4D6; color: #8C6500; }
+    .pill.expert { background: #EFE2FF; color: #5B2DBF; }
+    .pill.admin  { background: #1a1a18; color: #fff; }
+    .pill.banned { background: var(--red-50); color: var(--red); }
+    .pill.online { background: var(--teal-50); color: var(--teal-600); }
+    .pill.offline { background: var(--bg2); color: var(--text3); }
+
+    .empty { padding: 28px 12px; text-align: center; color: var(--text3); font-size: 13px; }
+    .loader { padding: 16px; text-align: center; color: var(--text3); font-size: 12px; }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      padding: 10px 18px; background: #1a1a18; color: #fff;
+      font-size: 13px; border-radius: 8px; opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s; z-index: 100;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+    /* gate (未授权) */
+    .gate {
+      max-width: 420px; margin: 80px auto; padding: 32px;
+      background: #fff; border: 0.5px solid var(--border); border-radius: 12px; text-align: center;
+    }
+    .gate h2 { font-family: 'Noto Serif SC', serif; font-size: 20px; margin-bottom: 8px; }
+    .gate p { color: var(--text2); font-size: 13px; margin-bottom: 18px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="/" class="logo">Chat<span>2GO</span></a>
+    <div class="nav-right" id="navRight" style="visibility:hidden;">
+      <span class="admin-badge">ADMIN</span>
+      <span class="nav-email" id="navEmail"></span>
+      <button class="btn" onclick="logout()">退出</button>
+    </div>
+  </nav>
+
+  <!-- 未授权门 -->
+  <div class="gate" id="gate" style="display:none;">
+    <h2>需要管理员权限</h2>
+    <p id="gateMsg">请用管理员账号登录后再访问此页面。</p>
+    <a class="btn btn-primary" href="/login.html">去登录</a>
+  </div>
+
+  <div class="layout" id="layout" style="display:none;">
+    <aside>
+      <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="ic">📊</span>概览</button>
+      <button class="tab-btn" data-tab="users" onclick="switchTab('users')"><span class="ic">👤</span>用户</button>
+      <button class="tab-btn" data-tab="rooms" onclick="switchTab('rooms')"><span class="ic">💬</span>房间</button>
+      <button class="tab-btn" data-tab="bridge" onclick="switchTab('bridge')"><span class="ic">🌉</span>Bridge</button>
+    </aside>
+    <main>
+      <!-- Dashboard -->
+      <section id="tab-dashboard">
+        <h1 class="page-title">概览</h1>
+        <p class="page-sub">实时数据 · 每 30 秒自动刷新</p>
+        <div class="stat-grid" id="statGrid"><div class="loader">加载中…</div></div>
+
+        <div class="panel">
+          <h3>系统状态</h3>
+          <table class="tbl">
+            <tbody id="sysStatus"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Users -->
+      <section id="tab-users" style="display:none;">
+        <h1 class="page-title">用户管理</h1>
+        <p class="page-sub">查看 / 升降角色 / 软封禁</p>
+        <div class="toolbar">
+          <input type="search" id="userSearch" placeholder="搜邮箱或昵称…" oninput="debouncedLoadUsers()">
+          <div class="pager" id="userPager"></div>
+        </div>
+        <div class="panel" style="padding:0;">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>邮箱</th><th>昵称</th><th>角色</th><th class="num">关注</th><th class="num">消息</th><th>注册</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="userRows"><tr><td colspan="7" class="loader">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Rooms -->
+      <section id="tab-rooms" style="display:none;">
+        <h1 class="page-title">房间管理</h1>
+        <p class="page-sub">查看所有调试室 · 删除（不可恢复）</p>
+        <div class="toolbar">
+          <input type="search" id="roomSearch" placeholder="搜房间名 / 大咖…" oninput="debouncedLoadRooms()">
+          <div class="pager" id="roomPager"></div>
+        </div>
+        <div class="panel" style="padding:0;">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>房间名</th><th>行业</th><th>大咖</th><th class="num">成员</th><th class="num">消息</th><th class="num">Cost USD</th><th class="num">收 ¥</th><th>建于</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="roomRows"><tr><td colspan="9" class="loader">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Bridge -->
+      <section id="tab-bridge" style="display:none;">
+        <h1 class="page-title">Bridge 状态</h1>
+        <p class="page-sub">推断方式：每个大咖最近 5 分钟内有 model_usage 写入 = 在线</p>
+        <div class="panel" style="padding:0;">
+          <table class="tbl">
+            <thead>
+              <tr><th>状态</th><th>邮箱</th><th>昵称</th><th>最后活动</th><th class="num">24h 消息</th><th class="num">24h Cost USD</th></tr>
+            </thead>
+            <tbody id="bridgeRows"><tr><td colspan="6" class="loader">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="vendor/supabase.js"></script>
+  <script>
+  const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  // ── 邮箱白名单（前端 gate；后端 SECURITY DEFINER 函数里也再校验一遍） ──
+  const ADMIN_EMAILS = ['iamdami2026@gmail.com']
+
+  let me = null
+  let activeTab = 'dashboard'
+
+  // ── 工具 ──
+  function showToast(msg) {
+    const t = document.getElementById('toast')
+    t.textContent = msg
+    t.classList.add('show')
+    clearTimeout(showToast._t)
+    showToast._t = setTimeout(() => t.classList.remove('show'), 2000)
+  }
+  function escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+  }
+  function fmtNum(n) {
+    n = Number(n) || 0
+    return n.toLocaleString('zh-CN')
+  }
+  function fmtMoney(n, prefix='¥') {
+    n = Number(n) || 0
+    return prefix + n.toFixed(2)
+  }
+  function fmtDate(s) {
+    if (!s) return '—'
+    const d = new Date(s)
+    const now = new Date()
+    const diff = (now - d) / 1000
+    if (diff < 60) return Math.floor(diff) + ' 秒前'
+    if (diff < 3600) return Math.floor(diff/60) + ' 分前'
+    if (diff < 86400) return Math.floor(diff/3600) + ' 小时前'
+    return d.toISOString().slice(0, 10)
+  }
+  function fmtDateFull(s) {
+    if (!s) return '—'
+    return new Date(s).toLocaleString('zh-CN', { hour12: false })
+  }
+  function debounce(fn, ms=300) {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms) }
+  }
+
+  // ── Auth gate ──
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession()
+    if (!session) {
+      document.getElementById('gate').style.display = 'block'
+      return
+    }
+    me = session.user
+    if (!ADMIN_EMAILS.includes(me.email)) {
+      document.getElementById('gate').style.display = 'block'
+      document.getElementById('gateMsg').textContent = `当前账号 ${me.email} 不在管理员白名单。`
+      return
+    }
+    document.getElementById('navEmail').textContent = me.email
+    document.getElementById('navRight').style.visibility = 'visible'
+    document.getElementById('layout').style.display = 'grid'
+    switchTab('dashboard')
+    // dashboard 自动刷新
+    setInterval(() => { if (activeTab === 'dashboard') loadDashboard(false) }, 30000)
+  }
+  async function logout() {
+    await sb.auth.signOut()
+    location.href = '/'
+  }
+
+  // ── Tabs ──
+  function switchTab(name) {
+    activeTab = name
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name))
+    document.querySelectorAll('main > section').forEach(s => s.style.display = (s.id === 'tab-' + name) ? '' : 'none')
+    if (name === 'dashboard') loadDashboard(true)
+    if (name === 'users')     loadUsers()
+    if (name === 'rooms')     loadRooms()
+    if (name === 'bridge')    loadBridge()
+  }
+
+  // ── Dashboard ──
+  async function loadDashboard(showLoader) {
+    const grid = document.getElementById('statGrid')
+    if (showLoader) grid.innerHTML = '<div class="loader">加载中…</div>'
+    const { data, error } = await sb.rpc('admin_dashboard_stats')
+    if (error) { grid.innerHTML = `<div class="empty">加载失败：${escHtml(error.message)}</div>`; return }
+    const s = data?.[0] || {}
+    const cards = [
+      { label: '总用户', value: fmtNum(s.total_users), delta: `今日 +${fmtNum(s.new_users_today)}` },
+      { label: '其中大咖', value: fmtNum(s.total_experts), delta: `封禁 ${fmtNum(s.banned_users)}` },
+      { label: '调试室', value: fmtNum(s.total_rooms), delta: '' },
+      { label: '总消息', value: fmtNum(s.total_messages), delta: `今日 +${fmtNum(s.msgs_today)}` },
+      { label: '今日 AI 调用', value: fmtNum(s.ai_calls_today), delta: '' },
+      { label: '累计 Cost', value: '$' + Number(s.total_cost_usd || 0).toFixed(2), delta: `今日 $${Number(s.cost_usd_today || 0).toFixed(2)}` },
+      { label: '累计收入', value: '¥' + Number(s.total_charge_cny || 0).toFixed(2), delta: `今日 ¥${Number(s.charge_cny_today || 0).toFixed(2)}` },
+    ]
+    grid.innerHTML = cards.map(c => `
+      <div class="stat-card">
+        <div class="label">${escHtml(c.label)}</div>
+        <div class="value">${escHtml(c.value)}</div>
+        ${c.delta ? `<div class="delta">${escHtml(c.delta)}</div>` : ''}
+      </div>`).join('')
+
+    // 系统状态
+    const sys = document.getElementById('sysStatus')
+    const dbOk = !error
+    sys.innerHTML = `
+      <tr><td>Supabase DB</td><td><span class="pill ${dbOk?'online':'offline'}">${dbOk?'OK':'ERR'}</span></td><td>${escHtml(SUPABASE_URL.replace('https://',''))}</td></tr>
+      <tr><td>Realtime</td><td><span class="pill online">OK</span></td><td>messages 表已开启</td></tr>
+      <tr><td>Storage</td><td><span class="pill online">OK</span></td><td>chat-uploads bucket（public）</td></tr>
+      <tr><td>站点</td><td><span class="pill online">在线</span></td><td>chat2go.cn → GitHub Pages</td></tr>
+    `
+  }
+
+  // ── Users ──
+  let usersOffset = 0
+  const USERS_PAGE = 50
+  const debouncedLoadUsers = debounce(() => { usersOffset = 0; loadUsers() }, 300)
+  async function loadUsers() {
+    const search = document.getElementById('userSearch').value.trim()
+    const tbody = document.getElementById('userRows')
+    tbody.innerHTML = '<tr><td colspan="7" class="loader">加载中…</td></tr>'
+    const { data, error } = await sb.rpc('admin_list_users', { p_search: search, p_limit: USERS_PAGE, p_offset: usersOffset })
+    if (error) { tbody.innerHTML = `<tr><td colspan="7" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">没有数据</td></tr>'; return }
+    tbody.innerHTML = data.map(u => {
+      const banned = !!u.banned_at
+      const rolePill = banned ? '<span class="pill banned">封禁</span>' : `<span class="pill ${u.role}">${u.role === 'expert' ? '大咖' : '小白'}</span>`
+      const roleBtn = u.role === 'expert'
+        ? `<button class="btn btn-mini" onclick="setRole('${u.user_id}','user')">→小白</button>`
+        : `<button class="btn btn-mini" onclick="setRole('${u.user_id}','expert')">→大咖</button>`
+      const banBtn = banned
+        ? `<button class="btn btn-mini" onclick="setBan('${u.user_id}',false)">解封</button>`
+        : `<button class="btn btn-mini btn-danger" onclick="setBan('${u.user_id}',true)">封禁</button>`
+      return `<tr>
+        <td>${escHtml(u.email)}</td>
+        <td>${escHtml(u.display_name || '—')}</td>
+        <td>${rolePill}</td>
+        <td class="num">${fmtNum(u.follow_count)}</td>
+        <td class="num">${fmtNum(u.msg_count)}</td>
+        <td title="${escHtml(fmtDateFull(u.created_at))}">${escHtml(fmtDate(u.created_at))}</td>
+        <td>${roleBtn} ${banBtn}</td>
+      </tr>`
+    }).join('')
+    document.getElementById('userPager').innerHTML = `
+      <button class="btn btn-mini" ${usersOffset===0?'disabled':''} onclick="usersOffset=Math.max(0,usersOffset-${USERS_PAGE});loadUsers()">←</button>
+      <span>${usersOffset+1}–${usersOffset+data.length}</span>
+      <button class="btn btn-mini" ${data.length<USERS_PAGE?'disabled':''} onclick="usersOffset+=${USERS_PAGE};loadUsers()">→</button>`
+  }
+  async function setRole(uid, role) {
+    const { error } = await sb.rpc('admin_update_user_role', { p_user_id: uid, p_role: role })
+    if (error) { showToast('失败：' + error.message); return }
+    showToast(`角色已设为 ${role === 'expert' ? '大咖' : '小白'}`)
+    loadUsers()
+  }
+  async function setBan(uid, banned) {
+    if (banned && !confirm('确定封禁此用户？（软封禁，可撤销）')) return
+    const { error } = await sb.rpc('admin_set_ban', { p_user_id: uid, p_banned: banned })
+    if (error) { showToast('失败：' + error.message); return }
+    showToast(banned ? '已封禁' : '已解封')
+    loadUsers()
+  }
+
+  // ── Rooms ──
+  let roomsOffset = 0
+  const ROOMS_PAGE = 50
+  const debouncedLoadRooms = debounce(() => { roomsOffset = 0; loadRooms() }, 300)
+  async function loadRooms() {
+    const search = document.getElementById('roomSearch').value.trim()
+    const tbody = document.getElementById('roomRows')
+    tbody.innerHTML = '<tr><td colspan="9" class="loader">加载中…</td></tr>'
+    const { data, error } = await sb.rpc('admin_list_rooms', { p_search: search, p_limit: ROOMS_PAGE, p_offset: roomsOffset })
+    if (error) { tbody.innerHTML = `<tr><td colspan="9" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">没有数据</td></tr>'; return }
+    tbody.innerHTML = data.map(r => `
+      <tr>
+        <td>${escHtml(r.name)}</td>
+        <td>${escHtml(r.industry || '—')}</td>
+        <td>${escHtml(r.expert_name || r.expert_email || '—')}</td>
+        <td class="num">${fmtNum(r.member_count)}</td>
+        <td class="num">${fmtNum(r.msg_count)}</td>
+        <td class="num">$${Number(r.total_cost_usd||0).toFixed(4)}</td>
+        <td class="num">¥${Number(r.total_charge_cny||0).toFixed(2)}</td>
+        <td title="${escHtml(fmtDateFull(r.created_at))}">${escHtml(fmtDate(r.created_at))}</td>
+        <td>
+          <a class="btn btn-mini" href="/chat.html?room=${escHtml(r.id)}" target="_blank">打开</a>
+          <button class="btn btn-mini btn-danger" onclick="deleteRoom('${r.id}','${escHtml(r.name).replace(/'/g,"\\'")}')">删</button>
+        </td>
+      </tr>`).join('')
+    document.getElementById('roomPager').innerHTML = `
+      <button class="btn btn-mini" ${roomsOffset===0?'disabled':''} onclick="roomsOffset=Math.max(0,roomsOffset-${ROOMS_PAGE});loadRooms()">←</button>
+      <span>${roomsOffset+1}–${roomsOffset+data.length}</span>
+      <button class="btn btn-mini" ${data.length<ROOMS_PAGE?'disabled':''} onclick="roomsOffset+=${ROOMS_PAGE};loadRooms()">→</button>`
+  }
+  async function deleteRoom(id, name) {
+    if (!confirm(`确认删除房间「${name}」？此操作不可恢复，会级联删除该房所有消息。`)) return
+    const { data, error } = await sb.rpc('admin_delete_room', { p_room_id: id })
+    if (error) { showToast('删除失败：' + error.message); return }
+    showToast(data > 0 ? '已删除' : '没找到（可能已被删）')
+    loadRooms()
+  }
+
+  // ── Bridge ──
+  async function loadBridge() {
+    const tbody = document.getElementById('bridgeRows')
+    tbody.innerHTML = '<tr><td colspan="6" class="loader">加载中…</td></tr>'
+    const { data, error } = await sb.rpc('admin_bridge_status')
+    if (error) { tbody.innerHTML = `<tr><td colspan="6" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">还没有大咖账户</td></tr>'; return }
+    tbody.innerHTML = data.map(b => {
+      const pill = b.is_online
+        ? '<span class="pill online">● 在线</span>'
+        : '<span class="pill offline">○ 离线</span>'
+      return `<tr>
+        <td>${pill}</td>
+        <td>${escHtml(b.email)}</td>
+        <td>${escHtml(b.display_name || '—')}</td>
+        <td title="${escHtml(fmtDateFull(b.last_seen_at))}">${escHtml(fmtDate(b.last_seen_at))}</td>
+        <td class="num">${fmtNum(b.msgs_24h)}</td>
+        <td class="num">$${Number(b.cost_usd_24h||0).toFixed(4)}</td>
+      </tr>`
+    }).join('')
+  }
+
+  init()
+  </script>
+</body>
+</html>
