@@ -463,9 +463,9 @@
       align-items: center;
       justify-content: space-between;
       gap: 4px;
-      height: 22px;
-      min-width: 80px;
-      padding: 0 10px;
+      height: 26px;
+      min-width: 96px;
+      padding: 0 14px;
       border-radius: 999px;
       line-height: 1;
       color: var(--text);
@@ -488,7 +488,7 @@
       border-color: var(--tab-c);
       background: color-mix(in srgb, var(--tab-c) 12%, #fff);
     }
-    .presence-tab .ti { font-size: 14px; color: var(--tab-c); }
+    .presence-tab .ti { font-size: 16px; color: var(--tab-c); }
     /* 未读数徽章：>0 显示，=0 隐藏；位置在 icon 右侧（gap 控制间距） */
     .presence-tab .unread {
       min-width: 14px;
@@ -2216,10 +2216,10 @@
     const isExp = isExpert(currentRoom)
     const aiName = currentRoom?.ai_name || 'AI'
     const tabs = [
-      { cls: 'main',                       icon: 'ti-users',          ch: 'main',        title: `主窗（三方共聊，${aiName} 参与）` },
+      { cls: 'main',                       icon: 'ti-users-group',    ch: 'main',        title: `主窗（三方共聊，${aiName} 参与）` },
       isExp
-        ? { cls: 'peer-user',   icon: 'ti-message-circle', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
-        : { cls: 'peer-expert', icon: 'ti-message-circle', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
+        ? { cls: 'peer-user',   icon: 'ti-user', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
+        : { cls: 'peer-expert', icon: 'ti-user', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' },
     ]
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
