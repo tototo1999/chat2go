@@ -1840,13 +1840,28 @@
     return `${(n / 1_000_000).toFixed(2)}M`
   }
 
+  const PROVIDER_LABELS = {
+    openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google',
+    deepseek: 'DeepSeek', qwen: 'Qwen', kimi: 'Kimi', glm: 'GLM', gemini: 'Gemini',
+  }
   function shortModelName(model) {
     if (!model) return '—'
-    let name = (model.split('/')[1] || model)
+    const parts = model.split('/')
+    const tail = parts[parts.length - 1]
       .replace(/^claude-/, '')
-      .replace(/(\d+)-(\d+)/g, '$1.$2')
       .replace(/^gpt-/, 'GPT-')
-    return name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ')
+      .replace(/(\d+)-(\d+)/g, '$1.$2')
+    const tailNice = tail.split('-')
+      .map(s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+      .join(' ')
+    if (parts.length > 1) {
+      const p = parts[0].toLowerCase()
+      const provider = PROVIDER_LABELS[p] || (p.charAt(0).toUpperCase() + p.slice(1))
+      return `${provider} · ${tailNice}`
+    }
+    // 只有 provider 没有具体 model（如 'google'），保留 provider 名
+    const lone = (model || '').toLowerCase()
+    return PROVIDER_LABELS[lone] || tailNice
   }
 
   async function loadRoomCost(roomId) {
