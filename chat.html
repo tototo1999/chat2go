@@ -1490,6 +1490,13 @@
       await ensureExpertRoom()
     }
 
+    // 一次性清理：自己名下叫 "Todo list" 的房（早期测试残留）
+    try {
+      await sb.from('rooms').delete()
+        .eq('expert_id', currentUser.id)
+        .eq('name', 'Todo list')
+    } catch (e) { console.warn('[cleanup todo room]', e) }
+
     await loadRooms()
 
     // 小白：订阅 room_members 变动（用于其它入口加入的房间也能同步）
