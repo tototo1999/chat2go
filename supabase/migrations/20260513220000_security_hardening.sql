@@ -39,6 +39,11 @@ create policy "用户可删自己上传的 chat-uploads" on storage.objects
   for delete to authenticated
   using (bucket_id = 'chat-uploads' and auth.uid() = owner);
 
+-- 让 admin 能读所有 chat-uploads（PDF 导出时重新生成 signed URL 用）
+create policy "admin 可读所有 chat-uploads" on storage.objects
+  for select to authenticated
+  using (bucket_id = 'chat-uploads' and is_admin());
+
 -- ── 3) Admin: 清空某房间所有消息 ──
 create or replace function admin_clear_room_messages(p_room_id uuid)
 returns int
