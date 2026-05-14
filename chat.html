@@ -2858,9 +2858,15 @@
     const list = getMentionCandidates()
     if (!list.length) { pop.classList.remove('open'); return }
     pop.innerHTML = list.map(c => `
-      <button type="button" onmousedown="event.preventDefault();insertMention(${JSON.stringify(c.name)})">
+      <button type="button" data-name="${escHtml(c.name)}">
         <span class="mav ${c.kind}">${c.initial}</span>${escHtml(c.name)}
       </button>`).join('')
+    pop.querySelectorAll('button').forEach(b => {
+      b.addEventListener('mousedown', e => {
+        e.preventDefault()
+        insertMention(b.dataset.name)
+      })
+    })
     pop.classList.add('open')
   }
   function hideMentionPopover() {
