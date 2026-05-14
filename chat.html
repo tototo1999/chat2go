@@ -47,7 +47,7 @@
     }
 
     html { background: #DDDCD6; }
-    html, body { height: 100%; overflow: hidden; }
+    html, body { height: 100vh; overflow: hidden; }
 
     /* body 本身就是 800px 居中容器，跟 index.html 完全一致 */
     body {
@@ -130,6 +130,7 @@
       flex: 1;
       display: flex;
       overflow: hidden;
+      min-height: 0;   /* 关键：让 .messages 能滚动而不撑高 body */
     }
 
     /* ── SIDEBAR ── */
@@ -429,6 +430,8 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      min-height: 0;
+      min-width: 0;
     }
 
     .welcome {
@@ -1507,7 +1510,7 @@
   <div class="chat-panel" id="chatPanel">
     <div class="welcome" id="welcomeState"></div>
 
-    <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+    <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
       <div class="chat-head">
         <!-- 在线头像 -->
         <div class="presence-row" id="presenceRow"></div>
