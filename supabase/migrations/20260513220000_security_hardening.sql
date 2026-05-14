@@ -61,13 +61,13 @@ $body$;
 
 grant execute on function admin_clear_room_messages(uuid) to authenticated;
 
--- ── 4) Admin: 导出房间所有消息为 JSON ──
+-- ── 4) Admin: 导出房间所有消息为 JSON（含 profiles map 给 PDF 显示真实昵称用）──
 create or replace function admin_export_room(p_room_id uuid)
 returns jsonb
 language plpgsql security definer
 set search_path = public, pg_temp
 as $body$
-declare v_room jsonb; v_messages jsonb;
+declare v_room jsonb; v_messages jsonb; v_profiles jsonb;
 begin
   if not is_admin() then raise exception 'unauthorized'; end if;
   select to_jsonb(r.*) into v_room from rooms r where r.id = p_room_id;
@@ -76,10 +76,15 @@ begin
     into v_messages
     from messages m
    where m.room_id = p_room_id;
+  select coalesce(jsonb_object_agg(p.user_id::text, p.display_name), '{}'::jsonb)
+    into v_profiles
+    from profiles p
+    where p.user_id in (select distinct user_id from messages where room_id = p_room_id and user_id is not null);
   return jsonb_build_object(
     'export_at', now(),
     'room', v_room,
-    'messages', v_messages
+    'messages', v_messages,
+    'profiles', v_profiles
   );
 end;
 $body$;
