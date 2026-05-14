@@ -747,6 +747,12 @@
       letter-spacing: 0.4px;
       animation: ratePop .3s ease;
     }
+    /* 单钩状态：浅底深字，仅一个 ✓ */
+    .rate-badge.half {
+      background: var(--teal-50);
+      color: var(--teal-600);
+      border: 0.5px solid var(--teal-100);
+    }
     @keyframes ratePop {
       0% { transform: scale(.6); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -2687,15 +2693,21 @@
     }
     const upCount = Object.values(ratings || {}).filter(v => v === 'up').length
     let badge = bar.querySelector('.rate-badge')
-    if (upCount >= 2) {
+    if (upCount === 0) {
+      if (badge) badge.remove()
+    } else {
       if (!badge) {
         badge = document.createElement('span')
         badge.className = 'rate-badge'
-        badge.textContent = '✓✓ pass'
         bar.appendChild(badge)
       }
-    } else if (badge) {
-      badge.remove()
+      if (upCount >= 2) {
+        badge.className = 'rate-badge'
+        badge.textContent = '✓✓ pass'
+      } else {
+        badge.className = 'rate-badge half'
+        badge.textContent = '✓'
+      }
     }
   }
   // 旧 applyRateState 兼容：appendMessage 渲染完调，把 ratings 从消息对象写回
