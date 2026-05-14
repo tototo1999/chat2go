@@ -2721,16 +2721,30 @@
     const pop = document.getElementById('memberListPopover')
     if (!pop) return
     const aiName = currentRoom?.ai_name || 'AI 助手'
-    // AI 永远在场，单独加一行
+    // AI 永远在场，单独加一行；点行 = @ 这个名字进输入框
     const rows = []
-    rows.push(`<div class="ml-row"><span class="ml-av ai">AI</span><span class="ml-name">${escHtml(aiName)}</span><span class="ml-role">AI 助手</span></div>`)
+    rows.push(`<div class="ml-row" data-mention="${escHtml(aiName)}"><span class="ml-av ai">AI</span><span class="ml-name">${escHtml(aiName)}</span><span class="ml-role">AI 助手</span></div>`)
     _roomMembersCache.forEach(m => {
-      const roleCls = m.role  // expert / focal / audience
+      // 自己不出现在 @ 列表里（避免 @ 自己）
+      if (m.user_id === currentUser?.id) return
+      const roleCls = m.role
       const initial = m.role === 'expert' ? '咖' : (m.role === 'audience' ? '路' : '白')
       const roleLabel = m.role === 'expert' ? '大咖' : (m.role === 'focal' ? '小白' : '路人')
-      rows.push(`<div class="ml-row"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
+      rows.push(`<div class="ml-row" data-mention="${escHtml(m.display_name)}"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
     })
     pop.innerHTML = rows.join('')
+    pop.querySelectorAll('.ml-row[data-mention]').forEach(r => {
+      r.style.cursor = 'pointer'
+      r.addEventListener('mousedown', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const name = r.dataset.mention
+        if (name) {
+          insertMention(name)
+          pop.classList.remove('open')
+        }
+      })
+    })
     pop.classList.add('open')
     // 点外部关闭
     setTimeout(() => document.addEventListener('click', _onDocClickCloseMemberList, { once: true }), 0)
@@ -3071,13 +3085,17 @@
     const before = val.slice(0, pos)
     const after = val.slice(pos)
     const lastAt = before.lastIndexOf('@')
-    if (lastAt >= 0) {
+    // 只有 @ 到光标之间无空格才算「正在打的 @ token」，替换它；否则在光标位置插入新 @
+    const activeAt = lastAt >= 0 && !/\s/.test(before.slice(lastAt + 1))
+    let newPos
+    if (activeAt) {
       input.value = before.slice(0, lastAt) + '@' + name + ' ' + after
-      const newPos = lastAt + 1 + name.length + 1
-      input.setSelectionRange(newPos, newPos)
+      newPos = lastAt + 1 + name.length + 1
     } else {
-      input.value = '@' + name + ' ' + after
+      input.value = before + '@' + name + ' ' + after
+      newPos = pos + 1 + name.length + 1
     }
+    input.setSelectionRange(newPos, newPos)
     hideMentionPopover()
     autoResize(input)
     input.focus()
