@@ -2832,9 +2832,8 @@
       else if (src.user_id === currentUser?.id) senderName = currentDisplayName || '我'
       else senderName = profilesByUid[src.user_id] || (src.role === 'expert' ? '大咖' : '小白')
       const myRole = isExpert(currentRoom) ? 'expert' : 'user'
-      const truncated = (src.content || '').replace(/\s+/g, ' ').trim()
-      const summary = truncated.length > 100 ? truncated.slice(0, 100) + '…' : truncated
-      const newContent = `↪ 同步自 ${senderName}：${summary || '[附件]'}`
+      const full = (src.content || '').trim()
+      const newContent = `↪ 同步自 ${senderName}：${full || '[附件]'}`
       const { error: e2 } = await sb.from('messages').insert({
         room_id: currentRoom.id,
         user_id: currentUser.id,
@@ -2861,9 +2860,8 @@
     if (!group) return
     const md = group.querySelector('.md-body')
     const bubble = group.querySelector('.msg-bubble')
-    const raw = (md?.innerText || bubble?.innerText || '').replace(/\s+/g, ' ').trim()
-    const truncated = raw.length > 100 ? raw.slice(0, 100) + '…' : raw
-    const summary = '✓✓ pass · ' + truncated
+    const raw = (md?.innerText || bubble?.innerText || '').trim()
+    const summary = '✓✓ pass · ' + raw
     await sb.from('messages').insert({
       room_id: currentRoom.id,
       user_id: currentUser.id,

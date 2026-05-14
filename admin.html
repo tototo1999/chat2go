@@ -550,9 +550,13 @@
       const content = (m.type === 'markdown' || /^[#>*`-]|\n[#>*-]/.test(m.content || ''))
         ? marked.parse(m.content || '')
         : `<div style="white-space:pre-wrap;">${escHtml(m.content || '')}</div>`
-      const atts = (m.attachments || []).map(a =>
-        `<div style="font-size:11px;color:#666;margin-top:3px;">📎 ${escHtml(a.name)} (${Math.round((a.size||0)/1024)}KB)</div>`
-      ).join('')
+      const atts = (m.attachments || []).map(a => {
+        const isImage = (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+        if (isImage && a.url) {
+          return `<div style="margin-top:8px;"><img src="${escHtml(a.url)}" crossorigin="anonymous" style="max-width:100%;max-height:300px;border-radius:4px;border:0.5px solid #ddd;"></div>`
+        }
+        return `<div style="font-size:11px;color:#666;margin-top:3px;">📎 ${escHtml(a.name)} (${Math.round((a.size||0)/1024)}KB)</div>`
+      }).join('')
       return `
         <div style="margin-bottom:14px;page-break-inside:avoid;">
           <div style="font-size:11px;color:#666;margin-bottom:3px;">
@@ -578,6 +582,14 @@
     wrap.style.left = '-9999px'
     wrap.innerHTML = html
     document.body.appendChild(wrap)
+    // 等所有图片加载完（不然 html2canvas 截到空白）
+    await Promise.all(Array.from(wrap.querySelectorAll('img')).map(img => {
+      if (img.complete) return Promise.resolve()
+      return new Promise(res => {
+        img.onload = res
+        img.onerror = res   // 失败也别卡住
+      })
+    }))
     try {
       await html2pdf().set({
         margin: [10, 10, 10, 10],
