@@ -1101,6 +1101,51 @@
     }
     .msg-image:hover { border-color: var(--teal-100); }
 
+    /* @ 提及候选弹层 */
+    .mention-popover {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 60px;
+      display: none;
+      background: #fff;
+      border: 0.5px solid var(--border2);
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      min-width: 160px;
+      max-width: 240px;
+      z-index: 60;
+      padding: 4px;
+    }
+    .mention-popover.open { display: block; }
+    .mention-popover button {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 7px 10px;
+      background: transparent; border: 0;
+      font-family: inherit; font-size: 13px; color: var(--text);
+      cursor: pointer; border-radius: 6px;
+      text-align: left;
+    }
+    .mention-popover button:hover { background: var(--bg2); }
+    .mention-popover .mav {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .mention-popover .mav.ai     { background: var(--teal); }
+    .mention-popover .mav.expert { background: var(--purple); }
+    .mention-popover .mav.user   { background: #E5B85A; }
+    /* 消息里渲染出来的 @mention */
+    .mention {
+      color: var(--teal-600);
+      background: var(--teal-50);
+      padding: 0 5px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 0.96em;
+    }
+
     /* 图片 lightbox */
     .img-lightbox {
       position: fixed; inset: 0;
@@ -1504,7 +1549,9 @@
           <button class="qp-x" title="取消引用" onclick="clearPendingQuote()"><i class="ti ti-x"></i></button>
         </div>
 
-        <div class="input-wrap">
+        <div class="input-wrap" style="position:relative;">
+          <!-- @ 提及候选弹层（输入 @ 时显示） -->
+          <div class="mention-popover" id="mentionPopover"></div>
           <div class="role-badge-wrap">
             <div class="role-badge" id="roleBadge" title="你的身份" onclick="onRoleBadgeClick()">—</div>
           </div>
@@ -1517,10 +1564,12 @@
           <textarea
             class="input-box"
             id="msgInput"
-            placeholder="输入消息，AI 会在这里回应你... (可粘贴图片)"
+            placeholder="输入消息，AI 会在这里回应你... (可粘贴图片 / @ 提及)"
             rows="1"
             onkeydown="handleKey(event)"
-            oninput="autoResize(this)"
+            oninput="autoResize(this);onMentionInput(event)"
+            onkeyup="onMentionKeyup(event)"
+            onblur="setTimeout(hideMentionPopover, 150)"
             onpaste="onPasteImage(event)"
           ></textarea>
           <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
@@ -2479,7 +2528,7 @@
       : (isPlaceholderMsg
           ? ''  // 纯文件消息不显示气泡，只显示附件卡片
           : (displayContent
-              ? `<div class="msg-bubble ${role}">${escHtml(displayContent)}</div>`
+              ? `<div class="msg-bubble ${role}">${highlightMentions(escHtml(displayContent))}</div>`
               : ''))
 
     // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
@@ -2674,6 +2723,73 @@
       }
     } catch (e) { console.warn('[ensureProfileName]', e) }
     finally { _pendingNameFetches.delete(uid) }
+  }
+
+  // ── @ 提及功能 ──
+  function getMentionCandidates() {
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    const list = [{ name: aiName, kind: 'ai', initial: 'AI' }]
+    Object.entries(profilesByUid).forEach(([uid, name]) => {
+      if (uid === currentUser?.id || !name) return
+      const isExp = uid === currentRoom?.expert_id
+      list.push({ name, kind: isExp ? 'expert' : 'user', initial: isExp ? '咖' : '白' })
+    })
+    return list
+  }
+  function showMentionPopover() {
+    const pop = document.getElementById('mentionPopover')
+    if (!pop) return
+    const list = getMentionCandidates()
+    if (!list.length) { pop.classList.remove('open'); return }
+    pop.innerHTML = list.map(c => `
+      <button type="button" onmousedown="event.preventDefault()" onclick="insertMention(${JSON.stringify(c.name)})">
+        <span class="mav ${c.kind}">${c.initial}</span>${escHtml(c.name)}
+      </button>`).join('')
+    pop.classList.add('open')
+  }
+  function hideMentionPopover() {
+    document.getElementById('mentionPopover')?.classList.remove('open')
+  }
+  function insertMention(name) {
+    const input = document.getElementById('msgInput')
+    if (!input) return
+    const val = input.value
+    const pos = input.selectionStart
+    const before = val.slice(0, pos)
+    const after = val.slice(pos)
+    const lastAt = before.lastIndexOf('@')
+    if (lastAt >= 0) {
+      input.value = before.slice(0, lastAt) + '@' + name + ' ' + after
+      const newPos = lastAt + 1 + name.length + 1
+      input.setSelectionRange(newPos, newPos)
+    } else {
+      input.value = '@' + name + ' ' + after
+    }
+    hideMentionPopover()
+    autoResize(input)
+    input.focus()
+  }
+  function onMentionInput(e) {
+    // 在 oninput 时也检测一次（粘贴 / 输入法都走这里）
+    onMentionKeyup(e)
+  }
+  function onMentionKeyup(e) {
+    const input = e.target
+    const pos = input.selectionStart
+    const before = input.value.slice(0, pos)
+    const lastAt = before.lastIndexOf('@')
+    if (lastAt < 0) return hideMentionPopover()
+    // @ 前面必须是行头或空格
+    const charBefore = lastAt > 0 ? before[lastAt - 1] : ' '
+    if (!/\s/.test(charBefore)) return hideMentionPopover()
+    // @ 到光标之间不能有空格
+    if (/\s/.test(before.slice(lastAt + 1))) return hideMentionPopover()
+    showMentionPopover()
+  }
+  // 把消息文本里的 @xxx 高亮
+  function highlightMentions(html) {
+    // 匹配 @ + 后面 1-30 非空白/标点字符
+    return html.replace(/@([^\s@<>,，。?？!！]{1,30})/g, '<span class="mention">@$1</span>')
   }
 
   // 把刚 pass 的 AI 消息摘要 copy 到 expert_user 私聊频道
