@@ -202,6 +202,20 @@
       align-self: stretch;
     }
     .follow-pill .pf-count { min-width: 20px; text-align: center; font-variant-numeric: tabular-nums; }
+    /* 已关注：胶囊变低调，整张卡片可点 */
+    .follow-pill.joined { background: transparent; color: var(--text3); border: 0.5px solid var(--border2); }
+    .follow-pill.joined .pf-divider { background: var(--border); }
+    .expert-card.joined { position: relative; }
+    .expert-card.joined::after {
+      content: '已关注 · 进入对话 →';
+      position: absolute;
+      top: 18px; right: 22px;
+      font-size: 10px; letter-spacing: .5px;
+      color: var(--teal);
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .expert-card.joined:hover::after { opacity: 1; }
 
     /* follower list modal */
     .modal-backdrop {
@@ -382,6 +396,33 @@
       }))
     }
 
+    // 已关注的大咖：整张卡片可点 → 进对话
+    async function applyFollowedCardLinks() {
+      const { data: { session } } = await sb.auth.getSession()
+      if (!session) return
+      const cards = document.querySelectorAll('.expert-card[data-expert-id]')
+      await Promise.all([...cards].map(async card => {
+        const expertId = card.dataset.expertId
+        const { data: room } = await sb
+          .from('rooms').select('id').eq('expert_id', expertId).limit(1).maybeSingle()
+        if (!room) return
+        const { data: mem } = await sb
+          .from('room_members').select('user_id')
+          .eq('room_id', room.id).eq('user_id', session.user.id).maybeSingle()
+        if (!mem) return
+        card.classList.add('joined')
+        card.dataset.roomId = room.id
+        card.addEventListener('click', e => {
+          if (e.target.closest('.follow-pill')) return
+          location.href = `/chat.html?room=${room.id}`
+        })
+        const pill = card.querySelector('.follow-pill')
+        if (pill) pill.classList.add('joined')
+        const heart = pill?.querySelector('.pf-heart')
+        if (heart) heart.title = '已关注'
+      }))
+    }
+
     async function openFollowers(btnEl) {
       const expertId = expertIdFromEl(btnEl)
       if (!expertId) return
@@ -415,6 +456,7 @@
 
     renderNav()
     loadFollowerCounts()
+    applyFollowedCardLinks()
   </script>
 </body>
 </html>
