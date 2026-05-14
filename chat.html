@@ -2553,10 +2553,10 @@
       if (lastRatePrepend && input.value.startsWith(lastRatePrepend)) {
         input.value = input.value.slice(lastRatePrepend.length)
       }
-      if (next && b64 && sender) {
-        const emoji = next === 'up' ? '✅ ' : '❌ '
-        const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
-        const block = `${emoji}${phrase}\n\n`
+      // 仅 ✗ 时挂引用 + 评论；✓ 不打扰输入框
+      if (next === 'down' && b64 && sender) {
+        const phrase = pickPhrase(RATE_CRITIQUES)
+        const block = `❌ ${phrase}\n\n`
         input.value = block + (input.value || '')
         lastRatePrepend = block
         setPendingQuote(b64, sender)
