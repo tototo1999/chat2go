@@ -519,12 +519,29 @@
     const { data, error } = await sb.rpc('admin_export_room', { p_room_id: id })
     if (error) { showToast('导出失败：' + error.message); return }
     const room = data.room || {}
-    const msgs = data.messages || []
+    const allMsgs = data.messages || []
     const exportAt = new Date(data.export_at || Date.now()).toLocaleString('zh-CN', { hour12: false })
 
+    const mainMsgs = allMsgs.filter(m => (m.channel || 'main') === 'main')
+    const privMsgs = allMsgs.filter(m => m.channel === 'expert_user')
+
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    let downloaded = []
+    if (mainMsgs.length) {
+      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `chat2go-room-${name}-群聊-${ts}.pdf`)
+      downloaded.push('群聊')
+    }
+    if (privMsgs.length) {
+      await renderRoomPdf(room, privMsgs, exportAt, '私信', `chat2go-room-${name}-私信-${ts}.pdf`)
+      downloaded.push('私信')
+    }
+    if (!downloaded.length) showToast('该房间暂无消息')
+    else showToast(`已下载 ${downloaded.join(' + ')} PDF`)
+  }
+
+  async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename) {
     const ROLE_LABEL = { user: '小白', expert: '大咖', ai: 'AI 助手' }
     const ROLE_COLOR = { user: '#E5B85A', expert: '#7C3AED', ai: '#1D9E75' }
-
     const msgsHtml = msgs.map(m => {
       const role = m.role || 'user'
       const label = ROLE_LABEL[role] || role
@@ -533,8 +550,6 @@
       const content = (m.type === 'markdown' || /^[#>*`-]|\n[#>*-]/.test(m.content || ''))
         ? marked.parse(m.content || '')
         : `<div style="white-space:pre-wrap;">${escHtml(m.content || '')}</div>`
-      const channelTag = m.channel === 'expert_user'
-        ? '<span style="font-size:9px;background:#eee;color:#666;padding:1px 5px;border-radius:3px;margin-left:6px;">私聊</span>' : ''
       const atts = (m.attachments || []).map(a =>
         `<div style="font-size:11px;color:#666;margin-top:3px;">📎 ${escHtml(a.name)} (${Math.round((a.size||0)/1024)}KB)</div>`
       ).join('')
@@ -542,7 +557,7 @@
         <div style="margin-bottom:14px;page-break-inside:avoid;">
           <div style="font-size:11px;color:#666;margin-bottom:3px;">
             <span style="display:inline-block;padding:1px 7px;background:${color};color:#fff;border-radius:999px;font-weight:600;font-size:10px;">${label}</span>
-            <span style="margin-left:8px;">${ts}</span>${channelTag}
+            <span style="margin-left:8px;">${ts}</span>
           </div>
           <div style="border-left:2px solid ${color};padding:6px 10px;background:#fafafa;font-size:12px;line-height:1.6;">
             ${content}
@@ -550,33 +565,28 @@
           </div>
         </div>`
     }).join('')
-
     const html = `
       <div style="font-family:'Noto Sans SC','Helvetica Neue',sans-serif;color:#1a1a18;padding:20px;max-width:780px;">
-        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(room.name || '房间')}</h1>
+        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(room.name || '房间')} <span style="font-size:14px;color:#888;font-weight:400;">· ${channelLabel}</span></h1>
         <div style="font-size:11px;color:#888;margin-bottom:16px;border-bottom:0.5px solid #ddd;padding-bottom:10px;">
           行业：${escHtml(room.industry || '—')} · 共 ${msgs.length} 条消息 · 导出时间：${exportAt}
         </div>
         ${msgsHtml || '<div style="color:#888;">（无消息）</div>'}
       </div>`
-
     const wrap = document.createElement('div')
     wrap.style.position = 'fixed'
     wrap.style.left = '-9999px'
     wrap.innerHTML = html
     document.body.appendChild(wrap)
-
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     try {
       await html2pdf().set({
         margin: [10, 10, 10, 10],
-        filename: `chat2go-room-${name}-${ts}.pdf`,
+        filename,
         image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['css', 'legacy'] }
       }).from(wrap.firstElementChild).save()
-      showToast('PDF 已下载')
     } catch (e) {
       console.error('pdf gen failed:', e)
       showToast('PDF 生成失败：' + (e.message || e))
