@@ -515,6 +515,15 @@
     showToast(`已清空 ${data} 条消息`)
     loadRooms()
   }
+  // 大咖人设名（与 chat.html EXPERT_PERSONAS 一致） — 提到 module 级，filename/h1 都用
+  const EXPERT_PERSONAS = {
+    'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道 san',
+  }
+  function roomDisplayName(room) {
+    return EXPERT_PERSONAS[room?.expert_id]
+      || String(room?.name || '房间').replace(/\s*的\s*Chat\s*$/i, '')
+  }
+
   async function exportRoom(id, name) {
     showToast('生成 PDF 中…')
     const { data, error } = await sb.rpc('admin_export_room', { p_room_id: id })
@@ -526,8 +535,8 @@
     const mainMsgs = allMsgs.filter(m => (m.channel || 'main') === 'main')
     const privMsgs = allMsgs.filter(m => m.channel === 'expert_user')
 
-    // 短文件名：去掉「的 Chat」尾巴 + 紧凑日期 mmdd-HHMM
-    const shortName = String(name || 'room').replace(/\s*的\s*Chat\s*$/i, '').replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
+    // 短文件名：大咖人设名优先（如「森山大道 san」），不然用房名去尾的 fallback
+    const shortName = roomDisplayName(room).replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
     const d = new Date()
     const stamp = `${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`
     const profilesMap = data.profiles || {}
@@ -558,11 +567,6 @@
         } catch (e) { console.warn('[refreshImageUrls]', a.storage_path, e) }
       }
     }
-  }
-
-  // 大咖人设名（与 chat.html EXPERT_PERSONAS 一致）
-  const EXPERT_PERSONAS = {
-    'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道 san',
   }
 
   async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename, profilesMap) {
@@ -605,7 +609,7 @@
     }).join('')
     const html = `
       <div style="font-family:'Noto Sans SC','Helvetica Neue',sans-serif;color:#1a1a18;padding:20px;max-width:780px;">
-        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(room.name || '房间')} <span style="font-size:14px;color:#888;font-weight:400;">· ${channelLabel}</span></h1>
+        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(roomDisplayName(room))} <span style="font-size:14px;color:#888;font-weight:400;">· ${channelLabel}</span></h1>
         <div style="font-size:11px;color:#888;margin-bottom:16px;border-bottom:0.5px solid #ddd;padding-bottom:10px;">
           行业：${escHtml(room.industry || '—')} · 共 ${msgs.length} 条消息 · 导出时间：${exportAt}
         </div>
