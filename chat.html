@@ -2811,7 +2811,7 @@
   async function relayImagesToPrivate(role, imageAtts) {
     if (!currentRoom || !imageAtts.length) return
     const label = imageAtts.length > 1 ? `📷 [图片 ×${imageAtts.length}]` : '📷 [图片]'
-    await sb.from('messages').insert({
+    const { error } = await sb.from('messages').insert({
       room_id: currentRoom.id,
       user_id: currentUser.id,
       role,
@@ -2819,6 +2819,10 @@
       content: label,
       attachments: imageAtts,
     })
+    if (error) {
+      console.error('[relay image] insert failed:', error)
+      showToast('图片同步私聊失败：' + (error.message || error.code || 'unknown'))
+    }
   }
 
   // 把刚 pass 的 AI 消息摘要 copy 到 expert_user 私聊频道
