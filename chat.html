@@ -1541,6 +1541,7 @@
   let realtimeChannel = null
   let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
   let currentDisplayName = '' // 自己的 display_name，用于消息头展示
+  const profilesByUid = {}    // 房间内成员 display_name 缓存 {user_id: name}
   let currentChannel = 'main'  // 当前消息频道: 'main' | 'expert_user'
   let unreadCounts = { main: 0, expert_user: 0 }  // 每个 channel 的未读计数（本会话）
 
@@ -2044,6 +2045,8 @@
     currentRoom = room
     currentChannel = 'main'
     unreadCounts = { main: 0, expert_user: 0 }
+    // 切房间清掉 profile name 缓存（让 display_name 改名后下次进房能拿到最新值）
+    Object.keys(profilesByUid).forEach(k => delete profilesByUid[k])
 
     document.querySelectorAll('.room-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === room.id)
@@ -2381,14 +2384,24 @@
     const avText = role === 'ai' ? 'AI' : role === 'expert' ? '咖' : '白'
     // 大咖可点 AI 头像编辑名字
     const aiAvClick = (role === 'ai' && isExpert(currentRoom)) ? ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"' : ''
-    // AI 消息永远显示「AI 助手」，不管谁的 user_id 写的；只有 user/expert 才用「我」判断
-    const senderName = (role !== 'ai' && isOwn) ? (currentDisplayName || '我') : roleLabel
+    // 显示名优先级：自己 → currentDisplayName；他人 → profilesByUid 缓存 → roleLabel
+    let senderName
+    if (role === 'ai') {
+      senderName = roleLabel
+    } else if (isOwn) {
+      senderName = currentDisplayName || roleLabel
+    } else {
+      senderName = profilesByUid[msg.user_id] || roleLabel
+      // 没缓存就异步拉一下，回来再更新 DOM
+      if (!profilesByUid[msg.user_id]) ensureProfileName(msg.user_id)
+    }
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')
     el.className = 'msg-group'
     el.dataset.msgId = msg.id
     el.dataset.role = msg.role
+    el.dataset.userId = msg.user_id || ''
     el.dataset.ratings = JSON.stringify(msg.ratings || {})
 
     const attachments = Array.isArray(msg.attachments) ? msg.attachments : []
@@ -2609,6 +2622,29 @@
   function applyRateState(msgId, container) {
     // 真正的状态来源是消息数据，appendMessage 时通过 applyRatingsToMsg 写回
   }
+  // 拉某用户的 display_name 并回写所有已渲染的他/她的消息头
+  const _pendingNameFetches = new Set()
+  async function ensureProfileName(uid) {
+    if (!uid || profilesByUid[uid] || _pendingNameFetches.has(uid)) return
+    _pendingNameFetches.add(uid)
+    try {
+      const { data } = await sb.from('profiles')
+        .select('display_name').eq('user_id', uid).maybeSingle()
+      const name = (data?.display_name || '').trim()
+      if (name) {
+        profilesByUid[uid] = name
+        // 回写所有该用户的已渲染消息 sender 文字
+        document.querySelectorAll('.msg-group').forEach(g => {
+          const senderEl = g.querySelector('.msg-sender')
+          if (senderEl && g.dataset.userId === uid && !senderEl.dataset.own) {
+            senderEl.textContent = name
+          }
+        })
+      }
+    } catch (e) { console.warn('[ensureProfileName]', e) }
+    finally { _pendingNameFetches.delete(uid) }
+  }
+
   // 把刚 pass 的 AI 消息摘要 copy 到 expert_user 私聊频道
   async function relayPassToPrivate(msgId) {
     if (!currentRoom) return
