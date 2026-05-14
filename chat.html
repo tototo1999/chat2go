@@ -757,14 +757,17 @@
       0% { transform: scale(.6); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
     }
-    .msg-rate-btn.quote {
+    .msg-rate-btn.quote,
+    .msg-rate-btn.sync {
       background: var(--bg2);
       color: var(--text2);
       border-color: var(--border);
       padding: 0;
     }
-    .msg-rate-btn.quote svg { display: block; }
+    .msg-rate-btn.quote svg,
+    .msg-rate-btn.sync svg { display: block; }
     .msg-rate-btn.quote:hover { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
+    .msg-rate-btn.sync:hover  { background: #EDE9FE;          color: #7C3AED;            border-color: #DDD6FE; }
 
     /* 微信风引用卡片：消息气泡下方一个紧凑灰条 */
     .msg-quote-card {
@@ -2539,14 +2542,20 @@
 
     const quoteSender = escHtml(senderName).replace(/'/g, "&#39;")
     const quoteBtnHtml = `<button class="msg-rate-btn quote" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${quoteSender}')"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="2" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="8" cy="5" r="1"/></svg></button>`
+    // 同步到私聊按钮：只在主窗渲染时出现
+    const syncBtnHtml = currentChannel === 'main'
+      ? `<button class="msg-rate-btn sync" title="同步到私聊" onclick="syncToPrivate('${msg.id}', this)"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a2 2 0 0 1 2 2v4"/><path d="M7 7l3 3-3 3" transform="translate(0 -3)"/></svg></button>`
+      : ''
     const rateBarHtml = role === 'ai' ? `
       <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
         <button class="msg-rate-btn up" title="说得对 · 一键赞美 + 引用" onclick="rateMessage(this, '${msg.id}', 'up', '${rawB64}', '${quoteSender}')">&#10003;</button>
         <button class="msg-rate-btn down" title="说错了 · 一键纠错 + 引用" onclick="rateMessage(this, '${msg.id}', 'down', '${rawB64}', '${quoteSender}')">&#10005;</button>
         ${quoteBtnHtml}
+        ${syncBtnHtml}
       </div>` : `
       <div class="msg-rate-bar">
         ${quoteBtnHtml}
+        ${syncBtnHtml}
       </div>`
 
     el.innerHTML = `
@@ -2807,21 +2816,41 @@
     return html.replace(/@([^\s@<>,，。?？!！]{1,30})/g, '<span class="mention">@$1</span>')
   }
 
-  // 主窗发的图片 → 同步一条到私聊（保留原发送人和图片附件）
-  async function relayImagesToPrivate(role, imageAtts) {
-    if (!currentRoom || !imageAtts.length) return
-    const label = imageAtts.length > 1 ? `📷 [图片 ×${imageAtts.length}]` : '📷 [图片]'
-    const { error } = await sb.from('messages').insert({
-      room_id: currentRoom.id,
-      user_id: currentUser.id,
-      role,
-      channel: 'expert_user',
-      content: label,
-      attachments: imageAtts,
-    })
-    if (error) {
-      console.error('[relay image] insert failed:', error)
-      showToast('图片同步私聊失败：' + (error.message || error.code || 'unknown'))
+  // 手动同步一条主窗消息到私聊（每条消息底部的「→私聊」按钮）
+  async function syncToPrivate(msgId, btn) {
+    if (!currentRoom) return
+    if (btn) btn.disabled = true
+    try {
+      const { data: src, error: e1 } = await sb
+        .from('messages')
+        .select('content,attachments,user_id,role')
+        .eq('id', msgId)
+        .maybeSingle()
+      if (e1 || !src) { showToast('找不到原消息'); return }
+      let senderName
+      if (src.role === 'ai') senderName = currentRoom?.ai_name || 'AI 助手'
+      else if (src.user_id === currentUser?.id) senderName = currentDisplayName || '我'
+      else senderName = profilesByUid[src.user_id] || (src.role === 'expert' ? '大咖' : '小白')
+      const myRole = isExpert(currentRoom) ? 'expert' : 'user'
+      const truncated = (src.content || '').replace(/\s+/g, ' ').trim()
+      const summary = truncated.length > 100 ? truncated.slice(0, 100) + '…' : truncated
+      const newContent = `↪ 同步自 ${senderName}：${summary || '[附件]'}`
+      const { error: e2 } = await sb.from('messages').insert({
+        room_id: currentRoom.id,
+        user_id: currentUser.id,
+        role: myRole,
+        channel: 'expert_user',
+        content: newContent,
+        attachments: src.attachments || [],
+      })
+      if (e2) {
+        console.error('[sync to private]', e2)
+        showToast('同步失败：' + (e2.message || e2.code))
+        return
+      }
+      showToast('已同步到私聊')
+    } finally {
+      if (btn) btn.disabled = false
     }
   }
 
@@ -2932,16 +2961,6 @@
 
     appendMessage(msgData)
     scrollToBottom()
-
-    // 主窗发的图片 → 自动同步一条到私聊（和 ✓✓ pass 摘要一个逻辑）
-    if (currentChannel === 'main') {
-      const imageAtts = attachments.filter(a =>
-        (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
-      )
-      if (imageAtts.length) {
-        relayImagesToPrivate(role, imageAtts).catch(e => console.warn('[relay image]', e))
-      }
-    }
 
     // AI 在 main / expert_ai 频道响应；expert_user 频道（大咖 ↔ 小白）AI 不参与
     if (currentChannel !== 'expert_user') {
