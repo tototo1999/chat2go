@@ -1543,6 +1543,12 @@
               <path d="M9.5 6.5a3 3 0 0 0-4.5 0l-2 2a3 3 0 0 0 4.5 4.5l1-1"/>
             </svg>
           </button>
+          <button id="resetRoomBtn" class="invite-btn" title="重置房间（踢光小白/路人 + 清消息 + 重新发邀请）" onclick="resetRoom()" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/>
+              <path d="M13.5 2.5v3h-3"/>
+            </svg>
+          </button>
         </div>
         <!-- metrics + status -->
         <div class="chat-head-row">
@@ -2310,12 +2316,26 @@
       inviteBtn.style.display = (currentRoomRole === 'expert' || currentRoomRole === 'focal') ? '' : 'none'
       inviteBtn.title = currentRoomRole === 'expert' ? '复制邀请链接（发给小白）' : '复制邀请链接（发给路人）'
     }
+    // 重置按钮仅大咖看到
+    const resetBtn = document.getElementById('resetRoomBtn')
+    if (resetBtn) resetBtn.style.display = currentRoomRole === 'expert' ? '' : 'none'
 
     renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
     document.getElementById('msgInput').focus()
+  }
+
+  async function resetRoom() {
+    if (!currentRoom) return
+    if (currentRoomRole !== 'expert') { showToast('只有大咖能重置房间'); return }
+    const ok = confirm('重置这个房间？\n\n会做：\n• 踢掉所有小白和路人\n• 清空全部消息\n• 重新生成邀请链接（旧链接失效）\n\n不可恢复。')
+    if (!ok) return
+    const { error } = await sb.rpc('reset_room', { p_room_id: currentRoom.id })
+    if (error) { showToast('重置失败：' + (error.message || error.code)); return }
+    showToast('已重置，刷新中…')
+    setTimeout(() => location.reload(), 800)
   }
 
   async function copyInviteLink() {
