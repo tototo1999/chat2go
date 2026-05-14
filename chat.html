@@ -1654,7 +1654,7 @@
           <textarea
             class="input-box"
             id="msgInput"
-            placeholder="输入消息，AI 会在这里回应你... (可粘贴图片 / @ 提及)"
+            placeholder=""
             rows="1"
             onkeydown="handleKey(event)"
             oninput="autoResize(this);onMentionInput(event)"
@@ -2402,8 +2402,7 @@
   function updateInputPlaceholder() {
     const el = document.getElementById('msgInput')
     if (!el) return
-    if (currentChannel === 'expert_user') el.placeholder = isExpert(currentRoom) ? '与小白私聊（AI 不参与）…' : '与大咖私聊（AI 不参与）…'
-    else                                  el.placeholder = '主窗（三方共聊），AI 会在这里回应你…'
+    el.placeholder = ''
   }
 
   async function switchChannel(ch) {
