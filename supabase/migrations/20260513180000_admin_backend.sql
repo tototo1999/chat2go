@@ -59,7 +59,8 @@ $body$;
 
 grant execute on function admin_dashboard_stats() to authenticated;
 
--- 4) 用户列表
+-- 4) 用户列表（returns table 列改过，需要先 drop）
+drop function if exists admin_list_users(text, int, int);
 create or replace function admin_list_users(
   p_search text default '',
   p_limit  int default 50,
