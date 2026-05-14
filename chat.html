@@ -1101,6 +1101,39 @@
     }
     .msg-image:hover { border-color: var(--teal-100); }
 
+    /* 图片 lightbox */
+    .img-lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.86);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 9999;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+    .img-lightbox.open { display: flex; }
+    .img-lightbox img {
+      max-width: 92vw; max-height: 88vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    .img-lightbox-close {
+      position: absolute;
+      top: 16px; right: 18px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .img-lightbox-close:hover { background: rgba(255,255,255,.28); }
+
     /* ── NEW ROOM MODAL ── */
     .modal-overlay {
       display: none;
@@ -2410,9 +2443,7 @@
         ${attachments.map(a => {
           const isImage = (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
           if (isImage) {
-            return `<a href="${escHtml(a.url)}" target="_blank" rel="noopener">
-              <img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}">
-            </a>`
+            return `<img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}" onclick="openImageLightbox('${escHtml(a.url)}')">`
           }
           return `
             <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
@@ -3065,7 +3096,26 @@
     setTimeout(() => el.classList.remove('show'), 2500)
   }
 
+  // 图片 lightbox：点对话框里的图 → 内嵌大图查看
+  function openImageLightbox(url) {
+    const box = document.getElementById('imgLightbox')
+    if (!box) return
+    box.querySelector('img').src = url
+    box.classList.add('open')
+  }
+  function closeImageLightbox(ev) {
+    if (ev && ev.target.tagName === 'IMG') return  // 点图片本身不关
+    document.getElementById('imgLightbox')?.classList.remove('open')
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeImageLightbox()
+  })
+
   init()
 </script>
+<div class="img-lightbox" id="imgLightbox" onclick="closeImageLightbox(event)">
+  <button class="img-lightbox-close" onclick="closeImageLightbox()" title="关闭 (Esc)">×</button>
+  <img alt="">
+</div>
 </body>
 </html>
