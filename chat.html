@@ -2544,7 +2544,7 @@
     const quoteBtnHtml = `<button class="msg-rate-btn quote" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${quoteSender}')"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="2" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="8" cy="5" r="1"/></svg></button>`
     // 同步到私聊按钮：只在主窗渲染时出现
     const syncBtnHtml = currentChannel === 'main'
-      ? `<button class="msg-rate-btn sync" title="同步到私聊" onclick="syncToPrivate('${msg.id}', this)"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a2 2 0 0 1 2 2v4"/><path d="M7 7l3 3-3 3" transform="translate(0 -3)"/></svg></button>`
+      ? `<button class="msg-rate-btn sync" title="同步到私聊" onclick="syncToPrivate('${msg.id}', this)"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9v2.5A1.5 1.5 0 0 0 4.5 13h5A1.5 1.5 0 0 0 11 11.5V9"/><path d="M7 9V2"/><path d="M4 5l3-3 3 3"/></svg></button>`
       : ''
     const rateBarHtml = role === 'ai' ? `
       <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
