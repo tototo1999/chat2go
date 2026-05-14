@@ -625,16 +625,24 @@
       })
     }))
     try {
-      // 单页长 PDF：宽度 A4，高度按内容实际撑开（不分页）
+      // 单页长 PDF：宽度 A4，高度按内容缩放后的实际占用算（widthMm/offsetWidth 比例）
+      // + pagebreak.avoid-all 兜底：若分页发生，整块消息不会被切两半
       const inner = wrap.firstElementChild
       const widthMm = 210
-      const heightMm = Math.max(297, inner.offsetHeight * 0.2646 + 20)  // px→mm, 至少 A4
+      const marginMm = 10
+      const contentWidthMm = widthMm - 2 * marginMm
+      // 图像按 widthMm 缩放，所以 PDF 内实际高 = offsetHeight × (contentWidthMm / offsetWidth)
+      const naturalHeightMm = inner.offsetWidth > 0
+        ? (inner.offsetHeight * contentWidthMm / inner.offsetWidth)
+        : (inner.offsetHeight * 0.2646)
+      const heightMm = Math.max(297, naturalHeightMm + 2 * marginMm + 10)
       await html2pdf().set({
-        margin: [10, 10, 10, 10],
+        margin: [marginMm, marginMm, marginMm, marginMm],
         filename,
         image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: [widthMm, heightMm], orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
       }).from(inner).save()
     } catch (e) {
       console.error('pdf gen failed:', e)
