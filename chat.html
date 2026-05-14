@@ -1291,6 +1291,18 @@
       </div>
     </div>
 
+    <!-- 管理员入口（仅白名单邮箱可见）-->
+    <div id="adminSection" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:0.5px solid var(--border);">
+      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">管理员</h4>
+      <p style="margin:0 0 .8rem;font-size:13px;color:var(--text2);">
+        访问站点后台：用户/房间/Bridge 状态、计费汇总。
+      </p>
+      <a href="/admin.html" target="_blank"
+         style="display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;background:#1a1a18;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">
+        进入 Admin 后台 →
+      </a>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSettings()">关闭</button>
     </div>
@@ -1500,7 +1512,8 @@
         badge.textContent = currentRole === 'expert' ? '咖' : '白'
         badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
       }
-      if (currentRole === 'expert') {
+      // 大咖 或 admin 都看得到设置入口
+      if (currentRole === 'expert' || ADMIN_EMAILS.includes(currentUser?.email)) {
         document.getElementById('settingsBtn').style.display = ''
       }
     } catch (e) { console.warn('[role] failed:', e) }
@@ -1585,6 +1598,9 @@
     document.getElementById('agentKeysSection').style.display =
       currentRole === 'expert' ? '' : 'none'
     if (currentRole === 'expert') loadAgentKeys()
+    // 管理员入口仅 admin 白名单可见
+    document.getElementById('adminSection').style.display =
+      ADMIN_EMAILS.includes(currentUser?.email) ? '' : 'none'
   }
   function closeSettings(e) {
     if (e && e.currentTarget !== e.target) return
@@ -1748,6 +1764,9 @@
   const EXPERT_PERSONAS = {
     'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道 san',
   }
+
+  // admin 邮箱白名单（与 admin.html / is_admin() RPC 保持一致）
+  const ADMIN_EMAILS = ['lirui88888862@gmail.com']
 
   async function loadRooms() {
     const list = document.getElementById('roomsList')

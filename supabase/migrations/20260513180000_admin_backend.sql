@@ -11,7 +11,7 @@ language sql stable security definer
 set search_path = public, pg_temp
 as $body$
   select coalesce(
-    (select email from auth.users where id = auth.uid()) in ('iamdami2026@gmail.com'),
+    (select email from auth.users where id = auth.uid()) in ('lirui88888862@gmail.com'),
     false
   );
 $body$;
