@@ -978,6 +978,45 @@
       margin-bottom: 8px;
     }
     .attach-preview:empty { display: none; }
+
+    /* 微信风「回复 X」小条：挂在输入框上方，发送时静默附 quote 到消息末尾 */
+    .quote-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      background: var(--bg2);
+      border-left: 3px solid var(--teal);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+    .quote-preview i.ti { font-size: 14px; color: var(--teal); flex-shrink: 0; }
+    .quote-preview .qp-sender { color: var(--text); font-weight: 500; flex-shrink: 0; }
+    .quote-preview .qp-body {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quote-preview .qp-x {
+      width: 20px; height: 20px;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+      padding: 0;
+      font-family: inherit;
+    }
+    .quote-preview .qp-x:hover { background: var(--bg); color: var(--text); }
+    .quote-preview .qp-x i { font-size: 13px; }
     .attach-chip {
       display: inline-flex;
       align-items: center;
@@ -1416,6 +1455,13 @@
       <div class="input-area">
         <!-- 待上传的附件预览 -->
         <div class="attach-preview" id="attachPreview"></div>
+        <!-- 待发送引用预览（微信样式：发送时静默附在消息末尾） -->
+        <div class="quote-preview" id="quotePreview" style="display:none;">
+          <i class="ti ti-corner-up-left"></i>
+          <span class="qp-sender" id="qpSender"></span>
+          <span class="qp-body" id="qpBody"></span>
+          <button class="qp-x" title="取消引用" onclick="clearPendingQuote()"><i class="ti ti-x"></i></button>
+        </div>
 
         <div class="input-wrap">
           <div class="role-badge-wrap">
@@ -2423,6 +2469,29 @@
   // 记录上次 rate 自动 prepend 的字符串，便于下次 rate（切换 ✓/✗ 或取消）时先剥掉
   let lastRatePrepend = ''
 
+  // 待发送引用（微信样式：输入框里看不到，发送时静默附在消息末尾）
+  // { b64, sender, preview } | null
+  let pendingQuote = null
+
+  function setPendingQuote(b64, sender) {
+    let text = ''
+    try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
+    let preview = text.replace(/\s+/g, ' ').trim()
+    if (preview.length > 80) preview = preview.slice(0, 80) + '…'
+    pendingQuote = { b64, sender, preview }
+    const wrap = document.getElementById('quotePreview')
+    if (!wrap) return
+    document.getElementById('qpSender').textContent = sender + '：'
+    document.getElementById('qpBody').textContent = preview
+    wrap.style.display = ''
+  }
+
+  function clearPendingQuote() {
+    pendingQuote = null
+    const wrap = document.getElementById('quotePreview')
+    if (wrap) wrap.style.display = 'none'
+  }
+
   function buildQuoteBlock(b64, sender) {
     let text = ''
     try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
@@ -2449,11 +2518,13 @@
       if (lastRatePrepend && input.value.startsWith(lastRatePrepend)) {
         input.value = input.value.slice(lastRatePrepend.length)
       }
-      if (next) {
+      if (next && b64 && sender) {
         const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
         const block = `${phrase}\n\n`
         input.value = block + (input.value || '')
         lastRatePrepend = block
+        // 同时挂上待发送引用（发送时会自动附 AI 原文 trailer，渲染为微信卡片）
+        setPendingQuote(b64, sender)
         autoResize(input)
         input.focus()
         const pos = block.length
@@ -2461,6 +2532,7 @@
         input.scrollTop = 0
       } else {
         lastRatePrepend = ''
+        clearPendingQuote()
         autoResize(input)
       }
     }
@@ -2524,7 +2596,14 @@
     sendBtn.disabled = true
 
     const role = isExpert(currentRoom) ? 'expert' : 'user'
-    const finalContent = content || `[发送了 ${pendingAttachments.length} 个文件]`
+    // 微信样式引用：如果有 pendingQuote，把 trailer 静默附在消息末尾，
+    // 渲染时会被 appendMessage 抽出渲染为气泡下方灰卡片
+    let bodyContent = content
+    if (pendingQuote && bodyContent) {
+      bodyContent = bodyContent + '\n\n' + buildQuoteBlock(pendingQuote.b64, pendingQuote.sender)
+    }
+    const finalContent = bodyContent || `[发送了 ${pendingAttachments.length} 个文件]`
+    clearPendingQuote()
     const attachments = pendingAttachments.map(a => ({
       name: a.name, url: a.url, size: a.size, mime_type: a.mime_type, storage_path: a.storage_path
     }))
@@ -2823,19 +2902,10 @@
   }
 
   function quoteMessage(b64, sender) {
+    // 微信样式：不再往 input.value 里塞，挂到上方小条，发送时静默附 trailer
+    setPendingQuote(b64, sender)
     const input = document.getElementById('msgInput')
-    if (!input) return
-    const QUOTE_TRAILER_RE = /\n\n> \*\*(.+?)\*\*：\n((?:>.*(?:\n|$))+)\s*$/
-    // 先剥掉已有的引用尾，避免叠加多个 quote
-    let cur = input.value || ''
-    cur = cur.replace(QUOTE_TRAILER_RE, '').replace(/\s+$/, '')
-    const trailer = '\n\n' + buildQuoteBlock(b64, sender)
-    input.value = cur + trailer
-    autoResize(input)
-    input.focus()
-    // 光标停到输入框开头，方便直接打字
-    try { input.setSelectionRange(0, 0) } catch (e) {}
-    input.scrollTop = 0
+    if (input) input.focus()
   }
 
   async function copyMessage(btn, b64) {
