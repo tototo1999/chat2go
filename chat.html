@@ -470,65 +470,6 @@
       gap: 6px;
       min-height: 22px;
     }
-    .presence-tabs { display: flex; align-items: center; gap: 6px; }
-    /* 群图库小方块按钮 */
-    .gallery-btn {
-      width: 26px; height: 26px;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: #fff;
-      border: 0.5px solid var(--border);
-      border-radius: 6px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
-      color: var(--text2);
-      cursor: pointer;
-      padding: 0;
-      transition: transform .12s, box-shadow .15s, border-color .15s, color .15s;
-    }
-    .gallery-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(0,0,0,.1);
-      color: var(--teal);
-      border-color: var(--teal-100);
-    }
-    .gallery-btn svg { display: block; }
-    /* 群图库：聊天流样式 —— 每张图作为「转发自 xx」的一条消息 */
-    .gallery-stream { padding: 12px 16px; display: flex; flex-direction: column; gap: 14px; }
-    .gallery-msg { display: flex; gap: 10px; align-items: flex-start; }
-    .gallery-msg-av {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      background: var(--teal-50);
-      color: var(--teal-600);
-      display: inline-flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 600;
-      flex-shrink: 0;
-    }
-    .gallery-msg-av.expert { background: #EDE9FE; color: #7C3AED; }
-    .gallery-msg-av.user   { background: #FFF8E7; color: #B45309; }
-    .gallery-msg-body { flex: 1; min-width: 0; }
-    .gallery-msg-head {
-      display: flex; align-items: baseline; gap: 8px;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-    .gallery-msg-name { color: var(--text); font-weight: 500; }
-    .gallery-msg-time { color: var(--text3); font-size: 11px; }
-    .gallery-msg-meta { color: var(--text3); font-size: 11px; }
-    .gallery-msg-img {
-      display: inline-block;
-      max-width: 220px;
-      border-radius: 8px;
-      overflow: hidden;
-      border: 0.5px solid var(--border);
-      background: var(--bg2);
-    }
-    .gallery-msg-img img {
-      display: block;
-      max-width: 100%; max-height: 220px;
-      object-fit: cover;
-      transition: opacity .15s;
-    }
-    .gallery-msg-img:hover img { opacity: .92; }
     .presence-tab {
       display: inline-flex;
       align-items: center;
@@ -1565,17 +1506,8 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <!-- 在线头像 + 群图库按钮 -->
-        <div class="presence-row">
-          <div class="presence-tabs" id="presenceRow"></div>
-          <button class="gallery-btn" onclick="openImageGallery()" title="群图库" aria-label="群图库">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/>
-              <circle cx="5" cy="5" r="1"/>
-              <path d="M12.5 9.5l-3-3-6 6"/>
-            </svg>
-          </button>
-        </div>
+        <!-- 在线头像 -->
+        <div class="presence-row" id="presenceRow"></div>
         <!-- metrics + status -->
         <div class="chat-head-row">
           <div class="chat-metrics">
@@ -1668,17 +1600,6 @@
       <button class="btn-cancel" onclick="closeNewRoomModal()">取消</button>
       <button class="btn-create" id="createRoomBtn" onclick="createRoom()">创建</button>
     </div>
-  </div>
-</div>
-
-<!-- 群图库 modal -->
-<div class="modal-overlay" id="imageGalleryModal" onclick="closeImageGallery(event)">
-  <div class="modal" style="max-width:720px;padding:0;" onclick="event.stopPropagation()">
-    <h3 style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid var(--border);margin:0;">
-      <span>群图库</span>
-      <button onclick="closeImageGallery()" style="background:none;border:0;font-size:18px;color:var(--text3);cursor:pointer;">×</button>
-    </h3>
-    <div id="imageGalleryBody" style="max-height:70vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -2134,75 +2055,6 @@
   function closeFollowersListChat(e) {
     if (e && e.target !== document.getElementById('followersListModal')) return
     document.getElementById('followersListModal').classList.remove('show')
-  }
-
-  // 群图库：拉本房所有消息的 attachments，过滤出图片，按聊天流渲染（每张图一条「转发自」消息）
-  async function openImageGallery() {
-    if (!currentRoom) return
-    const modal = document.getElementById('imageGalleryModal')
-    const body = document.getElementById('imageGalleryBody')
-    body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">加载中…</div>'
-    modal.classList.add('show')
-    const { data, error } = await sb
-      .from('messages')
-      .select('id,user_id,role,attachments,created_at')
-      .eq('room_id', currentRoom.id)
-      .not('attachments', 'is', null)
-      .order('created_at', { ascending: true })
-    if (error) {
-      body.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">加载失败：${escHtml(error.message)}</div>`
-      return
-    }
-    const items = []
-    ;(data || []).forEach(m => {
-      const atts = Array.isArray(m.attachments) ? m.attachments : []
-      atts.forEach(a => {
-        const isImage = (a.mime_type || '').startsWith('image/')
-          || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
-        if (isImage && a.url) items.push({
-          url: a.url, name: a.name || '', user_id: m.user_id, role: m.role, ts: m.created_at,
-        })
-      })
-    })
-    if (!items.length) {
-      body.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px;">群里还没有图片</div>'
-      return
-    }
-    // 批量补齐缺失的 display_name
-    const missing = [...new Set(items.map(i => i.user_id).filter(uid => uid && !profilesByUid[uid]))]
-    if (missing.length) {
-      const { data: profs } = await sb.from('profiles').select('user_id,display_name').in('user_id', missing)
-      ;(profs || []).forEach(p => { if (p.display_name) profilesByUid[p.user_id] = p.display_name })
-    }
-    const aiName = currentRoom?.ai_name || 'AI 助手'
-    body.innerHTML = '<div class="gallery-stream">' + items.map(it => {
-      const role = it.role || 'user'
-      const isMe = it.user_id === currentUser?.id
-      const roleLabel = role === 'ai' ? aiName : (role === 'expert' ? '大咖' : '小白')
-      const senderName = isMe
-        ? (currentDisplayName || '我')
-        : (profilesByUid[it.user_id] || roleLabel)
-      const avText = role === 'ai' ? 'AI' : (role === 'expert' ? '咖' : '白')
-      const avCls = role === 'ai' ? '' : (role === 'expert' ? 'expert' : 'user')
-      return `
-        <div class="gallery-msg">
-          <span class="gallery-msg-av ${avCls}">${escHtml(avText)}</span>
-          <div class="gallery-msg-body">
-            <div class="gallery-msg-head">
-              <span class="gallery-msg-name">${escHtml(senderName)}</span>
-              <span class="gallery-msg-time">${formatTime(it.ts)}</span>
-              <span class="gallery-msg-meta">↪ 转发图片</span>
-            </div>
-            <a class="gallery-msg-img" href="${it.url}" target="_blank" rel="noopener" title="${escHtml(it.name)}">
-              <img loading="lazy" src="${it.url}" alt="${escHtml(it.name)}">
-            </a>
-          </div>
-        </div>`
-    }).join('') + '</div>'
-  }
-  function closeImageGallery(e) {
-    if (e && e.target !== document.getElementById('imageGalleryModal')) return
-    document.getElementById('imageGalleryModal').classList.remove('show')
   }
 
   async function requestFollow(expertId, btnEl) {
@@ -2955,6 +2807,20 @@
     return html.replace(/@([^\s@<>,，。?？!！]{1,30})/g, '<span class="mention">@$1</span>')
   }
 
+  // 主窗发的图片 → 同步一条到私聊（保留原发送人和图片附件）
+  async function relayImagesToPrivate(role, imageAtts) {
+    if (!currentRoom || !imageAtts.length) return
+    const label = imageAtts.length > 1 ? `📷 [图片 ×${imageAtts.length}]` : '📷 [图片]'
+    await sb.from('messages').insert({
+      room_id: currentRoom.id,
+      user_id: currentUser.id,
+      role,
+      channel: 'expert_user',
+      content: label,
+      attachments: imageAtts,
+    })
+  }
+
   // 把刚 pass 的 AI 消息摘要 copy 到 expert_user 私聊频道
   async function relayPassToPrivate(msgId) {
     if (!currentRoom) return
@@ -3062,6 +2928,16 @@
 
     appendMessage(msgData)
     scrollToBottom()
+
+    // 主窗发的图片 → 自动同步一条到私聊（和 ✓✓ pass 摘要一个逻辑）
+    if (currentChannel === 'main') {
+      const imageAtts = attachments.filter(a =>
+        (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+      )
+      if (imageAtts.length) {
+        relayImagesToPrivate(role, imageAtts).catch(e => console.warn('[relay image]', e))
+      }
+    }
 
     // AI 在 main / expert_ai 频道响应；expert_user 频道（大咖 ↔ 小白）AI 不参与
     if (currentChannel !== 'expert_user') {
