@@ -2172,7 +2172,14 @@
       // 进房
       const { data: roomId, error: joinErr } = await sb.rpc('join_room_by_token', { p_token: _pendingInviteToken })
       if (joinErr || !roomId) {
-        err.textContent = '加入房间失败：' + (joinErr?.message || '未知')
+        const msg = joinErr?.message || ''
+        if (msg.includes('invite_used') || msg.includes('focal already locked')) {
+          err.textContent = '这个邀请链接已被使用（小白名额已满）。请向小白索要新的「路人邀请链接」'
+        } else if (msg.includes('invalid invite token')) {
+          err.textContent = '邀请链接无效或已失效'
+        } else {
+          err.textContent = '加入房间失败：' + (msg || '未知')
+        }
         err.style.display = 'block'
         return
       }
@@ -2312,14 +2319,19 @@
   }
 
   async function copyInviteLink() {
-    if (!currentRoom?.invite_token) { showToast('当前房间无邀请 token'); return }
-    const url = `${location.origin}/chat.html?invite=${currentRoom.invite_token}`
+    if (!currentRoom) return
+    // 大咖 → 小白邀请（单次，invite_token）；小白 → 路人邀请（多次，audience_invite_token）
+    const token = currentRoomRole === 'expert'
+      ? currentRoom.invite_token
+      : currentRoom.audience_invite_token
+    if (!token) { showToast('当前房间无邀请 token'); return }
+    const url = `${location.origin}/chat.html?invite=${token}`
+    const tag = currentRoomRole === 'expert' ? '小白邀请链接' : '路人邀请链接'
     try {
       await navigator.clipboard.writeText(url)
-      showToast('邀请链接已复制')
+      showToast(tag + '已复制（' + (currentRoomRole === 'expert' ? '仅限一位小白' : '可分享给多个路人') + '）')
     } catch (e) {
-      // fallback: 弹个 prompt 让用户手动复制
-      window.prompt('复制下面的邀请链接：', url)
+      window.prompt('复制下面的' + tag + '：', url)
     }
   }
 
