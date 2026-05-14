@@ -2754,7 +2754,7 @@
     const list = getMentionCandidates()
     if (!list.length) { pop.classList.remove('open'); return }
     pop.innerHTML = list.map(c => `
-      <button type="button" onmousedown="event.preventDefault()" onclick="insertMention(${JSON.stringify(c.name)})">
+      <button type="button" onmousedown="event.preventDefault();insertMention(${JSON.stringify(c.name)})">
         <span class="mav ${c.kind}">${c.initial}</span>${escHtml(c.name)}
       </button>`).join('')
     pop.classList.add('open')
