@@ -2449,20 +2449,20 @@
   const RATE_PRAISES = [
     '说得对！这条说到点子上了。',
     '完全正确，就是这样。',
-    '✓ 准。我也是这么理解的。',
+    '准。我也是这么理解的。',
     '对，没毛病，继续。',
-    '👍 这条挺准，我同意。',
+    '这条挺准，我同意。',
     '讲到点子上了，赞一个。',
     '嗯，这条说得很到位。',
-    '👏 这条很妙，正是关键。',
+    '这条很妙，正是关键。',
   ]
   const RATE_CRITIQUES = [
     '这条不对，完全错了，纠正一下：',
-    '❌ 错了，事实不是这样：',
+    '错了，事实不是这样：',
     '不，这里说偏了，应该是：',
     '这条判断有问题，需要修正：',
     '完全错，下面是我的看法：',
-    '❌ 这条偏离了，重新理解一下：',
+    '这条偏离了，重新理解一下：',
     '不对，这里得改改：',
     '这一段有误，正确理解是：',
   ]
@@ -2521,8 +2521,9 @@
         input.value = input.value.slice(lastRatePrepend.length)
       }
       if (next && b64 && sender) {
+        const emoji = next === 'up' ? '✅ ' : '❌ '
         const phrase = pickPhrase(next === 'up' ? RATE_PRAISES : RATE_CRITIQUES)
-        const block = `${phrase}\n\n`
+        const block = `${emoji}${phrase}\n\n`
         input.value = block + (input.value || '')
         lastRatePrepend = block
         // 同时挂上待发送引用（发送时会自动附 AI 原文 trailer，渲染为微信卡片）
