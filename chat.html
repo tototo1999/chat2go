@@ -154,16 +154,18 @@
     }
     .invite-btn {
       flex-shrink: 0;
-      width: 32px; height: 32px;
-      border-radius: var(--radius);
+      width: 26px; height: 26px;
+      border-radius: 999px;
       border: 0.5px solid var(--border);
       background: #fff;
       color: var(--text2);
       cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center;
-      transition: background .15s, color .15s, transform .12s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      transition: background .15s, color .15s, transform .12s, box-shadow .15s;
     }
-    .invite-btn:hover { background: var(--teal-50); color: var(--teal-600); transform: translateY(-1px); }
+    .invite-btn:hover { background: var(--teal-50); color: var(--teal-600); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+    .invite-btn svg { width: 13px; height: 13px; }
     /* sidebar 顶部：当前聊天室标题（极简版，无新建按钮） */
     .sidebar-room-title {
       width: 100%;
@@ -1486,12 +1488,6 @@
   <aside class="sidebar">
     <div class="sidebar-head">
       <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
-      <button id="inviteBtn" class="invite-btn" title="复制邀请链接" onclick="copyInviteLink()" style="display:none;">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M6.5 9.5a3 3 0 0 0 4.5 0l2-2a3 3 0 0 0-4.5-4.5l-1 1"/>
-          <path d="M9.5 6.5a3 3 0 0 0-4.5 0l-2 2a3 3 0 0 0 4.5 4.5l1-1"/>
-        </svg>
-      </button>
     </div>
     <div class="todo-section">
       <div class="todo-head">Todo</div>
@@ -1539,7 +1535,15 @@
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
       <div class="chat-head">
         <!-- 在线头像 -->
-        <div class="presence-row" id="presenceRow"></div>
+        <div class="presence-row">
+          <div id="presenceRow" style="display:flex;align-items:center;gap:6px;"></div>
+          <button id="inviteBtn" class="invite-btn" title="复制邀请链接" onclick="copyInviteLink()" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6.5 9.5a3 3 0 0 0 4.5 0l2-2a3 3 0 0 0-4.5-4.5l-1 1"/>
+              <path d="M9.5 6.5a3 3 0 0 0-4.5 0l-2 2a3 3 0 0 0 4.5 4.5l1-1"/>
+            </svg>
+          </button>
+        </div>
         <!-- metrics + status -->
         <div class="chat-head-row">
           <div class="chat-metrics">
