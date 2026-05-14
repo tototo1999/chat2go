@@ -184,6 +184,7 @@
       font-size: 13px;
       font-weight: 300;
       color: var(--text);
+      text-align: center;
     }
     .todo-group { margin-top: 5px; padding-left: 12px; }
     .todo-pill {
@@ -1381,7 +1382,7 @@
       <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
     </div>
     <div class="todo-section">
-      <div class="todo-head">Todo list</div>
+      <div class="todo-head">Todo</div>
       <div class="todo-group" data-group="wuxing">
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
@@ -2534,12 +2535,18 @@
     const group = bar.closest('.msg-group')
     let ratings = {}
     try { ratings = JSON.parse(group?.dataset.ratings || '{}') } catch (e) {}
+    const oldUp = Object.values(ratings).filter(v => v === 'up').length
     const cur = ratings[myUid] || ''
     const next = (cur === val) ? '' : val   // 再点取消
     const { data, error } = await sb.rpc('rate_message', { p_msg_id: msgId, p_val: next })
     if (error) { showToast('评价失败：' + error.message); return }
     applyRatingsToMsg(msgId, data || {})
     refreshQuizState()
+    // 我刚把 up 数从 <2 推到 >=2 → 把摘要 copy 到私聊频道
+    const newUp = Object.values(data || {}).filter(v => v === 'up').length
+    if (newUp >= 2 && oldUp < 2) {
+      relayPassToPrivate(msgId).catch(e => console.warn('[relay pass]', e))
+    }
     // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
     const input = document.getElementById('msgInput')
     if (input) {
