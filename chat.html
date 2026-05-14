@@ -2794,9 +2794,9 @@
     const before = input.value.slice(0, pos)
     const lastAt = before.lastIndexOf('@')
     if (lastAt < 0) return hideMentionPopover()
-    // @ 前面必须是行头或空格
-    const charBefore = lastAt > 0 ? before[lastAt - 1] : ' '
-    if (!/\s/.test(charBefore)) return hideMentionPopover()
+    // @ 前面：行头 / 空格 / 中文 / 标点 都行；只在前面是 ASCII 字母数字时拦截（避邮箱 user@host 误触）
+    const charBefore = lastAt > 0 ? before[lastAt - 1] : ''
+    if (charBefore && /[A-Za-z0-9._-]/.test(charBefore)) return hideMentionPopover()
     // @ 到光标之间不能有空格
     if (/\s/.test(before.slice(lastAt + 1))) return hideMentionPopover()
     showMentionPopover()
