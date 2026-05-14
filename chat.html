@@ -2423,12 +2423,6 @@
     const bubbleHtml = isMarkdown
       ? `<div class="msg-bubble markdown" style="padding:0;background:transparent;border:none;">
            <div class="md-body" id="md-${msg.id}">${marked.parse(msg.content)}</div>
-           <div class="pdf-bar">
-             <button class="btn-pdf" onclick="exportPdf('md-${msg.id}', '文档')">
-               <i class="ti ti-file-type-pdf"></i> 下载 PDF
-             </button>
-             <span class="pdf-hint">AI 生成 · 请核对</span>
-           </div>
          </div>`
       : (isPlaceholderMsg
           ? ''  // 纯文件消息不显示气泡，只显示附件卡片
