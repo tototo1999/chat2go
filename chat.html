@@ -2631,14 +2631,18 @@
     // 群聊：原 ti-users 风格 + 第三个人头 → 手写 SVG 3 头
     const groupIconSvg = `<svg class="tab-icon" width="20" height="16" viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="2.4"/><circle cx="13" cy="4" r="2.8"/><circle cx="21" cy="5" r="2.4"/><path d="M1 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 9 13.8V15"/><path d="M8.4 15v-1.4A3 3 0 0 1 11.4 10.6h3.2a3 3 0 0 1 3 3V15"/><path d="M17 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 25 13.8V15"/></svg>`
     const groupCountHtml = `<span class="group-count" id="groupMemberCount">${roomMemberCount ?? ''}</span>`
+    // 私聊永远是大咖 + 小白 = 焦点锁了就 2，否则只有大咖 = 1
+    const peerCount = currentRoom?.focal_user_id ? 2 : 1
+    const peerCountHtml = `<span class="group-count">${peerCount}</span>`
     const tabs = [
       { cls: 'main', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）`, iconHtml: groupCountHtml + groupIconSvg },
     ]
     // 私聊 tab 只对大咖和八字主（focal）开放；路人看不到
     if (currentRoomRole === 'expert' || currentRoomRole === 'focal') {
+      const peerInner = peerCountHtml + `<i class="ti ti-user"></i>`
       tabs.push(isExp
-        ? { cls: 'peer-user',   icon: 'ti-user', ch: 'expert_user', title: '与小白私聊（AI 不参与）' }
-        : { cls: 'peer-expert', icon: 'ti-user', ch: 'expert_user', title: '与大咖私聊（AI 不参与）' })
+        ? { cls: 'peer-user',   ch: 'expert_user', title: '与小白私聊（AI 不参与）', iconHtml: peerInner }
+        : { cls: 'peer-expert', ch: 'expert_user', title: '与大咖私聊（AI 不参与）', iconHtml: peerInner })
     }
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
