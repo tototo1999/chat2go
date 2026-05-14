@@ -2773,8 +2773,11 @@
           cacheControl: '3600', upsert: false, contentType: file.type || 'application/octet-stream'
         })
         if (error) throw error
-        const { data: pub } = sb.storage.from('chat-uploads').getPublicUrl(path)
-        stub.url = pub.publicUrl
+        // 私有 bucket：用 1 年过期的 signed URL 写进消息（防止公开 URL 泄露）
+        const { data: signed, error: signErr } = await sb.storage
+          .from('chat-uploads').createSignedUrl(path, 365 * 24 * 3600)
+        if (signErr) throw signErr
+        stub.url = signed.signedUrl
         stub.storage_path = path
         stub.uploading = false
     } catch (err) {
