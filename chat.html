@@ -2131,14 +2131,22 @@
     if (!group) return
     group.classList.toggle('expanded')
   }
-  function refreshQuizState() {
-    // 数当前房所有 AI 消息里 ratings 'up' >= 2 的条数（按时间顺序）
-    const aiMsgs = document.querySelectorAll('.msg-group[data-role="ai"]')
+  async function refreshQuizState() {
+    // 直接查 DB：本房 main 频道 AI 消息里 ratings 'up' >= 2 的条数
+    // 不依赖当前 DOM —— 这样在私聊频道下 todo 进度也能同步（私聊频道 DOM 里没有 AI 消息）
+    if (!currentRoom) return
+    const { data, error } = await sb
+      .from('messages')
+      .select('ratings')
+      .eq('room_id', currentRoom.id)
+      .eq('role', 'ai')
+      .eq('channel', 'main')
+      .order('created_at', { ascending: true })
+    if (error || !data) return
     let passed = 0
-    aiMsgs.forEach(el => {
-      let ratings = {}
-      try { ratings = JSON.parse(el.dataset.ratings || '{}') } catch (e) {}
-      const upCount = Object.values(ratings).filter(v => v === 'up').length
+    data.forEach(m => {
+      const r = m.ratings || {}
+      const upCount = Object.values(r).filter(v => v === 'up').length
       if (upCount >= 2) passed++
     })
     const total = document.querySelectorAll('.todo-sub[data-quiz-idx]').length
