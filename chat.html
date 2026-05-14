@@ -1406,6 +1406,18 @@
   <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
     <h3 id="settingsTitle">设置</h3>
 
+    <!-- 管理员入口（仅白名单邮箱可见）—— 置顶，避免拉到底 -->
+    <div id="adminSection" style="display:none;margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:0.5px solid var(--border);">
+      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">管理员</h4>
+      <p style="margin:0 0 .8rem;font-size:13px;color:var(--text2);">
+        访问站点后台：用户/房间/Bridge 状态、计费汇总。
+      </p>
+      <a href="/admin.html" target="_blank"
+         style="display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;background:#1a1a18;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">
+        进入 Admin 后台 →
+      </a>
+    </div>
+
     <!-- 个人资料 -->
     <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">个人资料</h4>
     <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
@@ -1441,18 +1453,6 @@
           ③ 启动 bridge（launchd / start.sh）
         </p>
       </div>
-    </div>
-
-    <!-- 管理员入口（仅白名单邮箱可见）-->
-    <div id="adminSection" style="display:none;margin-top:1.2rem;padding-top:1.2rem;border-top:0.5px solid var(--border);">
-      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">管理员</h4>
-      <p style="margin:0 0 .8rem;font-size:13px;color:var(--text2);">
-        访问站点后台：用户/房间/Bridge 状态、计费汇总。
-      </p>
-      <a href="/admin.html" target="_blank"
-         style="display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;background:#1a1a18;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">
-        进入 Admin 后台 →
-      </a>
     </div>
 
     <div class="modal-actions">
