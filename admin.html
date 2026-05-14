@@ -241,10 +241,10 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th>邮箱</th><th>昵称</th><th>角色</th><th class="num">关注</th><th class="num">消息</th><th>注册</th><th>操作</th>
+                <th>邮箱</th><th>昵称</th><th>角色</th><th class="num">关注</th><th class="num">消息</th><th>注册</th><th>最近登录</th><th>操作</th>
               </tr>
             </thead>
-            <tbody id="userRows"><tr><td colspan="7" class="loader">加载中…</td></tr></tbody>
+            <tbody id="userRows"><tr><td colspan="8" class="loader">加载中…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -261,10 +261,10 @@
           <table class="tbl">
             <thead>
               <tr>
-                <th>房间名</th><th>行业</th><th>大咖</th><th class="num">成员</th><th class="num">消息</th><th class="num">Cost USD</th><th class="num">收 ¥</th><th>建于</th><th>操作</th>
+                <th>房间名</th><th>大咖</th><th class="num">成员</th><th class="num">消息</th><th class="num">Cost USD</th><th class="num">收 ¥</th><th>建于</th><th>操作</th>
               </tr>
             </thead>
-            <tbody id="roomRows"><tr><td colspan="9" class="loader">加载中…</td></tr></tbody>
+            <tbody id="roomRows"><tr><td colspan="8" class="loader">加载中…</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -415,8 +415,8 @@
     const tbody = document.getElementById('userRows')
     tbody.innerHTML = '<tr><td colspan="7" class="loader">加载中…</td></tr>'
     const { data, error } = await sb.rpc('admin_list_users', { p_search: search, p_limit: USERS_PAGE, p_offset: usersOffset })
-    if (error) { tbody.innerHTML = `<tr><td colspan="7" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
-    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">没有数据</td></tr>'; return }
+    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">没有数据</td></tr>'; return }
     tbody.innerHTML = data.map(u => {
       const banned = !!u.banned_at
       const rolePill = banned ? '<span class="pill banned">封禁</span>' : `<span class="pill ${u.role}">${u.role === 'expert' ? '大咖' : '小白'}</span>`
@@ -426,6 +426,7 @@
       const banBtn = banned
         ? `<button class="btn btn-mini" onclick="setBan('${u.user_id}',false)">解封</button>`
         : `<button class="btn btn-mini btn-danger" onclick="setBan('${u.user_id}',true)">封禁</button>`
+      const delBtn = `<button class="btn btn-mini btn-danger" onclick="deleteUser('${u.user_id}','${escHtml(u.email).replace(/'/g,"\\'")}')">删账号</button>`
       return `<tr>
         <td>${escHtml(u.email)}</td>
         <td>${escHtml(u.display_name || '—')}</td>
@@ -433,13 +434,22 @@
         <td class="num">${fmtNum(u.follow_count)}</td>
         <td class="num">${fmtNum(u.msg_count)}</td>
         <td title="${escHtml(fmtDateFull(u.created_at))}">${escHtml(fmtDate(u.created_at))}</td>
-        <td>${roleBtn} ${banBtn}</td>
+        <td title="${escHtml(fmtDateFull(u.last_sign_in_at))}">${escHtml(fmtDate(u.last_sign_in_at))}</td>
+        <td>${roleBtn} ${banBtn} ${delBtn}</td>
       </tr>`
     }).join('')
     document.getElementById('userPager').innerHTML = `
       <button class="btn btn-mini" ${usersOffset===0?'disabled':''} onclick="usersOffset=Math.max(0,usersOffset-${USERS_PAGE});loadUsers()">←</button>
       <span>${usersOffset+1}–${usersOffset+data.length}</span>
       <button class="btn btn-mini" ${data.length<USERS_PAGE?'disabled':''} onclick="usersOffset+=${USERS_PAGE};loadUsers()">→</button>`
+  }
+  async function deleteUser(uid, email) {
+    if (!confirm(`确认彻底删除账号「${email}」？\n会级联删除该用户拥有的房间、消息、follow 记录。\n此操作不可恢复。`)) return
+    if (!confirm('再次确认：真的删除吗？')) return
+    const { error } = await sb.rpc('admin_delete_user', { p_user_id: uid })
+    if (error) { showToast('删除失败：' + error.message); return }
+    showToast('账号已删除')
+    loadUsers()
   }
   async function setRole(uid, role) {
     const { error } = await sb.rpc('admin_update_user_role', { p_user_id: uid, p_role: role })
@@ -464,12 +474,11 @@
     const tbody = document.getElementById('roomRows')
     tbody.innerHTML = '<tr><td colspan="9" class="loader">加载中…</td></tr>'
     const { data, error } = await sb.rpc('admin_list_rooms', { p_search: search, p_limit: ROOMS_PAGE, p_offset: roomsOffset })
-    if (error) { tbody.innerHTML = `<tr><td colspan="9" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
-    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">没有数据</td></tr>'; return }
+    if (error) { tbody.innerHTML = `<tr><td colspan="8" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">没有数据</td></tr>'; return }
     tbody.innerHTML = data.map(r => `
       <tr>
         <td>${escHtml(r.name)}</td>
-        <td>${escHtml(r.industry || '—')}</td>
         <td>${escHtml(r.expert_name || r.expert_email || '—')}</td>
         <td class="num">${fmtNum(r.member_count)}</td>
         <td class="num">${fmtNum(r.msg_count)}</td>

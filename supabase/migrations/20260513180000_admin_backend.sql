@@ -72,6 +72,7 @@ returns table (
   role text,
   banned_at timestamptz,
   created_at timestamptz,
+  last_sign_in_at timestamptz,
   follow_count bigint,
   msg_count bigint
 )
@@ -88,6 +89,7 @@ begin
     p.role,
     p.banned_at,
     p.created_at,
+    u.last_sign_in_at,
     (select count(*) from room_members rm
        where rm.user_id = p.user_id
          and rm.user_id <> (select expert_id from rooms r where r.id = rm.room_id))::bigint,
@@ -104,6 +106,23 @@ end;
 $body$;
 
 grant execute on function admin_list_users(text, int, int) to authenticated;
+
+-- 5b) 彻底删除用户账号（连带 auth.users）
+create or replace function admin_delete_user(p_user_id uuid)
+returns void
+language plpgsql security definer
+set search_path = public, pg_temp
+as $body$
+begin
+  if not is_admin() then raise exception 'unauthorized'; end if;
+  -- 不允许 admin 删自己（防止误操作把自己锁外面）
+  if p_user_id = auth.uid() then raise exception 'cannot delete yourself'; end if;
+  delete from auth.users where id = p_user_id;
+  -- profiles / rooms / room_members / messages 都靠 on delete cascade 自动清
+end;
+$body$;
+
+grant execute on function admin_delete_user(uuid) to authenticated;
 
 -- 5) 角色升降 + 软封禁
 create or replace function admin_update_user_role(p_user_id uuid, p_role text)
