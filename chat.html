@@ -1522,7 +1522,7 @@
             </span>
           </div>
           <div class="chat-status">
-            <div class="status-item offline" id="bridgeStatus" title="AI 未连接">
+            <div class="status-item offline" id="bridgeStatus" title="AI 未连接 · 点击请求重启" onclick="requestBridgeRestart()" style="cursor:pointer;">
               <div class="dot"></div>
               <span class="brain-badge" id="brainBadge" title="当前 brain 运行时">hermes</span>
               <span id="chatRoomModel">AI</span>
@@ -1637,6 +1637,9 @@
     const { data: { session } } = await sb.auth.getSession()
     if (!session) { window.location.href = '/login.html'; return }
     currentUser = session.user
+
+    // bridge 心跳轮询：每 6 秒拉一次 last_seen 状态
+    startBridgeHeartbeatPolling()
 
     const email = currentUser.email
 
@@ -2361,14 +2364,8 @@
     refreshQuizState()
     scrollToBottom()
 
-    // 如果房间近 10 分钟内有 AI 消息，认为 bridge 在线
-    if (msgs && msgs.length > 0) {
-      const tenMinAgo = Date.now() - 10 * 60 * 1000
-      const recentAi = msgs.some(m => m.role === 'ai' && new Date(m.created_at).getTime() > tenMinAgo)
-      setBridgeStatus(recentAi)
-    } else {
-      setBridgeStatus(false)
-    }
+    // 用心跳真实反映 bridge 状态（不再靠「最近 10 分钟有 AI 消息」猜）
+    refreshBridgeStatus()
   }
 
   function subscribeRoom(roomId) {
@@ -2976,7 +2973,39 @@
   function setBridgeStatus(online) {
     const el = document.getElementById('bridgeStatus')
     el.className = 'status-item ' + (online ? 'online' : 'offline')
-    el.title = online ? 'AI 已连接' : 'AI 未连接'
+    el.title = online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启'
+  }
+
+  // ── bridge 心跳轮询 ──（每 6 秒拉 bridge_state.last_seen，> 30 秒未更新当离线）
+  let _bridgeHeartbeatTimer = null
+  async function refreshBridgeStatus() {
+    try {
+      const { data, error } = await sb
+        .from('bridge_state').select('last_seen').eq('id', 'singleton').maybeSingle()
+      if (error || !data || !data.last_seen) { setBridgeStatus(false); return }
+      const lastSeenMs = new Date(data.last_seen).getTime()
+      const ageSec = (Date.now() - lastSeenMs) / 1000
+      setBridgeStatus(ageSec < 30)
+    } catch (e) {
+      // 网络抖动等 → 保留上一次状态，不重置
+      console.warn('[bridge status]', e)
+    }
+  }
+  function startBridgeHeartbeatPolling() {
+    if (_bridgeHeartbeatTimer) return
+    refreshBridgeStatus()
+    _bridgeHeartbeatTimer = setInterval(refreshBridgeStatus, 6000)
+  }
+
+  // 点击图标 → 请求 bridge 重启（落入 bridge_state.restart_requested_at，bridge 下一轮自我退出，launchd 拉起）
+  async function requestBridgeRestart() {
+    const ok = confirm('AI 桥接重启一次？（适用于 AI 不响应）')
+    if (!ok) return
+    const { error } = await sb.rpc('request_bridge_restart')
+    if (error) { showToast('请求失败：' + (error.message || error.code)); return }
+    showToast('已请求重启，5~10 秒后生效')
+    // 立刻刷一下状态（lasts_seen 还没更新，会显示离线，等 bridge 拉起再变绿）
+    refreshBridgeStatus()
   }
 
   function showTyping() {
