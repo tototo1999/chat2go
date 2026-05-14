@@ -2159,6 +2159,8 @@
   }
   function shortModelName(model) {
     if (!model) return '—'
+    // openrouter 只是聚合层，不是真正的 LLM 提供方，去掉前缀只保留底层 provider/model
+    model = model.replace(/^openrouter\//, '')
     const parts = model.split('/')
     const tail = parts[parts.length - 1]
       .replace(/^claude-/, '')
