@@ -1201,14 +1201,11 @@
     .mention-popover .mav.ai     { background: var(--teal); }
     .mention-popover .mav.expert { background: var(--purple); }
     .mention-popover .mav.user   { background: #E5B85A; }
-    /* 消息里渲染出来的 @mention */
+    /* 消息里渲染出来的 @mention：纯文字色，无底色 / 无阴影 */
     .mention {
       color: var(--teal-600);
-      background: var(--teal-50);
-      padding: 0 5px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.96em;
+      font-weight: 500;
+      text-shadow: none;
     }
 
     /* 图片 lightbox */
