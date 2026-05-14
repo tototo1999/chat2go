@@ -614,6 +614,8 @@
     const wrap = document.createElement('div')
     wrap.style.position = 'fixed'
     wrap.style.left = '-9999px'
+    wrap.style.top = '0'
+    wrap.style.width = '780px'   // 锁定渲染宽度，让 offsetWidth 可预测
     wrap.innerHTML = html
     document.body.appendChild(wrap)
     // 等所有图片加载完（不然 html2canvas 截到空白）
@@ -626,21 +628,20 @@
     }))
     try {
       // 单页长 PDF：宽度 A4，高度按内容缩放后的实际占用算（widthMm/offsetWidth 比例）
-      // + pagebreak.avoid-all 兜底：若分页发生，整块消息不会被切两半
+      // 给 30% buffer，宁可页面比实际多一段空白，也不让 html2pdf 强行分页
       const inner = wrap.firstElementChild
       const widthMm = 210
       const marginMm = 10
       const contentWidthMm = widthMm - 2 * marginMm
-      // 图像按 widthMm 缩放，所以 PDF 内实际高 = offsetHeight × (contentWidthMm / offsetWidth)
-      const naturalHeightMm = inner.offsetWidth > 0
-        ? (inner.offsetHeight * contentWidthMm / inner.offsetWidth)
-        : (inner.offsetHeight * 0.2646)
-      const heightMm = Math.max(297, naturalHeightMm + 2 * marginMm + 10)
+      const ow = inner.offsetWidth || 780
+      const naturalHeightMm = inner.offsetHeight * contentWidthMm / ow
+      // 1.3 倍 + 50mm 双重 buffer：覆盖 html2canvas 渲染高度比 offsetHeight 略大的情况
+      const heightMm = Math.max(297, naturalHeightMm * 1.3 + 50)
       await html2pdf().set({
         margin: [marginMm, marginMm, marginMm, marginMm],
         filename,
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
+        html2canvas: { scale: 2, useCORS: true, windowWidth: ow },
         jsPDF: { unit: 'mm', format: [widthMm, heightMm], orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
       }).from(inner).save()
