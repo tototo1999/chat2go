@@ -525,21 +525,41 @@
     const mainMsgs = allMsgs.filter(m => (m.channel || 'main') === 'main')
     const privMsgs = allMsgs.filter(m => m.channel === 'expert_user')
 
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    // 短文件名：去掉「的 Chat」尾巴 + 紧凑日期 mmdd-HHMM
+    const shortName = String(name || 'room').replace(/\s*的\s*Chat\s*$/i, '').replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
+    const d = new Date()
+    const stamp = `${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`
     let downloaded = []
     if (mainMsgs.length) {
-      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `chat2go-room-${name}-群聊-${ts}.pdf`)
+      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊-${stamp}.pdf`)
       downloaded.push('群聊')
     }
     if (privMsgs.length) {
-      await renderRoomPdf(room, privMsgs, exportAt, '私信', `chat2go-room-${name}-私信-${ts}.pdf`)
+      await renderRoomPdf(room, privMsgs, exportAt, '私信', `${shortName}-私信-${stamp}.pdf`)
       downloaded.push('私信')
     }
     if (!downloaded.length) showToast('该房间暂无消息')
     else showToast(`已下载 ${downloaded.join(' + ')} PDF`)
   }
 
+  // 为图片附件批量生成短期 signed URL（10 分钟）—— 兼容老的失效公开 URL
+  async function refreshImageUrls(msgs) {
+    for (const m of msgs) {
+      const atts = m.attachments
+      if (!Array.isArray(atts)) continue
+      for (const a of atts) {
+        const isImage = (a.mime_type||'').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name||'')
+        if (!isImage || !a.storage_path) continue
+        try {
+          const { data, error } = await sb.storage.from('chat-uploads').createSignedUrl(a.storage_path, 600)
+          if (!error && data?.signedUrl) a.url = data.signedUrl
+        } catch (e) { console.warn('[refreshImageUrls]', a.storage_path, e) }
+      }
+    }
+  }
+
   async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename) {
+    await refreshImageUrls(msgs)
     const ROLE_LABEL = { user: '小白', expert: '大咖', ai: 'AI 助手' }
     const ROLE_COLOR = { user: '#E5B85A', expert: '#7C3AED', ai: '#1D9E75' }
     const msgsHtml = msgs.map(m => {
