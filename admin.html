@@ -624,14 +624,17 @@
       })
     }))
     try {
+      // 单页长 PDF：宽度 A4，高度按内容实际撑开（不分页）
+      const inner = wrap.firstElementChild
+      const widthMm = 210
+      const heightMm = Math.max(297, inner.offsetHeight * 0.2646 + 20)  // px→mm, 至少 A4
       await html2pdf().set({
         margin: [10, 10, 10, 10],
         filename,
         image: { type: 'jpeg', quality: 0.95 },
         html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['css', 'legacy'] }
-      }).from(wrap.firstElementChild).save()
+        jsPDF: { unit: 'mm', format: [widthMm, heightMm], orientation: 'portrait' },
+      }).from(inner).save()
     } catch (e) {
       console.error('pdf gen failed:', e)
       showToast('PDF 生成失败：' + (e.message || e))
