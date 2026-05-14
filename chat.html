@@ -242,6 +242,18 @@
       transition: background .15s, color .15s;
     }
     .todo-sub:hover { background: var(--teal-50); }
+    /* 当前正在做的题：橙黄底闪烁 */
+    .todo-sub.current {
+      background: #FEF3C7;
+      border-color: #F59E0B;
+      color: #92400E;
+      animation: quizPulse 1.8s ease-in-out infinite;
+    }
+    .todo-sub.current .check { border-color: #F59E0B; }
+    @keyframes quizPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      50%      { box-shadow: 0 0 0 4px rgba(245,158,11,0); }
+    }
     .todo-sub .check {
       width: 12px; height: 12px;
       border-radius: 3px;
@@ -725,6 +737,20 @@
     .msg-rate-btn.down:hover { background: #FECACA; }
     .msg-rate-btn.up.active   { background: var(--teal); color: #fff; border-color: var(--teal); }
     .msg-rate-btn.down.active { background: #DC2626;     color: #fff; border-color: #DC2626; }
+    .rate-badge {
+      display: inline-flex; align-items: center;
+      margin-left: 8px;
+      padding: 2px 9px;
+      background: var(--teal); color: #fff;
+      border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.4px;
+      animation: ratePop .3s ease;
+    }
+    @keyframes ratePop {
+      0% { transform: scale(.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
     .msg-rate-btn.quote {
       background: var(--bg2);
       color: var(--text2);
@@ -1355,56 +1381,38 @@
       <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
     </div>
     <div class="todo-section">
-      <div class="todo-head">ToDoList</div>
-      <div class="todo-group" data-group="who">
+      <div class="todo-head">做题进度</div>
+      <div class="todo-group" data-group="wuxing">
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">我是谁？</span>
+          <span class="todo-text">五行</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="who.wuxing" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">五行</span>
-          </div>
-          <div class="todo-sub" data-todo="who.qiangruo" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">强弱</span>
-          </div>
-          <div class="todo-sub" data-todo="who.duicuo" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">对错</span>
-          </div>
+          <div class="todo-sub" data-quiz-idx="0"><span class="check">&#10003;</span><span class="todo-text">填空（日主五行）</span></div>
+          <div class="todo-sub" data-quiz-idx="1"><span class="check">&#10003;</span><span class="todo-text">阴</span></div>
+          <div class="todo-sub" data-quiz-idx="2"><span class="check">&#10003;</span><span class="todo-text">阳</span></div>
         </div>
       </div>
-      <div class="todo-group" data-group="from">
+      <div class="todo-group" data-group="qiangruo">
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">我从哪里来？</span>
+          <span class="todo-text">强弱</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="from.guoqu" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">过去</span>
-          </div>
-          <div class="todo-sub" data-todo="from.sange" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">三个</span>
-          </div>
-          <div class="todo-sub" data-todo="from.jiedian" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">节点</span>
-          </div>
+          <div class="todo-sub" data-quiz-idx="3"><span class="check">&#10003;</span><span class="todo-text">格局</span></div>
+          <div class="todo-sub" data-quiz-idx="4"><span class="check">&#10003;</span><span class="todo-text">喜</span></div>
+          <div class="todo-sub" data-quiz-idx="5"><span class="check">&#10003;</span><span class="todo-text">忌</span></div>
         </div>
       </div>
-      <div class="todo-group" data-group="to">
+      <div class="todo-group" data-group="zhenjia">
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">我要去哪里？</span>
+          <span class="todo-text">真假</span>
         </div>
         <div class="todo-children">
-          <div class="todo-sub" data-todo="to.weilai" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">未来</span>
-          </div>
-          <div class="todo-sub" data-todo="to.sange" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">三个</span>
-          </div>
-          <div class="todo-sub" data-todo="to.jiedian" onclick="toggleTodo(this)">
-            <span class="check">&#10003;</span><span class="todo-text">节点</span>
-          </div>
+          <div class="todo-sub" data-quiz-idx="6"><span class="check">&#10003;</span><span class="todo-text">1</span></div>
+          <div class="todo-sub" data-quiz-idx="7"><span class="check">&#10003;</span><span class="todo-text">2</span></div>
+          <div class="todo-sub" data-quiz-idx="8"><span class="check">&#10003;</span><span class="todo-text">3</span></div>
         </div>
       </div>
     </div>
@@ -2114,37 +2122,42 @@
   }
   const DEFAULT_CTX_WINDOW = 200000
 
-  // Sidebar todo list — group 展开 + 子项 done 都存 localStorage
+  // ── 做题模式 ──
+  // 9 道题按固定顺序排列。某条 AI 消息的 messages.ratings 里 'up' >= 2 → pass 一题，指针前进。
+  // sidebar 子项 [0..passed-1] 标 done；第 passed 项 highlight 为「当前题」。
   function toggleTodoGroup(elOrBtn) {
     const group = elOrBtn.closest('.todo-group')
     if (!group) return
-    const expanded = group.classList.toggle('expanded')
-    try { localStorage.setItem('c2g_todog_' + group.dataset.group, expanded ? '1' : '0') } catch (e) {}
+    group.classList.toggle('expanded')
   }
-  function toggleTodo(el) {
-    const key = el.dataset.todo
-    if (!key) return
-    const done = !el.classList.contains('done')
-    el.classList.toggle('done', done)
-    try { localStorage.setItem('c2g_todo_' + key, done ? '1' : '0') } catch (e) {}
-  }
-  function restoreTodos() {
-    document.querySelectorAll('.todo-group').forEach(g => {
-      try {
-        if (localStorage.getItem('c2g_todog_' + g.dataset.group) === '1') {
-          g.classList.add('expanded')
-        }
-      } catch (e) {}
+  function refreshQuizState() {
+    // 数当前房所有 AI 消息里 ratings 'up' >= 2 的条数（按时间顺序）
+    const aiMsgs = document.querySelectorAll('.msg-group[data-role="ai"]')
+    let passed = 0
+    aiMsgs.forEach(el => {
+      let ratings = {}
+      try { ratings = JSON.parse(el.dataset.ratings || '{}') } catch (e) {}
+      const upCount = Object.values(ratings).filter(v => v === 'up').length
+      if (upCount >= 2) passed++
     })
-    document.querySelectorAll('.todo-sub').forEach(sub => {
-      try {
-        if (localStorage.getItem('c2g_todo_' + sub.dataset.todo) === '1') {
-          sub.classList.add('done')
-        }
-      } catch (e) {}
+    const total = document.querySelectorAll('.todo-sub[data-quiz-idx]').length
+    passed = Math.min(passed, total)
+    document.querySelectorAll('.todo-sub[data-quiz-idx]').forEach(sub => {
+      const idx = Number(sub.dataset.quizIdx)
+      sub.classList.toggle('done', idx < passed)
+      sub.classList.toggle('current', idx === passed)
     })
+    // 自动展开包含 current 的 group
+    const currentSub = document.querySelector('.todo-sub.current')
+    if (currentSub) {
+      const currentGroup = currentSub.closest('.todo-group')
+      document.querySelectorAll('.todo-group').forEach(g => {
+        if (g === currentGroup) g.classList.add('expanded')
+      })
+    }
   }
-  restoreTodos()
+  // 默认展开五行（第一组），其它折叠
+  document.querySelector('.todo-group[data-group="wuxing"]')?.classList.add('expanded')
 
   function formatTokens(n) {
     n = Number(n) || 0
@@ -2246,6 +2259,7 @@
 
     if (error) { showToast('加载消息失败'); return }
     if (msgs) msgs.forEach(m => appendMessage(m))
+    refreshQuizState()
     scrollToBottom()
 
     // 如果房间近 10 分钟内有 AI 消息，认为 bridge 在线
@@ -2263,6 +2277,18 @@
 
     realtimeChannel = sb
       .channel(`room-${roomId}`, { config: { presence: { key: currentUser.id } } })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度
+        if (payload.new?.role === 'ai') {
+          applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
+          refreshQuizState()
+        }
+      })
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -2354,6 +2380,8 @@
     const el = document.createElement('div')
     el.className = 'msg-group'
     el.dataset.msgId = msg.id
+    el.dataset.role = msg.role
+    el.dataset.ratings = JSON.stringify(msg.ratings || {})
 
     const attachments = Array.isArray(msg.attachments) ? msg.attachments : []
     const attachHtml = attachments.length ? `
@@ -2442,7 +2470,7 @@
       </div>
     `
     list.appendChild(el)
-    if (role === 'ai') applyRateState(msg.id, el)
+    if (role === 'ai') applyRatingsToMsg(msg.id, msg.ratings || {})
   }
 
   // 评 ✓ / ✗ 时自动 prepend 的赞美 / 纠错短句
@@ -2503,17 +2531,21 @@
     return `> **${sender}**：\n${preview}`
   }
 
-  function rateMessage(btn, msgId, val, b64, sender) {
+  // 评价 AI 消息：调 rate_message RPC，状态走 messages.ratings（双方共识，Realtime 同步）
+  async function rateMessage(btn, msgId, val, b64, sender) {
     const bar = btn.closest('.msg-rate-bar')
     if (!bar) return
-    const cur = (() => { try { return localStorage.getItem('c2g_rate_' + msgId) || '' } catch (e) { return '' } })()
-    const next = (cur === val) ? '' : val  // 再点取消
-    try {
-      if (next) localStorage.setItem('c2g_rate_' + msgId, next)
-      else localStorage.removeItem('c2g_rate_' + msgId)
-    } catch (e) {}
-    bar.querySelectorAll('.msg-rate-btn').forEach(b => b.classList.remove('active'))
-    if (next) bar.querySelector('.msg-rate-btn.' + next)?.classList.add('active')
+    const myUid = currentUser?.id
+    if (!myUid) return
+    const group = bar.closest('.msg-group')
+    let ratings = {}
+    try { ratings = JSON.parse(group?.dataset.ratings || '{}') } catch (e) {}
+    const cur = ratings[myUid] || ''
+    const next = (cur === val) ? '' : val   // 再点取消
+    const { data, error } = await sb.rpc('rate_message', { p_msg_id: msgId, p_val: next })
+    if (error) { showToast('评价失败：' + error.message); return }
+    applyRatingsToMsg(msgId, data || {})
+    refreshQuizState()
     // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
     const input = document.getElementById('msgInput')
     if (input) {
@@ -2526,7 +2558,6 @@
         const block = `${emoji}${phrase}\n\n`
         input.value = block + (input.value || '')
         lastRatePrepend = block
-        // 同时挂上待发送引用（发送时会自动附 AI 原文 trailer，渲染为微信卡片）
         setPendingQuote(b64, sender)
         autoResize(input)
         input.focus()
@@ -2540,12 +2571,35 @@
       }
     }
   }
+  // 把 messages.ratings 应用到 AI 消息 UI（DOM 状态 + 按钮 active + 双钩 badge）
+  function applyRatingsToMsg(msgId, ratings) {
+    const group = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
+    if (!group) return
+    group.dataset.ratings = JSON.stringify(ratings || {})
+    const bar = group.querySelector('.msg-rate-bar')
+    if (!bar) return
+    const myUid = currentUser?.id
+    const myVal = (ratings && myUid && ratings[myUid]) || ''
+    bar.querySelectorAll('.msg-rate-btn').forEach(b => b.classList.remove('active'))
+    if (myVal === 'up' || myVal === 'down') {
+      bar.querySelector('.msg-rate-btn.' + myVal)?.classList.add('active')
+    }
+    const upCount = Object.values(ratings || {}).filter(v => v === 'up').length
+    let badge = bar.querySelector('.rate-badge')
+    if (upCount >= 2) {
+      if (!badge) {
+        badge = document.createElement('span')
+        badge.className = 'rate-badge'
+        badge.textContent = '✓✓ pass'
+        bar.appendChild(badge)
+      }
+    } else if (badge) {
+      badge.remove()
+    }
+  }
+  // 旧 applyRateState 兼容：appendMessage 渲染完调，把 ratings 从消息对象写回
   function applyRateState(msgId, container) {
-    let v = ''
-    try { v = localStorage.getItem('c2g_rate_' + msgId) || '' } catch (e) {}
-    if (!v) return
-    const btn = container.querySelector('.msg-rate-btn.' + v)
-    if (btn) btn.classList.add('active')
+    // 真正的状态来源是消息数据，appendMessage 时通过 applyRatingsToMsg 写回
   }
 
   function looksLikeMarkdown(text) {
