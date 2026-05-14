@@ -470,6 +470,49 @@
       gap: 6px;
       min-height: 22px;
     }
+    .presence-tabs { display: flex; align-items: center; gap: 6px; flex: 1; }
+    /* 群图库小方块按钮 */
+    .gallery-btn {
+      width: 26px; height: 26px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      color: var(--text2);
+      cursor: pointer;
+      padding: 0;
+      transition: transform .12s, box-shadow .15s, border-color .15s, color .15s;
+    }
+    .gallery-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,.1);
+      color: var(--teal);
+      border-color: var(--teal-100);
+    }
+    .gallery-btn svg { display: block; }
+    /* 图库网格 */
+    .image-gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 6px;
+      padding: 12px;
+    }
+    .img-thumb {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      overflow: hidden;
+      border-radius: 6px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      display: block;
+    }
+    .img-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform .2s;
+    }
+    .img-thumb:hover img { transform: scale(1.04); }
     .presence-tab {
       display: inline-flex;
       align-items: center;
@@ -1509,8 +1552,17 @@
 
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
       <div class="chat-head">
-        <!-- 在线头像 -->
-        <div class="presence-row" id="presenceRow"></div>
+        <!-- 在线头像 + 群图库按钮 -->
+        <div class="presence-row">
+          <div class="presence-tabs" id="presenceRow"></div>
+          <button class="gallery-btn" onclick="openImageGallery()" title="群图库" aria-label="群图库">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="1.5" y="1.5" width="11" height="11" rx="1.5"/>
+              <circle cx="5" cy="5" r="1"/>
+              <path d="M12.5 9.5l-3-3-6 6"/>
+            </svg>
+          </button>
+        </div>
         <!-- metrics + status -->
         <div class="chat-head-row">
           <div class="chat-metrics">
@@ -1603,6 +1655,17 @@
       <button class="btn-cancel" onclick="closeNewRoomModal()">取消</button>
       <button class="btn-create" id="createRoomBtn" onclick="createRoom()">创建</button>
     </div>
+  </div>
+</div>
+
+<!-- 群图库 modal -->
+<div class="modal-overlay" id="imageGalleryModal" onclick="closeImageGallery(event)">
+  <div class="modal" style="max-width:720px;padding:0;" onclick="event.stopPropagation()">
+    <h3 style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:0.5px solid var(--border);margin:0;">
+      <span>群图库</span>
+      <button onclick="closeImageGallery()" style="background:none;border:0;font-size:18px;color:var(--text3);cursor:pointer;">×</button>
+    </h3>
+    <div id="imageGalleryBody" style="max-height:70vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -2058,6 +2121,47 @@
   function closeFollowersListChat(e) {
     if (e && e.target !== document.getElementById('followersListModal')) return
     document.getElementById('followersListModal').classList.remove('show')
+  }
+
+  // 群图库：拉本房所有消息的 attachments，过滤出图片，渲染瀑布格
+  async function openImageGallery() {
+    if (!currentRoom) return
+    const modal = document.getElementById('imageGalleryModal')
+    const body = document.getElementById('imageGalleryBody')
+    body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">加载中…</div>'
+    modal.classList.add('show')
+    const { data, error } = await sb
+      .from('messages')
+      .select('id,attachments,created_at')
+      .eq('room_id', currentRoom.id)
+      .not('attachments', 'is', null)
+      .order('created_at', { ascending: false })
+    if (error) {
+      body.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">加载失败：${escHtml(error.message)}</div>`
+      return
+    }
+    const images = []
+    ;(data || []).forEach(m => {
+      const atts = Array.isArray(m.attachments) ? m.attachments : []
+      atts.forEach(a => {
+        const isImage = (a.mime_type || '').startsWith('image/')
+          || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+        if (isImage && a.url) images.push({ url: a.url, name: a.name || '' })
+      })
+    })
+    if (!images.length) {
+      body.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px;">群里还没有图片</div>'
+      return
+    }
+    body.innerHTML = '<div class="image-gallery-grid">' + images.map(img =>
+      `<a class="img-thumb" href="${img.url}" target="_blank" rel="noopener" title="${escHtml(img.name)}">
+         <img loading="lazy" src="${img.url}" alt="${escHtml(img.name)}">
+       </a>`
+    ).join('') + '</div>'
+  }
+  function closeImageGallery(e) {
+    if (e && e.target !== document.getElementById('imageGalleryModal')) return
+    document.getElementById('imageGalleryModal').classList.remove('show')
   }
 
   async function requestFollow(expertId, btnEl) {
