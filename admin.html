@@ -288,6 +288,8 @@
   <div class="toast" id="toast"></div>
 
   <script src="vendor/supabase.js"></script>
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/html2pdf.bundle.min.js"></script>
   <script>
   const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
@@ -513,17 +515,74 @@
     loadRooms()
   }
   async function exportRoom(id, name) {
+    showToast('生成 PDF 中…')
     const { data, error } = await sb.rpc('admin_export_room', { p_room_id: id })
     if (error) { showToast('导出失败：' + error.message); return }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const room = data.room || {}
+    const msgs = data.messages || []
+    const exportAt = new Date(data.export_at || Date.now()).toLocaleString('zh-CN', { hour12: false })
+
+    const ROLE_LABEL = { user: '小白', expert: '大咖', ai: 'AI 助手' }
+    const ROLE_COLOR = { user: '#E5B85A', expert: '#7C3AED', ai: '#1D9E75' }
+
+    const msgsHtml = msgs.map(m => {
+      const role = m.role || 'user'
+      const label = ROLE_LABEL[role] || role
+      const color = ROLE_COLOR[role] || '#888'
+      const ts = new Date(m.created_at).toLocaleString('zh-CN', { hour12: false })
+      const content = (m.type === 'markdown' || /^[#>*`-]|\n[#>*-]/.test(m.content || ''))
+        ? marked.parse(m.content || '')
+        : `<div style="white-space:pre-wrap;">${escHtml(m.content || '')}</div>`
+      const channelTag = m.channel === 'expert_user'
+        ? '<span style="font-size:9px;background:#eee;color:#666;padding:1px 5px;border-radius:3px;margin-left:6px;">私聊</span>' : ''
+      const atts = (m.attachments || []).map(a =>
+        `<div style="font-size:11px;color:#666;margin-top:3px;">📎 ${escHtml(a.name)} (${Math.round((a.size||0)/1024)}KB)</div>`
+      ).join('')
+      return `
+        <div style="margin-bottom:14px;page-break-inside:avoid;">
+          <div style="font-size:11px;color:#666;margin-bottom:3px;">
+            <span style="display:inline-block;padding:1px 7px;background:${color};color:#fff;border-radius:999px;font-weight:600;font-size:10px;">${label}</span>
+            <span style="margin-left:8px;">${ts}</span>${channelTag}
+          </div>
+          <div style="border-left:2px solid ${color};padding:6px 10px;background:#fafafa;font-size:12px;line-height:1.6;">
+            ${content}
+            ${atts}
+          </div>
+        </div>`
+    }).join('')
+
+    const html = `
+      <div style="font-family:'Noto Sans SC','Helvetica Neue',sans-serif;color:#1a1a18;padding:20px;max-width:780px;">
+        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(room.name || '房间')}</h1>
+        <div style="font-size:11px;color:#888;margin-bottom:16px;border-bottom:0.5px solid #ddd;padding-bottom:10px;">
+          行业：${escHtml(room.industry || '—')} · 共 ${msgs.length} 条消息 · 导出时间：${exportAt}
+        </div>
+        ${msgsHtml || '<div style="color:#888;">（无消息）</div>'}
+      </div>`
+
+    const wrap = document.createElement('div')
+    wrap.style.position = 'fixed'
+    wrap.style.left = '-9999px'
+    wrap.innerHTML = html
+    document.body.appendChild(wrap)
+
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-    a.href = url
-    a.download = `chat2go-room-${name}-${ts}.json`
-    document.body.appendChild(a); a.click(); a.remove()
-    URL.revokeObjectURL(url)
-    showToast('已下载 JSON')
+    try {
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `chat2go-room-${name}-${ts}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(wrap.firstElementChild).save()
+      showToast('PDF 已下载')
+    } catch (e) {
+      console.error('pdf gen failed:', e)
+      showToast('PDF 生成失败：' + (e.message || e))
+    } finally {
+      document.body.removeChild(wrap)
+    }
   }
 
   // ── Bridge ──
