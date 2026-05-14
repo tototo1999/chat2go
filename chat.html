@@ -533,6 +533,42 @@
       min-width: 12px; text-align: center;
       font-variant-numeric: tabular-nums;
     }
+    /* 群成员列表弹层（点群胶囊出现） */
+    .member-list-popover {
+      position: absolute;
+      top: 30px; left: 0;
+      display: none;
+      flex-direction: column;
+      min-width: 220px; max-width: 320px; max-height: 60vh;
+      overflow-y: auto;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      padding: 6px;
+      z-index: 50;
+    }
+    .member-list-popover.open { display: flex; }
+    .member-list-popover .ml-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .member-list-popover .ml-row:hover { background: var(--bg2); }
+    .member-list-popover .ml-av {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .member-list-popover .ml-av.expert    { background: var(--purple-50); color: var(--purple-600); }
+    .member-list-popover .ml-av.focal     { background: var(--bg2);       color: #B8893A; }
+    .member-list-popover .ml-av.audience  { background: #FFEDD5;          color: #C2410C; }
+    .member-list-popover .ml-av.ai        { background: var(--teal-50);   color: var(--teal-600); }
+    .member-list-popover .ml-name { flex: 1; color: var(--text); }
+    .member-list-popover .ml-role { font-size: 11px; color: var(--text3); }
     /* 未读数徽章：>0 显示，=0 隐藏；位置在 icon 右侧（gap 控制间距） */
     .presence-tab .unread {
       min-width: 14px;
@@ -1541,8 +1577,9 @@
     <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
       <div class="chat-head">
         <!-- 在线头像 -->
-        <div class="presence-row">
+        <div class="presence-row" style="position:relative;">
           <div id="presenceRow" style="display:flex;align-items:center;gap:6px;"></div>
+          <div id="memberListPopover" class="member-list-popover"></div>
           <button id="inviteBtn" class="invite-btn" title="复制邀请链接" onclick="copyInviteLink()" style="display:none;">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M6.5 9.5a3 3 0 0 0 4.5 0l2-2a3 3 0 0 0-4.5-4.5l-1 1"/>
@@ -2326,7 +2363,7 @@
     const resetBtn = document.getElementById('resetRoomBtn')
     if (resetBtn) resetBtn.style.display = currentRoomRole === 'expert' ? '' : 'none'
 
-    await refreshRoomMemberCount()  // 拉群人数，renderPresence 渲染时已可用
+    await refreshRoomMembers()  // 拉群人数 + 成员列表（同时补 profilesByUid 让 @ 列表完整）
     renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
     await loadMessages(room.id)
     await loadRoomCost(room.id)
@@ -2648,7 +2685,11 @@
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
       const iconHtml = t.iconHtml || `<i class="ti ${t.icon}"></i>`
-      return `<div class="${cls}" data-ch="${t.ch}" onclick="switchChannel('${t.ch}')" title="${escHtml(t.title)}">`
+      // 群胶囊：点了切到 main + 弹成员列表；其它胶囊只切频道
+      const clickHandler = t.ch === 'main'
+        ? "switchChannel('main');openMemberListPopover();event.stopPropagation();"
+        : `switchChannel('${t.ch}')`
+      return `<div class="${cls}" data-ch="${t.ch}" onclick="${clickHandler}" title="${escHtml(t.title)}">`
         + iconHtml
         + `<span class="unread" data-ch="${t.ch}">0</span>`
         + `</div>`
@@ -2658,12 +2699,51 @@
   }
 
   let roomMemberCount = null
-  async function refreshRoomMemberCount() {
+  let _roomMembersCache = []
+  async function refreshRoomMembers() {
+    // 拉本房成员（用 SECURITY DEFINER RPC 绕开 room_members RLS），顺带塞 profilesByUid 让 @ 列表完整
     if (!currentRoom) return
-    const { data } = await sb.rpc('get_room_member_count', { p_room_id: currentRoom.id })
-    roomMemberCount = data ?? 0
+    const { data, error } = await sb.rpc('get_room_members', { p_room_id: currentRoom.id })
+    if (error) { console.warn('[room members]', error); return }
+    _roomMembersCache = data || []
+    roomMemberCount = _roomMembersCache.length
     const el = document.getElementById('groupMemberCount')
     if (el) el.textContent = roomMemberCount
+    _roomMembersCache.forEach(m => {
+      if (m.display_name && !profilesByUid[m.user_id]) profilesByUid[m.user_id] = m.display_name
+    })
+  }
+  // 兼容旧调用入口
+  async function refreshRoomMemberCount() { return refreshRoomMembers() }
+
+  // 点群胶囊：除了切换频道，还弹出成员清单
+  function openMemberListPopover() {
+    const pop = document.getElementById('memberListPopover')
+    if (!pop) return
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    // AI 永远在场，单独加一行
+    const rows = []
+    rows.push(`<div class="ml-row"><span class="ml-av ai">AI</span><span class="ml-name">${escHtml(aiName)}</span><span class="ml-role">AI 助手</span></div>`)
+    _roomMembersCache.forEach(m => {
+      const roleCls = m.role  // expert / focal / audience
+      const initial = m.role === 'expert' ? '咖' : (m.role === 'audience' ? '路' : '白')
+      const roleLabel = m.role === 'expert' ? '大咖' : (m.role === 'focal' ? '小白' : '路人')
+      rows.push(`<div class="ml-row"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
+    })
+    pop.innerHTML = rows.join('')
+    pop.classList.add('open')
+    // 点外部关闭
+    setTimeout(() => document.addEventListener('click', _onDocClickCloseMemberList, { once: true }), 0)
+  }
+  function _onDocClickCloseMemberList(e) {
+    const pop = document.getElementById('memberListPopover')
+    if (!pop) return
+    if (pop.contains(e.target)) {
+      // 在弹层内点击就保持打开，再挂一次 once 监听
+      setTimeout(() => document.addEventListener('click', _onDocClickCloseMemberList, { once: true }), 0)
+      return
+    }
+    pop.classList.remove('open')
   }
 
   function appendMessage(msg) {
