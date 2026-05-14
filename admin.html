@@ -529,13 +529,14 @@
     const shortName = String(name || 'room').replace(/\s*的\s*Chat\s*$/i, '').replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
     const d = new Date()
     const stamp = `${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`
+    const profilesMap = data.profiles || {}
     let downloaded = []
     if (mainMsgs.length) {
-      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊-${stamp}.pdf`)
+      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊-${stamp}.pdf`, profilesMap)
       downloaded.push('群聊')
     }
     if (privMsgs.length) {
-      await renderRoomPdf(room, privMsgs, exportAt, '私信', `${shortName}-私信-${stamp}.pdf`)
+      await renderRoomPdf(room, privMsgs, exportAt, '私信', `${shortName}-私信-${stamp}.pdf`, profilesMap)
       downloaded.push('私信')
     }
     if (!downloaded.length) showToast('该房间暂无消息')
@@ -558,13 +559,25 @@
     }
   }
 
-  async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename) {
+  // 大咖人设名（与 chat.html EXPERT_PERSONAS 一致）
+  const EXPERT_PERSONAS = {
+    'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道 san',
+  }
+
+  async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename, profilesMap) {
     await refreshImageUrls(msgs)
     const ROLE_LABEL = { user: '小白', expert: '大咖', ai: 'AI 助手' }
     const ROLE_COLOR = { user: '#E5B85A', expert: '#7C3AED', ai: '#1D9E75' }
+    const profiles = profilesMap || {}
+    const aiName = (room && room.ai_name) || 'AI 助手'
+    function senderLabel(m) {
+      if (m.role === 'ai') return aiName
+      if (m.role === 'expert') return EXPERT_PERSONAS[m.user_id] || profiles[m.user_id] || '大咖'
+      return profiles[m.user_id] || '小白'
+    }
     const msgsHtml = msgs.map(m => {
       const role = m.role || 'user'
-      const label = ROLE_LABEL[role] || role
+      const label = senderLabel(m)
       const color = ROLE_COLOR[role] || '#888'
       const ts = new Date(m.created_at).toLocaleString('zh-CN', { hour12: false })
       const content = (m.type === 'markdown' || /^[#>*`-]|\n[#>*-]/.test(m.content || ''))
