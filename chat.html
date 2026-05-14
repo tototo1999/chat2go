@@ -2639,7 +2639,8 @@
     ]
     // 私聊 tab 只对大咖和八字主（focal）开放；路人看不到
     if (currentRoomRole === 'expert' || currentRoomRole === 'focal') {
-      const peerInner = peerCountHtml + `<i class="ti ti-user"></i>`
+      // 私聊：图标在左，数字在右
+      const peerInner = `<i class="ti ti-user"></i>` + peerCountHtml
       tabs.push(isExp
         ? { cls: 'peer-user',   ch: 'expert_user', title: '与小白私聊（AI 不参与）', iconHtml: peerInner }
         : { cls: 'peer-expert', ch: 'expert_user', title: '与大咖私聊（AI 不参与）', iconHtml: peerInner })
