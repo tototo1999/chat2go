@@ -537,16 +537,14 @@
 
     // 短文件名：大咖人设名优先（如「森山大道 san」），不然用房名去尾的 fallback
     const shortName = roomDisplayName(room).replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
-    const d = new Date()
-    const stamp = `${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`
     const profilesMap = data.profiles || {}
     let downloaded = []
     if (mainMsgs.length) {
-      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊-${stamp}.pdf`, profilesMap)
+      await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊.pdf`, profilesMap)
       downloaded.push('群聊')
     }
     if (privMsgs.length) {
-      await renderRoomPdf(room, privMsgs, exportAt, '私信', `${shortName}-私信-${stamp}.pdf`, profilesMap)
+      await renderRoomPdf(room, privMsgs, exportAt, '私信', `${shortName}-私信.pdf`, profilesMap)
       downloaded.push('私信')
     }
     if (!downloaded.length) showToast('该房间暂无消息')
