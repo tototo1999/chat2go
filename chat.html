@@ -2364,10 +2364,29 @@
           return
         }
       }
-      // 写 profiles.display_name（handle_new_user trigger 可能已经写过；这里再确保一次）
+      // 写 profiles.display_name
       const { data: { user } } = await sb.auth.getUser()
       if (user) {
-        await sb.from('profiles').upsert({ user_id: user.id, role: 'user', display_name: nickname }, { onConflict: 'user_id' })
+        if (_inviteMode === 'anon') {
+          // 新匿名用户：profile 行可能 trigger 还没建好（race），upsert + role='user' 兜底
+          const { error: pErr } = await sb.from('profiles')
+            .upsert({ user_id: user.id, role: 'user', display_name: nickname }, { onConflict: 'user_id' })
+          if (pErr) {
+            err.textContent = '保存昵称失败：' + (pErr.message || pErr.code)
+            err.style.display = 'block'
+            return
+          }
+        } else {
+          // existing：profile 必有行，只 update display_name 不动 role（避免覆盖大咖角色）
+          const { error: pErr } = await sb.from('profiles')
+            .update({ display_name: nickname })
+            .eq('user_id', user.id)
+          if (pErr) {
+            err.textContent = '保存昵称失败：' + (pErr.message || pErr.code)
+            err.style.display = 'block'
+            return
+          }
+        }
       }
       // 进房
       const { data: roomId, error: joinErr } = await sb.rpc('join_room_by_token', { p_token: _pendingInviteToken })
