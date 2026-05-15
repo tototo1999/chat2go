@@ -3257,8 +3257,14 @@
     const roleLabels = { user: '小白', audience: '路人', expert: '大咖', ai: aiName }
     const roleLabel = roleLabels[displayRole] || displayRole
     const avText = displayRole === 'ai' ? 'AI' : displayRole === 'expert' ? '咖' : displayRole === 'audience' ? '路' : '白'
-    // 大咖可点 AI 头像编辑名字
-    const aiAvClick = (role === 'ai' && isExpert(currentRoom)) ? ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"' : ''
+    // 头像点击：AI 头像(仅大咖)→编辑 AI 名；自己头像(非 AI)→进设置；其它头像不可点
+    let avClick = ''
+    if (role === 'ai' && isExpert(currentRoom)) {
+      avClick = ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"'
+    } else if (isOwn && role !== 'ai') {
+      avClick = ' onclick="openSettings()" title="点击进入设置" style="cursor:pointer;"'
+    }
+    const aiAvClick = avClick
     // 显示名优先级：自己 → currentDisplayName；他人 → profilesByUid 缓存 → roleLabel
     let senderName
     if (role === 'ai') {
