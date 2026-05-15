@@ -2529,6 +2529,10 @@
   function renderTodos(payload) {
     const body = document.getElementById('todoBody')
     if (!body) return
+    // 重渲染保留每组展开状态（addTodoSub 等编辑操作会触发 rerender，
+    // 否则用户在非首组加子项时该组会被默认折叠逻辑收起）
+    const prevExpanded = new Set()
+    body.querySelectorAll('.todo-group.expanded').forEach(g => prevExpanded.add(g.dataset.group))
     body.innerHTML = ''
     let idx = 0
     ;(payload || []).forEach((group, gi) => {
@@ -2556,7 +2560,13 @@
         </div>`
       body.appendChild(groupEl)
     })
-    body.querySelector('.todo-group')?.classList.add('expanded')
+    if (prevExpanded.size === 0) {
+      body.querySelector('.todo-group')?.classList.add('expanded')
+    } else {
+      prevExpanded.forEach(key => {
+        body.querySelector(`.todo-group[data-group="${key}"]`)?.classList.add('expanded')
+      })
+    }
     applyEditingMode()
   }
 
