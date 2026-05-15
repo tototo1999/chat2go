@@ -192,9 +192,10 @@
     .todo-section {
       padding: 6px;
       border-bottom: 0.5px solid var(--border);
+      position: relative;
     }
     .todo-head {
-      padding: 7px 12px 7px 38px;
+      padding: 7px 10px;
       background: var(--teal-50);
       border: 0.5px solid var(--teal-100);
       border-radius: var(--radius);
@@ -202,7 +203,107 @@
       font-size: 13px;
       font-weight: 300;
       color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
+    .todo-head-name {
+      flex: 1;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .todo-head-btn {
+      width: 22px; height: 22px;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      color: var(--text2);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .todo-head-btn.visible { display: inline-flex; }
+    .todo-head-btn:hover { background: var(--teal-100); color: var(--teal-600); }
+    .todo-popup {
+      position: absolute;
+      left: 6px; right: 6px; top: 42px;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.08);
+      z-index: 50;
+      padding: 6px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .todo-popup-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .todo-popup-item:hover { background: var(--teal-50); }
+    .todo-popup-item.active { background: var(--teal-50); color: var(--teal-600); font-weight: 500; }
+    .todo-popup-item .dot { width: 6px; height: 6px; border-radius: 50%; background: transparent; flex-shrink: 0; }
+    .todo-popup-item.active .dot { background: var(--teal-600); }
+    .todo-popup-divider { height: 0.5px; background: var(--border); margin: 4px 0; }
+    .todo-popup-add { color: var(--teal-600); }
+    /* 编辑态：可改名 + 行尾 ✕ + + 新建 */
+    .todo-section.editing .todo-pill,
+    .todo-section.editing .todo-sub { cursor: default; }
+    .todo-section.editing .todo-text[contenteditable="true"] {
+      outline: 1px dashed var(--teal-300, #5eead4);
+      border-radius: 4px;
+      padding: 0 3px;
+      cursor: text;
+      background: rgba(255,255,255,0.6);
+    }
+    .todo-row-del {
+      margin-left: auto;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .todo-section.editing .todo-row-del { display: inline-flex; }
+    .todo-row-del:hover { background: #fee; color: #c00; }
+    .todo-add-sub, .todo-add-group {
+      padding: 5px 10px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--teal-600);
+      cursor: pointer;
+      display: none;
+      border-radius: 999px;
+      border: 0.5px dashed var(--border2);
+      background: transparent;
+      text-align: center;
+      user-select: none;
+    }
+    .todo-add-sub { margin-left: 32px; }
+    .todo-section.editing .todo-add-sub,
+    .todo-section.editing .todo-add-group { display: block; }
+    .todo-add-sub:hover, .todo-add-group:hover { background: var(--teal-50); }
     .todo-group { margin-top: 5px; padding-left: 12px; }
     .todo-pill {
       padding: 5px 10px;
@@ -1532,41 +1633,19 @@
     <div class="sidebar-head">
       <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
     </div>
-    <div class="todo-section">
-      <div class="todo-head">Todo</div>
-      <div class="todo-group" data-group="wuxing">
-        <div class="todo-pill" onclick="toggleTodoGroup(this)">
-          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">五行</span>
-        </div>
-        <div class="todo-children">
-          <div class="todo-sub" data-quiz-idx="0"><span class="check">&#10003;</span><span class="todo-text">强弱</span></div>
-          <div class="todo-sub" data-quiz-idx="1"><span class="check">&#10003;</span><span class="todo-text">冷暖</span></div>
-          <div class="todo-sub" data-quiz-idx="2"><span class="check">&#10003;</span><span class="todo-text">流通</span></div>
-        </div>
+    <div class="todo-section" id="todoSection">
+      <div class="todo-head" id="todoHead">
+        <button type="button" class="todo-head-btn" id="todoEditBtn" title="编辑方案" onclick="toggleTodoEditing()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+        <span class="todo-head-name" id="todoHeadName">Todo</span>
+        <button type="button" class="todo-head-btn" id="todoCaretBtn" title="切换方案" onclick="toggleTodoPopup()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
-      <div class="todo-group" data-group="geju">
-        <div class="todo-pill" onclick="toggleTodoGroup(this)">
-          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">格局</span>
-        </div>
-        <div class="todo-children">
-          <div class="todo-sub" data-quiz-idx="3"><span class="check">&#10003;</span><span class="todo-text">格局</span></div>
-          <div class="todo-sub" data-quiz-idx="4"><span class="check">&#10003;</span><span class="todo-text">喜</span></div>
-          <div class="todo-sub" data-quiz-idx="5"><span class="check">&#10003;</span><span class="todo-text">忌</span></div>
-        </div>
-      </div>
-      <div class="todo-group" data-group="check">
-        <div class="todo-pill" onclick="toggleTodoGroup(this)">
-          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
-          <span class="todo-text">check</span>
-        </div>
-        <div class="todo-children">
-          <div class="todo-sub" data-quiz-idx="6"><span class="check">&#10003;</span><span class="todo-text">1</span></div>
-          <div class="todo-sub" data-quiz-idx="7"><span class="check">&#10003;</span><span class="todo-text">2</span></div>
-          <div class="todo-sub" data-quiz-idx="8"><span class="check">&#10003;</span><span class="todo-text">3</span></div>
-        </div>
-      </div>
+      <div class="todo-popup" id="todoPopup" style="display:none;"></div>
+      <div class="todo-body" id="todoBody"></div>
+      <div class="todo-add-group" onclick="addTodoGroup()">+ 新建分组</div>
     </div>
     <!-- 极简版：sidebar 不再渲染聊天室列表，房间在右侧主区自动打开 -->
     <div class="rooms-list" id="roomsList" style="display:none;"></div>
@@ -2356,6 +2435,7 @@
 
     await refreshRoomMembers()  // 拉群人数 + 成员列表（同时补 profilesByUid 让 @ 列表完整）
     renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
+    await loadActiveTodoTemplate(room)  // sidebar todo 渲染要在 refreshQuizState 之前
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
@@ -2435,8 +2515,252 @@
   const DEFAULT_CTX_WINDOW = 200000
 
   // ── 做题模式 ──
-  // 9 道题按固定顺序排列。某条 AI 消息的 messages.ratings 里 'up' >= 2 → pass 一题，指针前进。
+  // 题序由 active todo 方案的 items.flat() 顺序决定（data-quiz-idx 在 renderTodos 里自动派生）。
+  // 某条 AI 消息的 messages.ratings 里 'up' >= 2 → pass 一题，指针前进。
   // sidebar 子项 [0..passed-1] 标 done；第 passed 项 highlight 为「当前题」。
+  const DEFAULT_TODO_PAYLOAD = [
+    { label: '五行', items: [{ label: '强弱' }, { label: '冷暖' }, { label: '流通' }] },
+    { label: '格局', items: [{ label: '格局' }, { label: '喜' }, { label: '忌' }] },
+    { label: 'check', items: [{ label: '1' }, { label: '2' }, { label: '3' }] },
+  ]
+  let currentTemplate = null  // {id, name, payload} —— 当前房间挂的方案（小白也持有副本，仅大咖可改）
+  let todoPopupOpen = false
+
+  function renderTodos(payload) {
+    const body = document.getElementById('todoBody')
+    if (!body) return
+    body.innerHTML = ''
+    let idx = 0
+    ;(payload || []).forEach((group, gi) => {
+      const groupEl = document.createElement('div')
+      groupEl.className = 'todo-group'
+      groupEl.dataset.group = `g${gi}`
+      const subsHtml = (group.items || []).map((it, ii) => {
+        const cur = idx++
+        return `
+          <div class="todo-sub" data-quiz-idx="${cur}">
+            <span class="check">&#10003;</span>
+            <span class="todo-text" data-text="sub" data-gi="${gi}" data-ii="${ii}">${escHtml(it.label || '')}</span>
+            <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
+          </div>`
+      }).join('')
+      groupEl.innerHTML = `
+        <div class="todo-pill" onclick="toggleTodoGroup(this)">
+          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="todo-text" data-text="group" data-gi="${gi}">${escHtml(group.label || '')}</span>
+          <button type="button" class="todo-row-del" title="删除分组" onclick="event.stopPropagation();deleteTodoGroup(${gi})">×</button>
+        </div>
+        <div class="todo-children">
+          ${subsHtml}
+          <div class="todo-add-sub" onclick="addTodoSub(${gi})">+ 新建</div>
+        </div>`
+      body.appendChild(groupEl)
+    })
+    body.querySelector('.todo-group')?.classList.add('expanded')
+    applyEditingMode()
+  }
+
+  function applyEditingMode() {
+    const sec = document.getElementById('todoSection')
+    if (!sec) return
+    const editing = sec.classList.contains('editing')
+    sec.querySelectorAll('.todo-text[data-text]').forEach(el => {
+      if (editing) el.setAttribute('contenteditable', 'true')
+      else el.removeAttribute('contenteditable')
+    })
+  }
+
+  async function ensureExpertHasDefaultTemplate(ownerId) {
+    const { data: existing, error: selErr } = await sb
+      .from('expert_todo_templates')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (selErr) { console.warn('[seed templates select]', selErr); return null }
+    if (existing?.length) return existing[0].id
+    const { data: created, error: insErr } = await sb
+      .from('expert_todo_templates')
+      .insert({ owner_id: ownerId, name: '命理八字基础', payload: DEFAULT_TODO_PAYLOAD })
+      .select('id')
+      .single()
+    if (insErr) { console.warn('[seed templates insert]', insErr); return null }
+    return created.id
+  }
+
+  async function loadActiveTodoTemplate(room) {
+    let templateId = room.active_todo_template_id
+
+    // 大咖在自己房：没 active 就 seed 个人首个方案并设为 active
+    if (!templateId && isExpert(room)) {
+      templateId = await ensureExpertHasDefaultTemplate(room.expert_id)
+      if (templateId) {
+        const { error } = await sb.from('rooms')
+          .update({ active_todo_template_id: templateId })
+          .eq('id', room.id)
+        if (!error) {
+          room.active_todo_template_id = templateId
+          if (currentRoom?.id === room.id) currentRoom.active_todo_template_id = templateId
+        }
+      }
+    }
+
+    currentTemplate = null
+    if (templateId) {
+      const { data } = await sb
+        .from('expert_todo_templates')
+        .select('id, payload, name')
+        .eq('id', templateId)
+        .maybeSingle()
+      if (data) currentTemplate = { id: data.id, name: data.name || 'Todo', payload: data.payload || [] }
+    }
+
+    document.getElementById('todoHeadName').textContent = currentTemplate?.name || 'Todo'
+
+    const expert = isExpert(room)
+    document.getElementById('todoEditBtn')?.classList.toggle('visible', expert && !!currentTemplate)
+    document.getElementById('todoCaretBtn')?.classList.toggle('visible', expert)
+
+    document.getElementById('todoSection')?.classList.remove('editing')
+    hideTodoPopup()
+
+    renderTodos(currentTemplate ? currentTemplate.payload : DEFAULT_TODO_PAYLOAD)
+  }
+
+  async function toggleTodoEditing() {
+    if (!currentRoom || !isExpert(currentRoom) || !currentTemplate) return
+    const sec = document.getElementById('todoSection')
+    if (!sec) return
+    const wasEditing = sec.classList.contains('editing')
+    sec.classList.toggle('editing')
+    applyEditingMode()
+    hideTodoPopup()
+    if (wasEditing) await saveCurrentTemplate()
+  }
+
+  async function saveCurrentTemplate() {
+    if (!currentTemplate?.id) return
+    const sec = document.getElementById('todoSection')
+    sec.querySelectorAll('.todo-text[data-text="group"]').forEach(el => {
+      const gi = Number(el.dataset.gi)
+      if (currentTemplate.payload[gi]) currentTemplate.payload[gi].label = el.textContent.trim()
+    })
+    sec.querySelectorAll('.todo-text[data-text="sub"]').forEach(el => {
+      const gi = Number(el.dataset.gi), ii = Number(el.dataset.ii)
+      const it = currentTemplate.payload[gi]?.items?.[ii]
+      if (it) it.label = el.textContent.trim()
+    })
+    const { error } = await sb.from('expert_todo_templates')
+      .update({ payload: currentTemplate.payload })
+      .eq('id', currentTemplate.id)
+    if (error) { console.warn('[save template]', error); showToast('保存失败：' + (error.message || error.code)); return }
+    showToast('已保存')
+    await refreshQuizState()
+  }
+
+  function addTodoGroup() {
+    if (!currentTemplate) return
+    const label = (window.prompt('新分组名：', '') || '').trim()
+    if (!label) return
+    currentTemplate.payload.push({ label, items: [] })
+    renderTodos(currentTemplate.payload)
+  }
+
+  function addTodoSub(gi) {
+    if (!currentTemplate?.payload?.[gi]) return
+    const label = (window.prompt('新子项名：', '') || '').trim()
+    if (!label) return
+    currentTemplate.payload[gi].items = currentTemplate.payload[gi].items || []
+    currentTemplate.payload[gi].items.push({ label })
+    renderTodos(currentTemplate.payload)
+  }
+
+  function deleteTodoGroup(gi) {
+    const g = currentTemplate?.payload?.[gi]
+    if (!g) return
+    if (!confirm(`删除分组「${g.label}」及其所有子项？`)) return
+    currentTemplate.payload.splice(gi, 1)
+    renderTodos(currentTemplate.payload)
+  }
+
+  function deleteTodoItem(gi, ii) {
+    const items = currentTemplate?.payload?.[gi]?.items
+    if (!items?.[ii]) return
+    items.splice(ii, 1)
+    renderTodos(currentTemplate.payload)
+  }
+
+  async function toggleTodoPopup() {
+    if (!currentRoom || !isExpert(currentRoom)) return
+    if (todoPopupOpen) { hideTodoPopup(); return }
+    await showTodoPopup()
+  }
+
+  async function showTodoPopup() {
+    const popup = document.getElementById('todoPopup')
+    if (!popup) return
+    const { data, error } = await sb
+      .from('expert_todo_templates')
+      .select('id, name')
+      .eq('owner_id', currentRoom.expert_id)
+      .order('created_at', { ascending: true })
+    if (error) { console.warn('[load templates]', error); showToast('加载方案失败'); return }
+    const items = (data || []).map(t => `
+      <div class="todo-popup-item ${t.id === currentTemplate?.id ? 'active' : ''}" onclick="switchActiveTemplate('${t.id}')">
+        <span class="dot"></span><span>${escHtml(t.name)}</span>
+      </div>`).join('')
+    popup.innerHTML = `
+      ${items || '<div class="todo-popup-item" style="color:var(--text3);cursor:default;">还没有方案</div>'}
+      <div class="todo-popup-divider"></div>
+      <div class="todo-popup-item todo-popup-add" onclick="createNewTemplate()">
+        <span class="dot"></span><span>+ 新建方案</span>
+      </div>`
+    popup.style.display = 'block'
+    todoPopupOpen = true
+  }
+
+  function hideTodoPopup() {
+    const popup = document.getElementById('todoPopup')
+    if (popup) popup.style.display = 'none'
+    todoPopupOpen = false
+  }
+
+  async function switchActiveTemplate(templateId) {
+    if (!currentRoom) return
+    hideTodoPopup()
+    if (templateId === currentRoom.active_todo_template_id) return
+    const { error } = await sb.from('rooms')
+      .update({ active_todo_template_id: templateId })
+      .eq('id', currentRoom.id)
+    if (error) { showToast('切换失败：' + (error.message || error.code)); return }
+    currentRoom.active_todo_template_id = templateId
+    await loadActiveTodoTemplate(currentRoom)
+    await refreshQuizState()
+  }
+
+  async function createNewTemplate() {
+    if (!currentRoom) return
+    hideTodoPopup()
+    const name = (window.prompt('新方案名：', '') || '').trim()
+    if (!name) return
+    const { data, error } = await sb.from('expert_todo_templates')
+      .insert({ owner_id: currentRoom.expert_id, name, payload: [] })
+      .select('id')
+      .single()
+    if (error) { showToast('新建失败：' + (error.message || error.code)); return }
+    await switchActiveTemplate(data.id)
+    document.getElementById('todoSection')?.classList.add('editing')
+    applyEditingMode()
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!todoPopupOpen) return
+    const popup = document.getElementById('todoPopup')
+    const caret = document.getElementById('todoCaretBtn')
+    if (popup?.contains(e.target) || caret?.contains(e.target)) return
+    hideTodoPopup()
+  })
+
   function toggleTodoGroup(elOrBtn) {
     const group = elOrBtn.closest('.todo-group')
     if (!group) return
@@ -2476,8 +2800,6 @@
       })
     }
   }
-  // 默认展开五行（第一组），其它折叠
-  document.querySelector('.todo-group[data-group="wuxing"]')?.classList.add('expanded')
 
   function formatTokens(n) {
     n = Number(n) || 0
