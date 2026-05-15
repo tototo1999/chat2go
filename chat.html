@@ -3784,7 +3784,11 @@
   function setBridgeStatus(online) {
     const el = document.getElementById('bridgeStatus')
     el.className = 'status-item ' + (online ? 'online' : 'offline')
-    el.title = online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启'
+    const canRestart = currentRoomRole === 'expert'
+    el.title = canRestart
+      ? (online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启')
+      : (online ? 'AI 已连接' : 'AI 未连接 · 仅大咖可重启')
+    el.style.cursor = canRestart ? 'pointer' : 'default'
   }
 
   // ── bridge 心跳轮询 ──（每 6 秒拉 bridge_state.last_seen，> 30 秒未更新当离线）
@@ -3810,6 +3814,7 @@
 
   // 点击图标 → 请求 bridge 重启（落入 bridge_state.restart_requested_at，bridge 下一轮自我退出，launchd 拉起）
   async function requestBridgeRestart() {
+    if (currentRoomRole !== 'expert') { showToast('只有大咖能重启 AI'); return }
     const ok = confirm('AI 桥接重启一次？（适用于 AI 不响应）')
     if (!ok) return
     const { error } = await sb.rpc('request_bridge_restart')
