@@ -2704,7 +2704,7 @@
     const { data, error } = await sb.rpc('get_room_members', { p_room_id: currentRoom.id })
     if (error) { console.warn('[room members]', error); return }
     _roomMembersCache = data || []
-    roomMemberCount = _roomMembersCache.length
+    roomMemberCount = _roomMembersCache.length + 1  // +1: AI 也算一个成员
     const el = document.getElementById('groupMemberCount')
     if (el) el.textContent = roomMemberCount
     _roomMembersCache.forEach(m => {
