@@ -190,22 +190,6 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .sidebar-room-title-edit {
-      flex-shrink: 0;
-      width: 22px; height: 22px;
-      background: rgba(255,255,255,0.18);
-      border: 0;
-      border-radius: 6px;
-      color: #fff;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      transition: background .15s;
-    }
-    .sidebar-room-title-edit.visible { display: inline-flex; }
-    .sidebar-room-title-edit:hover { background: rgba(255,255,255,0.32); }
 
     /* Todo list section（在 + Chat 下方） */
     .todo-section {
@@ -1647,6 +1631,14 @@
       <button class="btn-cancel" onclick="saveProfile()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存资料</button>
     </div>
 
+    <!-- 当前房间标题（仅大咖在房间内时显示） -->
+    <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
+      <h4 style="margin:0;font-size:14px;font-weight:600;">当前房间标题</h4>
+      <label style="font-size:12px;color:var(--text2);">显示在 sidebar 顶部绿色卡片，最多 10 个字。留空则用大咖昵称兜底。</label>
+      <input type="text" id="roomSidebarTitle" maxlength="10" placeholder="留空则用大咖昵称" style="padding:.5rem;font-size:13px;">
+      <button class="btn-cancel" onclick="saveRoomSidebarTitle()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存房间标题</button>
+    </div>
+
     <!-- Agent Keys（仅大咖可见） -->
     <div id="agentKeysSection" style="display:none;">
       <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
@@ -1686,9 +1678,6 @@
     <div class="sidebar-head">
       <div class="sidebar-room-title" id="sidebarRoomTitle">
         <span class="sidebar-room-title-text" id="sidebarRoomTitleText">Chat</span>
-        <button type="button" class="sidebar-room-title-edit" id="sidebarRoomTitleEdit" title="编辑房间标题" onclick="editSidebarTitle()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </button>
       </div>
     </div>
     <div class="todo-section" id="todoSection">
@@ -1999,6 +1988,13 @@
     document.getElementById('agentKeysSection').style.display =
       currentRole === 'expert' ? '' : 'none'
     if (currentRole === 'expert') loadAgentKeys()
+    // 当前房间标题：仅当处在自己作为大咖的房间内时显示
+    const showRoomTitle = !!currentRoom && isExpert(currentRoom)
+    const roomTitleSection = document.getElementById('roomTitleSection')
+    if (roomTitleSection) roomTitleSection.style.display = showRoomTitle ? 'flex' : 'none'
+    if (showRoomTitle) {
+      document.getElementById('roomSidebarTitle').value = (currentRoom.sidebar_title || '').slice(0, 10)
+    }
     // 管理员入口仅 admin 白名单可见
     document.getElementById('adminSection').style.display =
       ADMIN_EMAILS.includes(currentUser?.email) ? '' : 'none'
@@ -2444,18 +2440,16 @@
     return room.expert_id === currentUser?.id
   }
 
-  async function editSidebarTitle() {
-    if (!currentRoom || !isExpert(currentRoom)) return
-    const titleTextEl = document.getElementById('sidebarRoomTitleText')
-    const cur = (currentRoom.sidebar_title || '').trim()
-    const input = window.prompt('编辑房间标题（清空则用大咖昵称兜底）：', cur)
-    if (input === null) return
-    const newTitle = input.trim()
+  async function saveRoomSidebarTitle() {
+    if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的大咖能改'); return }
+    const inputEl = document.getElementById('roomSidebarTitle')
+    const newTitle = (inputEl?.value || '').trim().slice(0, 10)  // 兜底再截 10 字，防绕过 maxlength
     const { error } = await sb.from('rooms')
       .update({ sidebar_title: newTitle || null })
       .eq('id', currentRoom.id)
     if (error) { showToast('保存失败：' + (error.message || error.code)); return }
     currentRoom.sidebar_title = newTitle || null
+    const titleTextEl = document.getElementById('sidebarRoomTitleText')
     if (titleTextEl) {
       if (newTitle) {
         titleTextEl.textContent = newTitle
@@ -2493,8 +2487,8 @@
     })
 
     // sidebar 顶部房间标题：rooms.sidebar_title 优先，否则 fallback 到 expert.display_name
+    // 编辑入口在「设置 → 当前房间标题」（仅大咖在房间内可见）
     const titleTextEl = document.getElementById('sidebarRoomTitleText')
-    const titleEditBtn = document.getElementById('sidebarRoomTitleEdit')
     if (titleTextEl) {
       let title = (room.sidebar_title || '').trim()
       if (!title && room.expert_id) {
@@ -2506,7 +2500,6 @@
       }
       titleTextEl.textContent = title || 'Chat'
     }
-    if (titleEditBtn) titleEditBtn.classList.toggle('visible', isExpert(room))
 
     updateInputPlaceholder()
 
