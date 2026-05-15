@@ -1733,7 +1733,7 @@
               <circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="3.5"/>
               <circle id="chatTokensRingFill" cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="84.82" stroke-dashoffset="84.82" transform="rotate(-90 16 16)"/>
             </svg>
-            <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
+            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10K</span>
             <span class="ctx-pct" id="chatCtxWrap" style="display:none;">
               <span id="chatRoomCtx"></span>
               <i class="ctx-battery"><i id="ctxBatteryFill"></i></i>
@@ -2626,22 +2626,8 @@
     el.classList.toggle('has', n > 0)
   }
 
-  // 模型 context window 大小（tokens）。表外的模型走默认值 200K。
-  const MODEL_CONTEXT_WINDOWS = {
-    'anthropic/claude-sonnet-4-5':  200000,
-    'anthropic/claude-haiku-4-5':   200000,
-    'anthropic/claude-opus-4-5':    200000,
-    'openai/gpt-5':                 400000,
-    'openai/gpt-5-mini':            400000,
-    'deepseek/deepseek-chat':       128000,
-    'deepseek/deepseek-reasoner':    64000,
-    'qwen/qwen-max':                 32000,
-    'qwen/qwen-plus':               128000,
-    'kimi/moonshot-v1-128k':        128000,
-    'glm/glm-4-plus':               128000,
-    'gemini/gemini-2-pro':         2000000,
-  }
-  const DEFAULT_CTX_WINDOW = 200000
+  // 房间 token 预算（不再是物理 context window，而是产品维度的"一房一桌"用量上限）
+  const ROOM_TOKEN_BUDGET = 10000
 
   // ── 做题模式 ──
   // 题序由 active todo 方案的 items.flat() 顺序决定（data-quiz-idx 在 renderTodos 里自动派生）。
@@ -3040,7 +3026,7 @@
                  + Number(lu.data?.cache_creation_input_tokens ?? 0)
                  + Number(lu.data?.cache_read_input_tokens ?? 0)
       const model = lu.data?.model ?? ''
-      const window = MODEL_CONTEXT_WINDOWS[model] || DEFAULT_CTX_WINDOW
+      const window = ROOM_TOKEN_BUDGET
       const pct = window > 0 ? (used / window) * 100 : 0
 
       // 累计 token（input+output）作为悬停详情
