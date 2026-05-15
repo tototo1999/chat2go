@@ -260,6 +260,26 @@
     .todo-popup-item.active .dot { background: var(--teal-600); }
     .todo-popup-divider { height: 0.5px; background: var(--border); margin: 4px 0; }
     .todo-popup-add { color: var(--teal-600); }
+    .todo-popup-del {
+      margin-left: auto;
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      background: transparent;
+      border: 0;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .12s, background .12s, color .12s;
+      flex-shrink: 0;
+    }
+    .todo-popup-item:hover .todo-popup-del { opacity: 1; }
+    .todo-popup-del:hover { background: #fee; color: #c00; }
     /* 编辑态：可改名 + 行尾 ✕ + + 新建 */
     .todo-section.editing .todo-pill,
     .todo-section.editing .todo-sub { cursor: default; }
@@ -2526,6 +2546,7 @@
   ]
   let currentTemplate = null  // {id, name, payload} —— 当前房间挂的方案（小白也持有副本，仅大咖可改）
   let todoPopupOpen = false
+  let _todoPopupTemplates = []  // showTodoPopup 缓存的方案列表，供 deleteTemplate 查名字用
 
   function renderTodos(payload) {
     const body = document.getElementById('todoBody')
@@ -2726,9 +2747,11 @@
       .eq('owner_id', currentRoom.expert_id)
       .order('created_at', { ascending: true })
     if (error) { console.warn('[load templates]', error); showToast('加载方案失败'); return }
+    _todoPopupTemplates = data || []
     const items = (data || []).map(t => `
       <div class="todo-popup-item ${t.id === currentTemplate?.id ? 'active' : ''}" onclick="switchActiveTemplate('${t.id}')">
         <span class="dot"></span><span>${escHtml(t.name)}</span>
+        <button type="button" class="todo-popup-del" title="删除方案" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>
       </div>`).join('')
     popup.innerHTML = `
       ${items || '<div class="todo-popup-item" style="color:var(--text3);cursor:default;">还没有方案</div>'}
@@ -2761,6 +2784,24 @@
     currentRoom.active_todo_template_id = templateId
     await loadActiveTodoTemplate(currentRoom)
     await refreshQuizState()
+  }
+
+  async function deleteTemplate(templateId) {
+    if (!currentRoom) return
+    const t = _todoPopupTemplates.find(x => x.id === templateId)
+    const name = t?.name || '该方案'
+    if (!confirm(`删除方案「${name}」？\n所有引用它的房间会回到默认 todo。`)) return
+    hideTodoPopup()
+    const wasActive = (currentRoom.active_todo_template_id === templateId)
+    const { error } = await sb.from('expert_todo_templates').delete().eq('id', templateId)
+    if (error) { showToast('删除失败：' + (error.message || error.code)); return }
+    showToast('已删除')
+    if (wasActive) {
+      // rooms.active_todo_template_id 已被 fk on delete set null
+      currentRoom.active_todo_template_id = null
+      await loadActiveTodoTemplate(currentRoom)
+      await refreshQuizState()
+    }
   }
 
   async function createNewTemplate() {
