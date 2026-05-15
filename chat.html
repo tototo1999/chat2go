@@ -3793,17 +3793,21 @@
 
   // ── bridge 心跳轮询 ──（每 6 秒拉 bridge_state.last_seen，> 30 秒未更新当离线）
   let _bridgeHeartbeatTimer = null
+  let _bridgeStatusFailCount = 0  // 连续异常计数；> 3 强制 offline，避免无限保留旧绿状态
   async function refreshBridgeStatus() {
     try {
       const { data, error } = await sb
         .from('bridge_state').select('last_seen').eq('id', 'singleton').maybeSingle()
+      _bridgeStatusFailCount = 0
       if (error || !data || !data.last_seen) { setBridgeStatus(false); return }
       const lastSeenMs = new Date(data.last_seen).getTime()
       const ageSec = (Date.now() - lastSeenMs) / 1000
       setBridgeStatus(ageSec < 30)
     } catch (e) {
-      // 网络抖动等 → 保留上一次状态，不重置
+      _bridgeStatusFailCount++
       console.warn('[bridge status]', e)
+      // 连续 3 次失败（约 18 秒）后转 offline，防止 bridge 中风但 UI 永远满格
+      if (_bridgeStatusFailCount >= 3) setBridgeStatus(false)
     }
   }
   function startBridgeHeartbeatPolling() {
