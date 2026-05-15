@@ -1634,8 +1634,8 @@
     <!-- 当前房间标题（仅大咖在房间内时显示） -->
     <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
       <h4 style="margin:0;font-size:14px;font-weight:600;">当前房间标题</h4>
-      <label style="font-size:12px;color:var(--text2);">显示在 sidebar 顶部绿色卡片，最多 10 个字。留空则用大咖昵称兜底。</label>
-      <input type="text" id="roomSidebarTitle" maxlength="10" placeholder="留空则用大咖昵称" style="padding:.5rem;font-size:13px;">
+      <label style="font-size:12px;color:var(--text2);">显示在 sidebar 顶部绿色卡片，最多 13 个字。留空则用大咖昵称兜底。</label>
+      <input type="text" id="roomSidebarTitle" maxlength="13" placeholder="留空则用大咖昵称" style="padding:.5rem;font-size:13px;">
       <button class="btn-cancel" onclick="saveRoomSidebarTitle()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存房间标题</button>
     </div>
 
@@ -1993,7 +1993,7 @@
     const roomTitleSection = document.getElementById('roomTitleSection')
     if (roomTitleSection) roomTitleSection.style.display = showRoomTitle ? 'flex' : 'none'
     if (showRoomTitle) {
-      document.getElementById('roomSidebarTitle').value = (currentRoom.sidebar_title || '').slice(0, 10)
+      document.getElementById('roomSidebarTitle').value = (currentRoom.sidebar_title || '').slice(0, 13)
     }
     // 管理员入口仅 admin 白名单可见
     document.getElementById('adminSection').style.display =
@@ -2443,7 +2443,7 @@
   async function saveRoomSidebarTitle() {
     if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的大咖能改'); return }
     const inputEl = document.getElementById('roomSidebarTitle')
-    const newTitle = (inputEl?.value || '').trim().slice(0, 10)  // 兜底再截 10 字，防绕过 maxlength
+    const newTitle = (inputEl?.value || '').trim().slice(0, 13)  // 兜底再截 13 字，防绕过 maxlength
     const { error } = await sb.from('rooms')
       .update({ sidebar_title: newTitle || null })
       .eq('id', currentRoom.id)
