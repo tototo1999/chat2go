@@ -2,8 +2,11 @@
 
 > 本文档为 vibe-coding agent 配合双仓库代码独立重建 Chat2GO.ai 的完整技术蓝图。
 > 阅读顺序建议:① 仓库结构 → ② 数据模型 → ③ 前端 → ④ Agent 包 → ⑤ Edge Functions → ⑥ 部署 → ⑦ 已知缺陷 → ⑧ 决策与踩坑。
-> 最后快照:2026-05-14(含 focal_user / quiz_mode / pass_relay / bridge_state)。
-> 上一版本文档:2026-05-13 v0.6.8-voice-clear-fix(本文档全面替换该版本)。
+> 最后快照:**2026-05-15** v0.7.10-room-sidebar-title(含大咖个人 todo 方案库 / 房间 sidebar 标题独立 / CNAME 救火)。
+> 上一快照:2026-05-14(含 focal_user / quiz_mode / pass_relay / bridge_state)。
+> 上一版本文档:2026-05-13 v0.6.8-voice-clear-fix(已被全面替换)。
+
+> **2026-05-15 重要方向决策**:chat2go-agent(独立 Python 包)开发**暂停**到「小 MVP」之后,小 MVP = 现命理 + 心理咨询 + 康复师 3 行业。这阶段大咖 AI 倾向走 chat-ai Edge Function 顶替 bridge.py(避开 agent 那套精细架构),具体方案见 §12「未完成与下一步」。
 
 ---
 
@@ -41,7 +44,7 @@ chat2go/
 ├── vendor/                 # 本地化 JS 依赖(supabase / marked / html2pdf)
 ├── supabase/
 │   ├── config.toml
-│   ├── migrations/         # 34 个迁移文件(到 2026-05-14)
+│   ├── migrations/         # 36 个迁移文件(到 2026-05-15,加 expert_todo_templates 和 rooms.sidebar_title)
 │   └── functions/
 │       ├── chat-ai/        # Deno Edge Function(备用,当 bridge 离线时降级)
 │       └── agent-auth/     # connection_key → magiclink OTP
@@ -114,20 +117,22 @@ chat2go-agent/
 
 ### 4.1 `rooms` — 调试室
 ```sql
-id                      uuid pk
-name                    text not null              -- 房间名
-industry                text not null              -- 行业(决定 skill / prompt)
-expert_id               uuid → auth.users          -- 房主大咖
-focal_user_id           uuid → auth.users          -- ★ 八字主(第一个非大咖加入者)
-status                  text default 'active'
-model                   text                       -- 房间级模型覆盖(provider/name 格式)
-system_prompt           text                       -- 房间级 system prompt 覆盖
-ai_name                 text                       -- AI 在本房显示名
-brain                   text check (in ('builtin','hermes','auto'))
-commission_pct          numeric default 0.15       -- 佣金比例
-exchange_rate_to_cny    numeric default 7.20       -- 汇率快照
-invite_token            uuid unique not null       -- 邀请链接 token
-created_at              timestamptz default now()
+id                          uuid pk
+name                        text not null              -- 房间名
+industry                    text not null              -- 行业(决定 skill / prompt)
+expert_id                   uuid → auth.users          -- 房主大咖
+focal_user_id               uuid → auth.users          -- ★ 八字主(第一个非大咖加入者)
+status                      text default 'active'
+model                       text                       -- 房间级模型覆盖(provider/name 格式)
+system_prompt               text                       -- 房间级 system prompt 覆盖
+ai_name                     text                       -- AI 在本房显示名
+brain                       text check (in ('builtin','hermes','auto'))
+commission_pct              numeric default 0.15       -- 佣金比例
+exchange_rate_to_cny        numeric default 7.20       -- 汇率快照
+invite_token                uuid unique not null       -- 邀请链接 token
+active_todo_template_id     uuid → expert_todo_templates  -- ★ 2026-05-15 房间挂的 todo 方案
+sidebar_title               text                       -- ★ 2026-05-15 sidebar 顶部绿卡片标题(null 时回退 expert.display_name)
+created_at                  timestamptz default now()
 ```
 
 ### 4.2 `messages` — 消息
@@ -208,6 +213,20 @@ created_at, updated_at
 - SELECT policy `memories_read_scoped`:room scope 需是成员、expert/user scope 需是本人。
 - **INSERT policy 没定义** → bridge 用 expert session 写入会被 RLS 拦截(默认 deny)。
 - Phase A 设计上「只读 prefetch」,Phase B 由 bridge `sync_memory` 写入 —— 但写入路径目前 broken。
+
+### 4.8b `expert_todo_templates` — 大咖个人 todo 方案库 ★(2026-05-15 新)
+```sql
+id          uuid pk default gen_random_uuid()
+owner_id    uuid → auth.users on delete cascade
+name        text not null                          -- 方案名(最多 13 字)
+payload     jsonb not null default '[]'            -- [{label, items:[{label}]}]
+created_at, updated_at
+```
+- `rooms.active_todo_template_id` fk 引用,一房挂一方案
+- RLS:任何登录可 SELECT(避开 room_members 递归坑);写操作限 owner
+- 大咖编辑某方案 → 用同一方案的所有房间一起变("方案库"自然语义,要"本房独立微调"留给后续 fork 按钮)
+- chat.html `renderTodos(payload)` 从 jsonb 渲染,quiz_idx 由 `items.flat()` 顺序自动派生喂给 `refreshQuizState`
+- 大咖首次进房自动 seed「命理八字基础」默认方案(原五行/格局/check 八条)
 
 ### 4.9 `bridge_state` — Agent 心跳与重启 ★
 ```sql
@@ -311,8 +330,14 @@ unreadCounts          // { main: 0, expert_user: 0 }
 - 顶部胶囊 tab 显示当前频道 + 未读徽章。
 - 发消息:`channel: currentChannel`;但 typing 等元信号硬写 `expert_user`。
 
-#### 5.4.4 ToDoList(forntend localStorage)
-3 个父胶囊(我是谁/我从哪里来/我要去哪里),每父 3 个子 ☐。展开/勾选状态全部 localStorage:`c2g_todog_<group>` / `c2g_todo_<key>`。
+#### 5.4.4 ToDoList(★ 2026-05-15 改造为大咖个人方案库)
+- 数据来源:`expert_todo_templates`(§4.8b),不再是 localStorage 也不再硬编码。
+- sidebar Todo 胶囊:小白只看内容;大咖见 ✎(编辑) + ▾(切方案)。
+- ▾ 弹出 popup(fixed 定位,跟随 caret 按钮,避开 sidebar overflow:hidden 截断)显示 ta 个人所有方案 + ✕ 删除 + 「+ 新建方案」。
+- ✎ 进编辑态:`.todo-section.editing` → 所有 `.todo-text[data-text]` 和方案名 `#todoHeadName` 变 contenteditable + 行尾 ✕ + 「+ 新建」(子项)+ 「+ 新建分组」(底部钉)。✎ 切换为 ✓,再点 ✓ 退出 + 一并 update payload + name。
+- `.todo-body` flex:1 + overflow-y:auto 独立滚动,长方案不溢出 sidebar。
+- quiz_idx 由 `items.flat()` 位置自动派生,`refreshQuizState` 不动(继续按 main 频道 AI 消息 ratings 'up'≥2 算 pass)。
+- 切方案 = update `rooms.active_todo_template_id` + 重 loadActiveTodoTemplate。
 
 #### 5.4.5 消息渲染 `appendMessage(msg)`
 - 三色 bubble:`.msg-bubble.user|.expert|.ai`。
@@ -667,13 +692,49 @@ bridge 监测 restart_requested_at > 启动时间 → sys.exit(1) → launchd Ke
 ### 11.8 公开 persona 名硬编码
 - `EXPERT_PERSONAS` 写死在 chat.html;`profiles.display_name` 是私昵称。
 - 待加 `profiles.public_name` 列。
+- 部分需求可能被 `rooms.sidebar_title`(§4.1)替代——大咖在 sidebar 上想看到的标题已经能独立改。
+
+### 11.9 todo 编辑器小遗留(2026-05-15)
+- 切方案时 `loadActiveTodoTemplate → renderTodos` 会从旧方案 DOM 读 expanded 状态,可能让新方案同 `data-group` 索引"暗合"展开。
+- `deleteTodoGroup` splice 后剩余 group 索引前移,恢复展开按字符串 key 错位。
+- 多端同步:暂未实现轮询(用户明确暂不做);A 端编辑 B 端要 reopen 房间才看到。
+
+### 11.10 chat-ai Edge Function 升级是 MVP 的关键工作(2026-05-15)
+- 现状:chat-ai 是"备用",bridge.py 是主力(CLAUDE.md 自述)。
+- MVP 路线要让 chat-ai 接管:多 provider(OpenAI 兼容统一调 DeepSeek/Qwen/GLM/Kimi)、文件下载/Vision/markdown 检测、按 `room.expert_id` 路由 system_prompt 和大咖私有 key。
+- 需新增 `expert_ai_configs(expert_id pk, provider, model, base_url, api_key_encrypted, default_system_prompt)` 表 + pgcrypto 加密 key + RPC 写入。
+- 大咖入职 = expert_ai_configs upsert + 写 3 套 system_prompt 模板(命理/心理咨询/康复师)。详见 §12。
+
+### 11.11 chat2go.ai 域名切换中断(2026-05-15)
+- commit 4f201cc 把 CNAME 改成 chat2go.ai 但没先在 GitHub Pages Settings 加 Custom domain 也没在 DNS 把 .ai 指 Pages → 两域同时 404。
+- commit f5d3bef 救火回 chat2go.cn,站点恢复。
+- .ai 已在 Cloudflare(DNS 解析到 172.67.x / 104.21.x),但 Cloudflare 后端没回源 GitHub Pages。
+- 后续按正确时序:先 Cloudflare 配回源 → Pages Settings 加 chat2go.ai Custom domain → 再决定是否切 CNAME(用户当前判断 .cn 主域不变,.ai 做别名)。
 
 ---
 
 ## 12. 未完成与下一步
 
-### Phase 1(MVP)—— 最优先
-- [ ] 修 §11.1 + §11.2(memories 写入路径打通)
+### 2026-05-15 当前阶段 ★
+**本周聚焦:大模型记忆能力优化**(用户明确,持续约一周;在 chat2go-agent 仓库的 `memory.py` + DSPy 服务那侧打磨,但**不**在 chat2go-agent 主架构上做大改,因为 agent 方向已暂停)。
+
+**下一步是「小 MVP」**:在现命理(你/森山)基础上多接 2 个行业的大咖:
+- 心理咨询大咖
+- 康复师大咖
+
+**小 MVP 实现路线(暂定,按 §11.10)**:
+1. chat-ai Edge Function 升级:接管所有大咖 AI 调用,按 room.expert_id 路由
+2. 新表 `expert_ai_configs`(expert_id pk, provider, model, base_url, api_key_encrypted, default_system_prompt) + pgcrypto 加密 key + RPC 写入
+3. 走 OpenAI 兼容协议覆盖 DeepSeek / Qwen / GLM / Kimi(一段 fetch 代码 cover)
+4. 大咖自带 API key 自付费(现阶段倾向 DeepSeek-V3,中文好性价比高)
+5. 设置页加「我的 AI 配置」表单 + 测试连接按钮
+6. 写 3 套 system_prompt 模板 + admin 入职流程
+7. bridge.py 关停(你自己的命理房切到 chat-ai),验证不依赖本地 bridge
+
+**chat2go-agent 方向**:暂停到小 MVP 之后,本阶段不要推 CHAT2GO_HOME 多实例 / bridge_state 多 bridge / Mac mini 跑多 agent 实例 这些改造。
+
+### Phase 1(原 MVP 清单)—— 暂搁置(等小 MVP 跑通)
+- [ ] 修 §11.1 + §11.2(memories 写入路径打通)— 这周记忆优化可能涉及
 - [ ] 拍板 §11.3 + §11.4 记忆 / Lessons 产品形态
 - [ ] PDF 真生成(服务端 weasyprint/reportlab)
 - [ ] Multi-model Router 自动选 sonnet/haiku/local
@@ -775,4 +836,5 @@ bridge 监测 restart_requested_at > 启动时间 → sys.exit(1) → launchd Ke
 ---
 
 > 维护者:项目 owner / 你(vibe-coding agent)。
-> 上次大改:2026-05-14 重写,主要变化是把 chat2go-agent 包独立结构、三角色 / channel / 做题模式 / bridge 心跳 / focal 等新增能力以及 memory 写入隐患 全部归位。
+> 上次大改:2026-05-15 增量更新(v0.7.10-room-sidebar-title)——加大咖个人 todo 方案库 §4.8b、`rooms.sidebar_title` 字段、chat.html §5.4.4 ToDoList 改造、§11.9-11.11 新缺陷 / 域名遗留、§12 加 chat2go-agent 暂停 + 小 MVP 路线。
+> 上上次大改:2026-05-14 重写,把 chat2go-agent 包独立结构、三角色 / channel / 做题模式 / bridge 心跳 / focal 等归位。
