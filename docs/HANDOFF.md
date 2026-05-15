@@ -1,6 +1,6 @@
-# Chat2GO.Ai 技术交接文档
+# Chat2GO.ai 技术交接文档
 
-> 本文档为 vibe-coding agent 配合双仓库代码独立重建 Chat2GO.Ai 的完整技术蓝图。
+> 本文档为 vibe-coding agent 配合双仓库代码独立重建 Chat2GO.ai 的完整技术蓝图。
 > 阅读顺序建议:① 仓库结构 → ② 数据模型 → ③ 前端 → ④ Agent 包 → ⑤ Edge Functions → ⑥ 部署 → ⑦ 已知缺陷 → ⑧ 决策与踩坑。
 > 最后快照:2026-05-14(含 focal_user / quiz_mode / pass_relay / bridge_state)。
 > 上一版本文档:2026-05-13 v0.6.8-voice-clear-fix(本文档全面替换该版本)。
@@ -9,7 +9,7 @@
 
 ## 1. 项目定位
 
-Chat2GO.Ai 是 **AI marketplace** ——「行业大咖 × AI × 小白用户」三方协作平台。
+Chat2GO.ai 是 **AI marketplace** ——「行业大咖 × AI × 小白用户」三方协作平台。
 
 - **大咖**(expert):行业从业者,在「Chat 调试室」陪小白调 AI,被 follower 关注。
 - **小白 / 八字主**(focal user):第一个 follow 进房的非大咖用户,该房间的「主角」。
@@ -24,7 +24,7 @@ Chat2GO.Ai 是 **AI marketplace** ——「行业大咖 × AI × 小白用户」
 
 ## 2. 仓库结构 ★
 
-Chat2GO.Ai 实际由**两个独立仓库**组成。上一版 HANDOFF 没记这点,容易遗漏:
+Chat2GO.ai 实际由**两个独立仓库**组成。上一版 HANDOFF 没记这点,容易遗漏:
 
 ### 2.1 `chat2go/`(本仓库)
 前端 + Supabase 资产。GitHub: `tototo1999/chat2go`。

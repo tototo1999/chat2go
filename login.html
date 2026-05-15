@@ -3,7 +3,7 @@
 <html lang="zh-CN"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登录 · Chat2GO.Ai</title>
+  <title>登录 · Chat2GO.ai</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23DC2626'/%3E%3Ctext x='32' y='44' font-family='Helvetica,Arial,sans-serif' font-size='30' font-weight='800' text-anchor='middle' fill='%23fff'%3EGO%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,6 +28,7 @@
     .card-header { text-align: center; margin-bottom: 2rem; }
     .card-logo { font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
     .card-logo span { color: var(--teal); }
+    .logo .logo-tld, .card-logo .logo-tld { font-size: 0.65em; font-weight: 500; letter-spacing: 0; }
     .card-sub { font-size: 14px; color: var(--text2); }
     .tabs { display: flex; gap: 0; border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.75rem; }
     .tab { flex: 1; padding: 9px; font-size: 13px; font-family: inherit; cursor: pointer; border: none; background: transparent; color: var(--text2); font-weight: 500; transition: all .15s; }
@@ -54,14 +55,14 @@
 </head>
 <body>
   <nav>
-    <a href="/" class="logo">Chat<span>2GO.Ai</span></a>
+    <a href="/" class="logo">Chat<span>2GO</span><span class="logo-tld">.ai</span></a>
     <a href="/" class="nav-link">← 返回首页</a>
   </nav>
 
   <main class="main">
     <div class="card">
       <div class="card-header">
-        <div class="card-logo">Chat<span>2GO</span></div>
+        <div class="card-logo">Chat<span>2GO</span><span class="logo-tld">.ai</span></div>
       </div>
 
       <!-- 注册 tab 暂时隐藏（手动重开：把下面这行的 style="display:none;" 去掉，并取消下面 form-register 的隐藏）-->
@@ -116,8 +117,8 @@
   </main>
 
   <footer>
-    <a href="/" class="back-link">← Chat2GO.Ai 首页</a>
-    <p>© 2026 Chat2GO.Ai</p>
+    <a href="/" class="back-link">← Chat2GO.ai 首页</a>
+    <p>© 2026 Chat2GO.ai</p>
   </footer>
 
   <script src="/vendor/supabase.js"
