@@ -183,10 +183,29 @@
       align-items: center;
       gap: 6px;
       box-sizing: border-box;
-      white-space: nowrap;
+    }
+    .sidebar-room-title-text {
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
+    .sidebar-room-title-edit {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      background: rgba(255,255,255,0.18);
+      border: 0;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background .15s;
+    }
+    .sidebar-room-title-edit.visible { display: inline-flex; }
+    .sidebar-room-title-edit:hover { background: rgba(255,255,255,0.32); }
 
     /* Todo list section（在 + Chat 下方） */
     .todo-section {
@@ -1665,7 +1684,12 @@
 
   <aside class="sidebar">
     <div class="sidebar-head">
-      <div class="sidebar-room-title" id="sidebarRoomTitle">Chat</div>
+      <div class="sidebar-room-title" id="sidebarRoomTitle">
+        <span class="sidebar-room-title-text" id="sidebarRoomTitleText">Chat</span>
+        <button type="button" class="sidebar-room-title-edit" id="sidebarRoomTitleEdit" title="编辑房间标题" onclick="editSidebarTitle()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+      </div>
     </div>
     <div class="todo-section" id="todoSection">
       <div class="todo-head" id="todoHead">
@@ -2420,6 +2444,34 @@
     return room.expert_id === currentUser?.id
   }
 
+  async function editSidebarTitle() {
+    if (!currentRoom || !isExpert(currentRoom)) return
+    const titleTextEl = document.getElementById('sidebarRoomTitleText')
+    const cur = (currentRoom.sidebar_title || '').trim()
+    const input = window.prompt('编辑房间标题（清空则用大咖昵称兜底）：', cur)
+    if (input === null) return
+    const newTitle = input.trim()
+    const { error } = await sb.from('rooms')
+      .update({ sidebar_title: newTitle || null })
+      .eq('id', currentRoom.id)
+    if (error) { showToast('保存失败：' + (error.message || error.code)); return }
+    currentRoom.sidebar_title = newTitle || null
+    if (titleTextEl) {
+      if (newTitle) {
+        titleTextEl.textContent = newTitle
+      } else if (currentRoom.expert_id) {
+        try {
+          const { data } = await sb.from('profiles')
+            .select('display_name').eq('user_id', currentRoom.expert_id).maybeSingle()
+          titleTextEl.textContent = (data?.display_name || '').trim() || 'Chat'
+        } catch { titleTextEl.textContent = 'Chat' }
+      } else {
+        titleTextEl.textContent = 'Chat'
+      }
+    }
+    showToast('已保存')
+  }
+
   async function openRoom(room) {
     currentRoom = room
     currentChannel = 'main'
@@ -2440,16 +2492,21 @@
       el.classList.toggle('active', el.dataset.id === room.id)
     })
 
-    // sidebar 顶部显示当前聊天室对应大咖的 display_name（大咖在设置里改完全站实时生效）
-    try {
-      const titleEl = document.getElementById('sidebarRoomTitle')
-      if (titleEl && room.expert_id) {
-        const { data } = await sb.from('profiles')
-          .select('display_name').eq('user_id', room.expert_id).maybeSingle()
-        const name = (data?.display_name || '').trim()
-        if (name) titleEl.textContent = name
+    // sidebar 顶部房间标题：rooms.sidebar_title 优先，否则 fallback 到 expert.display_name
+    const titleTextEl = document.getElementById('sidebarRoomTitleText')
+    const titleEditBtn = document.getElementById('sidebarRoomTitleEdit')
+    if (titleTextEl) {
+      let title = (room.sidebar_title || '').trim()
+      if (!title && room.expert_id) {
+        try {
+          const { data } = await sb.from('profiles')
+            .select('display_name').eq('user_id', room.expert_id).maybeSingle()
+          title = (data?.display_name || '').trim()
+        } catch (e) { console.warn('[sidebar title]', e) }
       }
-    } catch (e) { console.warn('[sidebar title]', e) }
+      titleTextEl.textContent = title || 'Chat'
+    }
+    if (titleEditBtn) titleEditBtn.classList.toggle('visible', isExpert(room))
 
     updateInputPlaceholder()
 
