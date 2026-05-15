@@ -1873,8 +1873,16 @@
       window.location.href = '/login.html'; return
     }
     // 已登录但 URL 带 invite token → 用当前账号加入这个房（兼容大咖/已注册小白）
+    // 双保险：已登录但 display_name 为空(早期匿名残留 session 等) 也弹昵称 modal 强制补填
     if (inviteToken) {
       try {
+        const { data: profile } = await sb.from('profiles')
+          .select('display_name').eq('user_id', session.user.id).maybeSingle()
+        const dn = (profile?.display_name || '').trim()
+        if (!dn) {
+          showInviteModal(inviteToken, 'existing')
+          return
+        }
         const { data: roomId, error } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
         if (error) console.warn('[join_room_by_token]', error)
         if (roomId) history.replaceState({}, '', `/chat.html?room=${roomId}`)
@@ -2317,8 +2325,10 @@
 
   // ── Invite landing：匿名进场填昵称 → 进群 ──
   let _pendingInviteToken = null
-  function showInviteModal(token) {
+  let _inviteMode = 'anon'  // 'anon' (无 session 走 signInAnonymously) | 'existing' (已登录但缺 display_name 只 update)
+  function showInviteModal(token, mode = 'anon') {
     _pendingInviteToken = token
+    _inviteMode = mode
     const modal = document.getElementById('inviteModal')
     modal.classList.add('show')
     setTimeout(() => document.getElementById('inviteNickname')?.focus(), 50)
@@ -2338,14 +2348,17 @@
     submitBtn.disabled = true
     submitBtn.textContent = '进入中...'
     try {
-      const { error: signErr } = await sb.auth.signInAnonymously({
-        options: { data: { display_name: nickname } }
-      })
-      if (signErr) {
-        err.textContent = '匿名登录失败：' + (signErr.message || signErr.code)
-                       + '（管理员需在 Supabase Dashboard 打开 Anonymous Sign-Ins）'
-        err.style.display = 'block'
-        return
+      // 'anon' 模式：先匿名登录；'existing' 模式：已登录用户只补 display_name
+      if (_inviteMode === 'anon') {
+        const { error: signErr } = await sb.auth.signInAnonymously({
+          options: { data: { display_name: nickname } }
+        })
+        if (signErr) {
+          err.textContent = '匿名登录失败：' + (signErr.message || signErr.code)
+                         + '（管理员需在 Supabase Dashboard 打开 Anonymous Sign-Ins）'
+          err.style.display = 'block'
+          return
+        }
       }
       // 写 profiles.display_name（handle_new_user trigger 可能已经写过；这里再确保一次）
       const { data: { user } } = await sb.auth.getUser()
