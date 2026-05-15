@@ -1872,21 +1872,21 @@
       }
       window.location.href = '/login.html'; return
     }
-    // 已登录但 URL 带 invite token → 用当前账号加入这个房（兼容大咖/已注册小白）
-    // 双保险：已登录但 display_name 为空(早期匿名残留 session 等) 也弹昵称 modal 强制补填
+    // 已登录 + URL 带 invite token：邀请进入 = 加入新房的主动动作，
+    // 不论是否已有 display_name 都弹昵称 modal 让确认（input 预填现有名，可改可直进）
+    // 注意大咖自己点自己的邀请链接也会被弹，少见但无害（点取消会跳 login.html，刷新走老逻辑）
     if (inviteToken) {
       try {
         const { data: profile } = await sb.from('profiles')
           .select('display_name').eq('user_id', session.user.id).maybeSingle()
         const dn = (profile?.display_name || '').trim()
-        if (!dn) {
-          showInviteModal(inviteToken, 'existing')
-          return
-        }
-        const { data: roomId, error } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
-        if (error) console.warn('[join_room_by_token]', error)
-        if (roomId) history.replaceState({}, '', `/chat.html?room=${roomId}`)
-      } catch (e) { console.warn('[join via invite]', e) }
+        showInviteModal(inviteToken, 'existing', dn)
+        return
+      } catch (e) {
+        console.warn('[invite preload profile]', e)
+        showInviteModal(inviteToken, 'existing', '')
+        return
+      }
     }
     currentUser = session.user
 
@@ -2325,13 +2325,18 @@
 
   // ── Invite landing：匿名进场填昵称 → 进群 ──
   let _pendingInviteToken = null
-  let _inviteMode = 'anon'  // 'anon' (无 session 走 signInAnonymously) | 'existing' (已登录但缺 display_name 只 update)
-  function showInviteModal(token, mode = 'anon') {
+  let _inviteMode = 'anon'  // 'anon' (无 session 走 signInAnonymously) | 'existing' (已登录走 update display_name)
+  function showInviteModal(token, mode = 'anon', prefilledName = '') {
     _pendingInviteToken = token
     _inviteMode = mode
     const modal = document.getElementById('inviteModal')
+    const input = document.getElementById('inviteNickname')
+    if (input) input.value = prefilledName || ''
     modal.classList.add('show')
-    setTimeout(() => document.getElementById('inviteNickname')?.focus(), 50)
+    setTimeout(() => {
+      input?.focus()
+      input?.select()  // 选中预填文本，方便直接覆盖
+    }, 50)
   }
   function dismissInvite() {
     document.getElementById('inviteModal').classList.remove('show')
