@@ -736,6 +736,15 @@
     .chat-metrics .sep { color: var(--border2); }
     .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
     .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
+    /* token 用量进度环（Claude 客户端风格，圆环填充表示 used/total） */
+    .tokens-ring {
+      color: var(--teal-600);
+      flex-shrink: 0;
+      margin-right: -2px;  /* 跟数字稍微贴近，gap:8px 的视觉补偿 */
+    }
+    .tokens-ring circle { transition: stroke-dashoffset .35s ease, stroke .15s; }
+    .chat-metrics.warn   .tokens-ring { color: #d97706; }
+    .chat-metrics.danger .tokens-ring { color: #dc2626; }
     /* iPhone 风 context 电池图标 */
     .ctx-pct {
       display: inline-flex;
@@ -1720,6 +1729,10 @@
         <!-- metrics + status -->
         <div class="chat-head-row">
           <div class="chat-metrics">
+            <svg class="tokens-ring" width="13" height="13" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="3.5"/>
+              <circle id="chatTokensRingFill" cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="84.82" stroke-dashoffset="84.82" transform="rotate(-90 16 16)"/>
+            </svg>
             <span id="chatRoomTokens" title="本轮 context 已用 / 模型上限">0 / 200K</span>
             <span class="ctx-pct" id="chatCtxWrap" style="display:none;">
               <span id="chatRoomCtx"></span>
@@ -3047,6 +3060,20 @@
       tokensEl.title = `本轮 context: ${used.toLocaleString()} / ${window.toLocaleString()} tokens`
         + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
         + `\n累计消费: ¥${cny.toFixed(2)}`
+
+      // 进度环填充（dashoffset = C × (1 - pct/100)，pct 已是百分数）
+      const ring = document.getElementById('chatTokensRingFill')
+      if (ring) {
+        const C = 2 * Math.PI * 13.5
+        ring.style.strokeDasharray = String(C)
+        ring.style.strokeDashoffset = String(C * (1 - Math.min(pct, 100) / 100))
+      }
+      // chat-metrics 容器跟随 warn/danger 着色（让环跟随）
+      const metricsEl = document.querySelector('.chat-metrics')
+      if (metricsEl) {
+        metricsEl.classList.toggle('warn',   pct >= 60 && pct < 85)
+        metricsEl.classList.toggle('danger', pct >= 85)
+      }
 
       // 剩余百分比 + 电池图标（语义对齐：显示「还剩多少」）
       const remPct = Math.min(Math.max(100 - pct, 0), 100)
