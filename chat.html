@@ -1628,15 +1628,14 @@
       <input type="text" id="profileDisplayName" placeholder="给自己起个名字" style="padding:.5rem;font-size:13px;">
       <label style="font-size:12px;color:var(--text2);margin-top:.3rem;">邮箱</label>
       <input type="text" id="profileEmail" disabled style="padding:.5rem;font-size:13px;background:var(--bg);color:var(--text3);">
-      <button class="btn-cancel" onclick="saveProfile()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存资料</button>
-    </div>
 
-    <!-- 当前房间标题（仅大咖在房间内时显示） -->
-    <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
-      <h4 style="margin:0;font-size:14px;font-weight:600;">当前房间标题</h4>
-      <label style="font-size:12px;color:var(--text2);">显示在 sidebar 顶部绿色卡片，最多 13 个字。留空则用大咖昵称兜底。</label>
-      <input type="text" id="roomSidebarTitle" maxlength="13" placeholder="留空则用大咖昵称" style="padding:.5rem;font-size:13px;">
-      <button class="btn-cancel" onclick="saveRoomSidebarTitle()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存房间标题</button>
+      <!-- 当前房间标题 inline；仅大咖在自己房间内时显示 -->
+      <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.3rem;margin-top:.3rem;">
+        <label style="font-size:12px;color:var(--text2);">当前房间标题（最多 13 字，留空用昵称兜底）</label>
+        <input type="text" id="roomSidebarTitle" maxlength="13" placeholder="留空则用昵称" style="padding:.5rem;font-size:13px;">
+      </div>
+
+      <button class="btn-cancel" onclick="saveProfile()" style="align-self:flex-start;padding:.45rem 1rem;font-size:13px;margin-top:.3rem;">保存</button>
     </div>
 
     <!-- Agent Keys（仅大咖可见） -->
@@ -2070,7 +2069,13 @@
       document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
         el.textContent = name
       })
-      showToast('资料已保存')
+      // 同时保存当前房间标题（如果可见）
+      const roomSection = document.getElementById('roomTitleSection')
+      if (roomSection && roomSection.style.display !== 'none' && currentRoom && isExpert(currentRoom)) {
+        await saveRoomSidebarTitle(name)
+      } else {
+        showToast('资料已保存')
+      }
     } catch (e) {
       console.warn('[profile save]', e)
       showToast('保存失败：' + (e.message || e))
@@ -2440,7 +2445,7 @@
     return room.expert_id === currentUser?.id
   }
 
-  async function saveRoomSidebarTitle() {
+  async function saveRoomSidebarTitle(fallbackName) {
     if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的大咖能改'); return }
     const inputEl = document.getElementById('roomSidebarTitle')
     const newTitle = (inputEl?.value || '').trim().slice(0, 13)  // 兜底再截 13 字，防绕过 maxlength
@@ -2451,17 +2456,7 @@
     currentRoom.sidebar_title = newTitle || null
     const titleTextEl = document.getElementById('sidebarRoomTitleText')
     if (titleTextEl) {
-      if (newTitle) {
-        titleTextEl.textContent = newTitle
-      } else if (currentRoom.expert_id) {
-        try {
-          const { data } = await sb.from('profiles')
-            .select('display_name').eq('user_id', currentRoom.expert_id).maybeSingle()
-          titleTextEl.textContent = (data?.display_name || '').trim() || 'Chat'
-        } catch { titleTextEl.textContent = 'Chat' }
-      } else {
-        titleTextEl.textContent = 'Chat'
-      }
+      titleTextEl.textContent = newTitle || (fallbackName || '').trim() || 'Chat'
     }
     showToast('已保存')
   }
