@@ -1,6 +1,6 @@
-# 明天的议题：Chat2GO 自有 Agent 设计
+# 明天的议题：Chat2GO.Ai 自有 Agent 设计
 
-> **决策已定（2026-05-09）：Chat2GO 必须有自己的本地 Agent。不依赖 Hermes，不 fork Hermes，自己造。**
+> **决策已定（2026-05-09）：Chat2GO.Ai 必须有自己的本地 Agent。不依赖 Hermes，不 fork Hermes，自己造。**
 >
 > 理由：marketplace 是核心商业模式，AI 引擎是壁垒，必须 100% 自己掌控。Hermes 的好思路（skills / tools / memory / soul / 自学习）作为参考，不作为依赖。
 
@@ -73,7 +73,7 @@
 
 ## 起来后怎么继续
 
-> 跟我说一句「**开始 Chat2GO Agent 设计**」，我接着这份文档继续：
+> 跟我说一句「**开始 Chat2GO.Ai Agent 设计**」，我接着这份文档继续：
 >
 > 1. 先帮你过一遍上面 4 个拍板问题
 > 2. 把决定写进 `CHAT2GO_AGENT.md`
