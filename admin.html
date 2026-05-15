@@ -406,7 +406,7 @@
       <tr><td>Supabase DB</td><td><span class="pill ${dbOk?'online':'offline'}">${dbOk?'OK':'ERR'}</span></td><td>${escHtml(SUPABASE_URL.replace('https://',''))}</td></tr>
       <tr><td>Realtime</td><td><span class="pill online">OK</span></td><td>messages 表已开启</td></tr>
       <tr><td>Storage</td><td><span class="pill online">OK</span></td><td>chat-uploads bucket（public）</td></tr>
-      <tr><td>站点</td><td><span class="pill online">在线</span></td><td>chat2go.cn → GitHub Pages</td></tr>
+      <tr><td>站点</td><td><span class="pill online">在线</span></td><td>chat2go.ai → GitHub Pages</td></tr>
     `
   }
 
@@ -516,12 +516,10 @@
     showToast(`已清空 ${data} 条消息`)
     loadRooms()
   }
-  // 大咖人设名（与 chat.html EXPERT_PERSONAS 一致） — 提到 module 级，filename/h1 都用
-  const EXPERT_PERSONAS = {
-    'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道san命理教室',
-  }
-  function roomDisplayName(room) {
-    return EXPERT_PERSONAS[room?.expert_id]
+  // 大咖名直接读 profiles.display_name（由 profilesMap 提供），不再走前端硬编码
+  function roomDisplayName(room, profilesMap) {
+    const persona = profilesMap?.[room?.expert_id]
+    return persona
       || String(room?.name || '房间').replace(/\s*的\s*Chat\s*$/i, '')
   }
 
@@ -536,9 +534,9 @@
     const mainMsgs = allMsgs.filter(m => (m.channel || 'main') === 'main')
     const privMsgs = allMsgs.filter(m => m.channel === 'expert_user')
 
-    // 短文件名：大咖人设名优先（如「森山大道 san」），不然用房名去尾的 fallback
-    const shortName = roomDisplayName(room).replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
     const profilesMap = data.profiles || {}
+    // 短文件名：大咖 display_name 优先，不然用房名去尾的 fallback
+    const shortName = roomDisplayName(room, profilesMap).replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
     let downloaded = []
     if (mainMsgs.length) {
       await renderRoomPdf(room, mainMsgs, exportAt, '群聊', `${shortName}-群聊.pdf`, profilesMap)
@@ -576,7 +574,7 @@
     const aiName = (room && room.ai_name) || 'AI 助手'
     function senderLabel(m) {
       if (m.role === 'ai') return aiName
-      if (m.role === 'expert') return EXPERT_PERSONAS[m.user_id] || profiles[m.user_id] || '大咖'
+      if (m.role === 'expert') return profiles[m.user_id] || '大咖'
       return profiles[m.user_id] || '小白'
     }
     const msgsHtml = msgs.map(m => {
@@ -608,7 +606,7 @@
     }).join('')
     const html = `
       <div style="font-family:'Noto Sans SC','Helvetica Neue',sans-serif;color:#1a1a18;padding:20px;max-width:780px;">
-        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(roomDisplayName(room))} <span style="font-size:14px;color:#888;font-weight:400;">· ${channelLabel}</span></h1>
+        <h1 style="font-family:'Noto Serif SC',serif;font-size:22px;margin:0 0 4px;">${escHtml(roomDisplayName(room, profilesMap))} <span style="font-size:14px;color:#888;font-weight:400;">· ${channelLabel}</span></h1>
         <div style="font-size:11px;color:#888;margin-bottom:16px;border-bottom:0.5px solid #ddd;padding-bottom:10px;">
           行业：${escHtml(room.industry || '—')} · 共 ${msgs.length} 条消息 · 导出时间：${exportAt}
         </div>

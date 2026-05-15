@@ -2,7 +2,7 @@
 
 > 版本：v0.1（设计阶段）
 > 日期：2026-05-09
-> 作者：lirui88888862@gmail.com（chat2go.cn 主理人）
+> 作者：lirui88888862@gmail.com（chat2go.ai 主理人）
 
 ---
 
@@ -424,7 +424,7 @@ Day 10:   集成测试 + 部署
 **问题给自己回答：**
 - 商业模式怎么收钱？（按 token 抽成？月费？知识库订阅？）
 - 第一批种子大咖怎么找？（自己当大咖先 demo？拉熟人？）
-- chat2go.cn 现在是 GitHub Pages，扛得住几百小白同时在线吗？（不行，要换 Vercel / Cloudflare Pages）
+- chat2go.ai 现在是 GitHub Pages，扛得住几百小白同时在线吗？（不行，要换 Vercel / Cloudflare Pages）
 
 ---
 

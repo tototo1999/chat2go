@@ -2024,11 +2024,6 @@
   // demo 阶段：只放 fortune teller 这条线
   const DEMO_INDUSTRY = '算命'
 
-  // 大咖「人设名」(对应首页卡片上的 expert-name)，key = expert_id
-  const EXPERT_PERSONAS = {
-    'fbb9ab4b-dc51-40f8-800e-e824ff6fb8c0': '森山大道san命理教室',
-  }
-
   // admin 邮箱白名单（与 admin.html / is_admin() RPC 保持一致）
   const ADMIN_EMAILS = ['lirui88888862@gmail.com']
 
@@ -2332,17 +2327,13 @@
       el.classList.toggle('active', el.dataset.id === room.id)
     })
 
-    // sidebar 顶部显示当前聊天室对应大咖的「人设名」（与首页卡片完全一致）
-    // EXPERT_PERSONAS 是公开 persona 名（卡片/顶部统一），DB 里 display_name 是账户昵称（私）
+    // sidebar 顶部显示当前聊天室对应大咖的 display_name（大咖在设置里改完全站实时生效）
     try {
       const titleEl = document.getElementById('sidebarRoomTitle')
       if (titleEl && room.expert_id) {
-        let name = EXPERT_PERSONAS[room.expert_id] || ''
-        if (!name) {
-          const { data } = await sb.from('profiles')
-            .select('display_name').eq('user_id', room.expert_id).maybeSingle()
-          name = (data?.display_name || '').trim()
-        }
+        const { data } = await sb.from('profiles')
+          .select('display_name').eq('user_id', room.expert_id).maybeSingle()
+        const name = (data?.display_name || '').trim()
         if (name) titleEl.textContent = name
       }
     } catch (e) { console.warn('[sidebar title]', e) }
@@ -3528,7 +3519,7 @@
     recognition.onerror = (e) => {
       console.error('voice error:', e)
       stopVoice()
-      if (e.error === 'not-allowed') showToast('麦克风权限被拒，请到 chrome://settings 允许 chat2go.cn 使用麦克风')
+      if (e.error === 'not-allowed') showToast('麦克风权限被拒，请到 chrome://settings 允许 chat2go.ai 使用麦克风')
       else if (e.error === 'no-speech') {} // 无语音不报错
       else showToast('语音识别错误：' + e.error)
     }

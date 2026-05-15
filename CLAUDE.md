@@ -4,7 +4,7 @@
 
 Chat2GO.ai 是一个 AI marketplace 平台：**行业大咖 × AI × 小白用户**。大咖在「Chat 调试室」里陪小白把需求说清楚、演示 AI 能力，然后交付一个小白可以独立使用的专属 AI 助手（Go 交付室，尚未开发）。
 
-域名：chat2go.cn（GitHub Pages 托管静态页面）
+域名：chat2go.ai（GitHub Pages 托管静态页面）
 
 ## 技术栈
 

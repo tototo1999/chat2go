@@ -18,7 +18,7 @@ Chat2GO.ai 是 **AI marketplace** ——「行业大咖 × AI × 小白用户」
 
 最终形态:每个大咖向小白「交付」一个专属 AI 助手(Phase 4 的 Go 交付室,尚未开发)。
 
-**域名**:chat2go.cn(GitHub Pages 托管,CNAME 文件指向)。
+**域名**:chat2go.ai(GitHub Pages 托管,CNAME 文件指向)。
 
 ---
 
@@ -36,7 +36,7 @@ chat2go/
 ├── chat.html               # 调试室主界面(140KB+,核心)
 ├── onboarding.html         # 大咖入住流程(建房 + ai_name 设置)
 ├── admin.html              # 管理后台(房间观测 / 清空消息)
-├── CNAME                   # chat2go.cn
+├── CNAME                   # chat2go.ai
 ├── CLAUDE.md               # 项目上下文(喂给 Claude Code)
 ├── vendor/                 # 本地化 JS 依赖(supabase / marked / html2pdf)
 ├── supabase/
@@ -554,7 +554,7 @@ bridge 监测 restart_requested_at > 启动时间 → sys.exit(1) → launchd Ke
 
 ### 9.1 前端(GitHub Pages)
 - 仓库 `tototo1999/chat2go` main 分支,静态托管,无构建。push 后 30~90s 全球生效。
-- CNAME → `chat2go.cn`,DNS 端配 A / CNAME。
+- CNAME → `chat2go.ai`,DNS 端配 A / CNAME。
 
 ### 9.2 Supabase
 - Project URL / anon key 硬编码在前端 HTML 顶部 `<script>` + `chat2go-agent/config.py`。
