@@ -1733,7 +1733,7 @@
               <circle cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-opacity="0.18" stroke-width="3.5"/>
               <circle id="chatTokensRingFill" cx="16" cy="16" r="13.5" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="84.82" stroke-dashoffset="84.82" transform="rotate(-90 16 16)"/>
             </svg>
-            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10K</span>
+            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10K Token</span>
             <span class="ctx-pct" id="chatCtxWrap" style="display:none;">
               <span id="chatRoomCtx"></span>
               <i class="ctx-battery"><i id="ctxBatteryFill"></i></i>
@@ -3042,7 +3042,7 @@
 
       // 已用 / 上限
       const tokensEl = document.getElementById('chatRoomTokens')
-      tokensEl.textContent = `${formatTokens(used)} / ${formatTokens(window)}`
+      tokensEl.textContent = `${formatTokens(used)} / ${formatTokens(window)} Token`
       tokensEl.title = `本轮 context: ${used.toLocaleString()} / ${window.toLocaleString()} tokens`
         + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
         + `\n累计消费: ¥${cny.toFixed(2)}`
