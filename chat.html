@@ -294,7 +294,8 @@
     /* 编辑态：可改名 + 行尾 ✕ + + 新建 */
     .todo-section.editing .todo-pill,
     .todo-section.editing .todo-sub { cursor: default; }
-    .todo-section.editing .todo-text[contenteditable="true"] {
+    .todo-section.editing .todo-text[contenteditable="true"],
+    .todo-section.editing .todo-head-name[contenteditable="true"] {
       outline: 1px dashed var(--teal-300, #5eead4);
       border-radius: 4px;
       padding: 0 3px;
@@ -2612,6 +2613,12 @@
       if (editing) el.setAttribute('contenteditable', 'true')
       else el.removeAttribute('contenteditable')
     })
+    // 方案名（todoHeadName）也可改
+    const nameEl = document.getElementById('todoHeadName')
+    if (nameEl) {
+      if (editing) nameEl.setAttribute('contenteditable', 'true')
+      else nameEl.removeAttribute('contenteditable')
+    }
     // 编辑按钮在编辑态变成对勾「确认/保存」
     const btn = document.getElementById('todoEditBtn')
     if (btn) {
@@ -2703,8 +2710,13 @@
       const it = currentTemplate.payload[gi]?.items?.[ii]
       if (it) it.label = el.textContent.trim()
     })
+    // 同步方案名（清空则回退到原名，避免存空字符串）
+    const nameEl = document.getElementById('todoHeadName')
+    const newName = (nameEl?.textContent || '').trim() || currentTemplate.name || 'Todo'
+    currentTemplate.name = newName
+    if (nameEl) nameEl.textContent = newName
     const { error } = await sb.from('expert_todo_templates')
-      .update({ payload: currentTemplate.payload })
+      .update({ payload: currentTemplate.payload, name: currentTemplate.name })
       .eq('id', currentTemplate.id)
     if (error) { console.warn('[save template]', error); showToast('保存失败：' + (error.message || error.code)); return }
     showToast('已保存')
