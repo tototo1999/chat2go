@@ -813,10 +813,12 @@
       flex-shrink: 0;
     }
     .status-item.online .dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
-    .status-item.offline .dot { background: var(--gray-400); }
-    /* WiFi 信号图标用 currentColor，跟 online/offline 联动 */
+    .status-item.offline .dot { background: #DC2626; }
+    /* signal 图标:online 显示满格绿,offline 显示红 ✕ */
     .status-item.online  svg { color: var(--teal); }
-    .status-item.offline svg { color: var(--gray-400); }
+    .status-item .signal-offline { display: none; }
+    .status-item.offline .signal-online  { display: none; }
+    .status-item.offline .signal-offline { display: inline-block; color: #DC2626; }
     .online-count {
       font-size: 10px;
       color: var(--text3);
@@ -1744,10 +1746,14 @@
               <div class="dot"></div>
               <span class="brain-badge" id="brainBadge" title="重启 hermes！">hermes</span>
               <span id="chatRoomModel">AI</span>
-              <svg width="14" height="11" viewBox="0 0 14 11" fill="currentColor" aria-hidden="true">
+              <svg class="signal-online" width="14" height="11" viewBox="0 0 14 11" fill="currentColor" aria-hidden="true">
                 <rect x="1"   y="7" width="3" height="3" rx="0.5"/>
                 <rect x="5.5" y="4" width="3" height="6" rx="0.5"/>
                 <rect x="10"  y="1" width="3" height="9" rx="0.5"/>
+              </svg>
+              <svg class="signal-offline" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <line x1="3" y1="3" x2="9" y2="9"/>
+                <line x1="9" y1="3" x2="3" y2="9"/>
               </svg>
             </div>
           </div>
