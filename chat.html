@@ -1666,9 +1666,6 @@
       </div>
     </div>
 
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeSettings()">关闭</button>
-    </div>
   </div>
 </div>
 
@@ -2085,6 +2082,8 @@
       } else {
         showToast('资料已保存')
       }
+      // 保存成功后自动关 modal（极简；想取消改动可点 modal 外部）
+      document.getElementById('settingsModal').classList.remove('show')
     } catch (e) {
       console.warn('[profile save]', e)
       showToast('保存失败：' + (e.message || e))
