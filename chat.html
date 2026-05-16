@@ -3521,10 +3521,19 @@
     if (error) { showToast('评价失败：' + error.message); return }
     applyRatingsToMsg(msgId, data || {})
     refreshQuizState()
-    // 我刚把 up 数从 <2 推到 >=2 → 把摘要 copy 到私聊频道
+    // 我刚把 up 数从 <2 推到 >=2 → 把摘要 copy 到私聊频道 + main 频道发一条 "pass" 让 bridge 触发 AI 推进
     const newUp = Object.values(data || {}).filter(v => v === 'up').length
     if (newUp >= 2 && oldUp < 2) {
       relayPassToPrivate(msgId).catch(e => console.warn('[relay pass]', e))
+      // 当前用户在 main 频道实发一条 "pass" — bridge 必然响应，AI 看到 quiz-state passed+1 自动进入下一题
+      sb.from('messages').insert({
+        room_id: currentRoom?.id,
+        user_id: myUid,
+        role: currentRole === 'expert' ? 'expert' : 'user',
+        channel: 'main',
+        content: 'pass',
+        type: 'text',
+      }).then(({ error: e }) => { if (e) console.warn('[advance pass insert]', e) })
     }
     // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
     const input = document.getElementById('msgInput')
