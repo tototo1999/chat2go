@@ -3118,6 +3118,34 @@
     refreshBridgeStatus()
   }
 
+  async function maybeRefreshRoomFocal(payloadNew) {
+    // user role 消息到达时，若前端 currentRoom.focal_user_id 跟实际不一致(trigger 已在
+    // DB 端锁了 focal 但前端 snapshot stale)，refetch + 重画已渲染 user 头像
+    if (!currentRoom || !payloadNew || payloadNew.role !== 'user') return
+    const oldFocal = currentRoom.focal_user_id
+    try {
+      const { data } = await sb.from('rooms')
+        .select('focal_user_id, ai_name')
+        .eq('id', currentRoom.id).maybeSingle()
+      if (!data) return
+      if (data.focal_user_id === oldFocal) return
+      currentRoom.focal_user_id = data.focal_user_id
+      const fid = data.focal_user_id
+      document.querySelectorAll('.msg-group[data-role="user"]').forEach(g => {
+        const uid = g.dataset.userId
+        const isFoc = uid && fid && uid === fid
+        const role = fid && !isFoc ? 'audience' : 'user'
+        const av = g.querySelector('.msg-av')
+        if (av) {
+          av.className = av.className.replace(/\b(user|audience)\b/g, '').trim() + ' ' + role
+          av.textContent = role === 'audience' ? '路' : '白'
+        }
+        const sn = g.querySelector('.msg-sender')
+        if (sn) sn.className = sn.className.replace(/\b(user|audience)\b/g, '').trim() + ' ' + role
+      })
+    } catch (e) { console.warn('[refresh focal]', e) }
+  }
+
   function subscribeRoom(roomId) {
     if (realtimeChannel) sb.removeChannel(realtimeChannel)
 
@@ -3160,6 +3188,8 @@
           if (inCurChannel) {
             appendMessage(payload.new)
             scrollToBottom()
+            // user role 消息可能触发了 focal 锁定，refetch 同步 + 重画
+            if (payload.new.role === 'user') maybeRefreshRoomFocal(payload.new)
           } else if (!isSelf) {
             // 不在当前 channel + 不是自己发的 → 累计未读
             unreadCounts[msgChannel] = (unreadCounts[msgChannel] || 0) + 1
@@ -3289,8 +3319,10 @@
     const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
 
     // 三角色：role='user' 且 user_id 非 focal_user_id → 路人；其余按 role
+    // 兜底：focal_user_id 未锁定(null)时所有 user 默认显示「小白」而不是「路人」，
+    // 防止前端 currentRoom 数据 stale(trigger 在 DB 端锁了 focal 但前端没刷)误标头像
     const isFocal = msg.user_id && currentRoom?.focal_user_id && msg.user_id === currentRoom.focal_user_id
-    const displayRole = role === 'user' && !isFocal ? 'audience' : role
+    const displayRole = (role === 'user' && currentRoom?.focal_user_id && !isFocal) ? 'audience' : role
     const aiName = currentRoom?.ai_name || 'AI 助手'
     const roleLabels = { user: '小白', audience: '路人', expert: '大咖', ai: aiName }
     const roleLabel = roleLabels[displayRole] || displayRole
