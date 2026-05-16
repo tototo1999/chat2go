@@ -2566,6 +2566,18 @@
     // 重置按钮仅大咖看到
     const resetBtn = document.getElementById('resetRoomBtn')
     if (resetBtn) resetBtn.style.display = currentRoomRole === 'expert' ? '' : 'none'
+    // 输入栏身份徽章按房内角色(expert/focal/audience)显示，跟消息头像保持一致
+    const badge = document.getElementById('roleBadge')
+    if (badge) {
+      const map = { expert: '咖', focal: '白', audience: '路' }
+      badge.textContent = map[currentRoomRole] || '白'
+      const titleMap = {
+        expert: '大咖 · 点击修改资料',
+        focal:  '小白 · 点击修改资料',
+        audience: '路人 · 点击修改资料',
+      }
+      badge.title = titleMap[currentRoomRole] || '点击修改资料'
+    }
 
     await refreshRoomMembers()  // 拉群人数 + 成员列表（同时补 profilesByUid 让 @ 列表完整）
     renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
