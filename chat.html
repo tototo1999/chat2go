@@ -3809,6 +3809,11 @@
     if (pendingQuote && bodyContent) {
       bodyContent = bodyContent + '\n\n' + buildQuoteBlock(pendingQuote.b64, pendingQuote.sender)
     }
+    // 大咖带引用 = 私下纠正语义，强制发到 expert_user 频道，AI 不公开回复
+    // （main 频道里 AI 错了不当众纠正，避免小白看到错误公开化）
+    const hadQuote = !!pendingQuote
+    const isExpertQuoteCorrection = hadQuote && role === 'expert'
+    const targetChannel = isExpertQuoteCorrection ? 'expert_user' : currentChannel
     const finalContent = bodyContent || `[发送了 ${pendingAttachments.length} 个文件]`
     clearPendingQuote()
     const attachments = pendingAttachments.map(a => ({
@@ -3819,7 +3824,7 @@
       room_id: currentRoom.id,
       user_id: currentUser.id,
       role,
-      channel: currentChannel,
+      channel: targetChannel,
       content: finalContent,
       attachments
     }).select().single()
@@ -3836,6 +3841,11 @@
 
     sendBtn.disabled = false
     input.focus()
+
+    // 大咖私聊纠正：toast 提示已发到私聊，避免在 main 找不到困惑
+    if (isExpertQuoteCorrection && targetChannel !== currentChannel) {
+      showToast('已发到「大咖↔小白」私聊纠正')
+    }
 
     appendMessage(msgData)
     scrollToBottom()
