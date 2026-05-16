@@ -1893,10 +1893,18 @@
     if (inviteToken) {
       try {
         const { data: profile } = await sb.from('profiles')
-          .select('display_name').eq('user_id', session.user.id).maybeSingle()
+          .select('role,display_name').eq('user_id', session.user.id).maybeSingle()
         const dn = (profile?.display_name || '').trim()
-        showInviteModal(inviteToken, 'existing', dn)
-        return
+        // 大咖账号点邀请链接：不弹昵称 modal，避免误改大咖 display_name 污染数据
+        // （比如大咖在浏览器复制了自己房间的邀请链接给小白测试，结果自己先点了）
+        if (profile?.role === 'expert') {
+          const { data: roomId } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
+          if (roomId) history.replaceState({}, '', `/chat.html?room=${roomId}`)
+          // 继续走老登录逻辑（不 return），让 init 后续渲染设置 currentUser/currentRole 等
+        } else {
+          showInviteModal(inviteToken, 'existing', dn)
+          return
+        }
       } catch (e) {
         console.warn('[invite preload profile]', e)
         showInviteModal(inviteToken, 'existing', '')
