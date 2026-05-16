@@ -1,0 +1,47 @@
+diff --git a/gateway/run.py b/gateway/run.py
+index a024649c..f89746aa 100644
+--- a/gateway/run.py
++++ b/gateway/run.py
+@@ -1613,6 +1613,13 @@ class GatewayRunner:
+             f"I'll respond to your message shortly."
+         )
+ 
++        # ★ chat2go 平台不发占位 ack(用户体验差);interrupt 仍然生效,只是不显示提示
++        _plat = getattr(event.source, "platform", None)
++        _pname = (getattr(_plat, "value", None) or str(_plat) or "").lower()
++        if "chat2go" in _pname:
++            logger.debug("Skipping busy-ack for chat2go platform")
++            return True
++
+         thread_meta = {"thread_id": event.source.thread_id} if event.source.thread_id else None
+         try:
+             await adapter._send_with_retry(
+@@ -2887,6 +2894,12 @@ class GatewayRunner:
+                 logger.warning("QQBot: aiohttp/httpx missing or QQ_APP_ID/QQ_CLIENT_SECRET not configured")
+                 return None
+             return QQAdapter(config)
++        elif platform == Platform.CHAT2GO:
++            from gateway.platforms.chat2go import Chat2GoAdapter, check_chat2go_requirements
++            if not check_chat2go_requirements():
++                logger.warning("Chat2GO: supabase-py missing (pip install supabase)")
++                return None
++            return Chat2GoAdapter(config)
+ 
+         return None
+ 
+@@ -2930,6 +2943,7 @@ class GatewayRunner:
+             Platform.WEIXIN: "WEIXIN_ALLOWED_USERS",
+             Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOWED_USERS",
+             Platform.QQBOT: "QQ_ALLOWED_USERS",
++            Platform.CHAT2GO: "CHAT2GO_ALLOWED_USERS",
+         }
+         platform_group_env_map = {
+             Platform.QQBOT: "QQ_GROUP_ALLOWED_USERS",
+@@ -2951,6 +2965,7 @@ class GatewayRunner:
+             Platform.WEIXIN: "WEIXIN_ALLOW_ALL_USERS",
+             Platform.BLUEBUBBLES: "BLUEBUBBLES_ALLOW_ALL_USERS",
+             Platform.QQBOT: "QQ_ALLOW_ALL_USERS",
++            Platform.CHAT2GO: "CHAT2GO_ALLOW_ALL_USERS",
+         }
+ 
+         # Per-platform allow-all flag (e.g., DISCORD_ALLOW_ALL_USERS=true)
