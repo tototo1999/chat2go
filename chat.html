@@ -3169,6 +3169,8 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
+        // 系统 marker 消息：不渲染、不计未读（trigger 自动写的双钩 pass 推进信号）
+        if (payload.new?.content === '__SYS_ADVANCE_QUIZ__') return
         // 只渲染当前 channel 的消息；其它 channel 累计未读计数
         const msgChannel = payload.new.channel || 'main'
         const inCurChannel = msgChannel === currentChannel
@@ -3313,6 +3315,8 @@
   }
 
   function appendMessage(msg) {
+    // 系统 marker 消息：双钩 pass 触发 bridge 让 AI 进入下一题，前端不渲染
+    if (msg.content === '__SYS_ADVANCE_QUIZ__') return
     const list = document.getElementById('messagesList')
     const role = msg.role
     const isOwn = msg.user_id === currentUser?.id
