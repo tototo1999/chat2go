@@ -2227,6 +2227,9 @@
 
   // demo 阶段：只放 fortune teller 这条线
   const DEMO_INDUSTRY = '算命'
+  // 产品隔离 key:主站 chat.html 写'chat2go',tradego/chat.html 写'tradego'
+  // rooms.product 字段在 SELECT 列表 / INSERT 新房时一起用
+  const DEMO_PRODUCT = 'chat2go'
 
   // admin 邮箱白名单（与 admin.html / is_admin() RPC 保持一致）
   const ADMIN_EMAILS = ['lirui88888862@gmail.com']
@@ -2241,13 +2244,15 @@
       const { data, error } = await sb
         .from('rooms').select('*')
         .eq('expert_id', currentUser.id)
+        .eq('product', DEMO_PRODUCT)
         .order('created_at', { ascending: false })
       if (error) { console.warn('[loadRooms expert] error:', error); return }
       rooms = data || []
     } else {
-      // 小白：RLS 已经限定为成员才可读，直接拉就行
+      // 小白：RLS 已经限定为成员才可读,加 product filter 隔离两边产品的房间
       const { data, error } = await sb
         .from('rooms').select('*')
+        .eq('product', DEMO_PRODUCT)
         .order('created_at', { ascending: false })
       if (error) { console.warn('[loadRooms user] error:', error); return }
       rooms = data || []
@@ -2274,7 +2279,7 @@
   // ── 大咖：首次登录自动建一个房（每个大咖固定 1 个）──
   async function ensureExpertRoom() {
     const { data: existing, error } = await sb
-      .from('rooms').select('id').eq('expert_id', currentUser.id).limit(1)
+      .from('rooms').select('id').eq('expert_id', currentUser.id).eq('product', DEMO_PRODUCT).limit(1)
     if (error) { console.warn('[ensureExpertRoom] check failed:', error); return }
     if (existing && existing.length > 0) return
     const name = (currentDisplayName ? `${currentDisplayName} 的 Chat` : '我的 Chat')
@@ -2282,6 +2287,7 @@
       expert_id: currentUser.id,
       name,
       industry: DEMO_INDUSTRY,
+      product: DEMO_PRODUCT,
       status: 'active',
     })
     if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
@@ -2474,7 +2480,7 @@
   async function requestFollow(expertId, btnEl) {
     btnEl.disabled = true
     const { data: room, error: e1 } = await sb
-      .from('rooms').select('id').eq('expert_id', expertId).limit(1).maybeSingle()
+      .from('rooms').select('id').eq('expert_id', expertId).eq('product', DEMO_PRODUCT).limit(1).maybeSingle()
     if (e1 || !room) {
       showToast('找不到大咖的 Chat')
       btnEl.disabled = false
@@ -4169,6 +4175,7 @@
     const { data: room, error } = await sb.from('rooms').insert({
       name,
       industry,
+      product: DEMO_PRODUCT,
       expert_id: currentUser.id,
       status: 'active'
     }).select().single()
