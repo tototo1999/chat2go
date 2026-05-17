@@ -3049,9 +3049,12 @@
 
     // 单次计算 context 占用（三档之和），同时驱动模型名 / 已用-上限 / 百分比
     try {
+      // input_tokens 来源：hermes brain 暂时不回传，bridge 写 0；
+      // output_tokens 是 bridge 按消息内容长度估算。两者都算进 used 让进度环有数据
       const used = Number(lu.data?.input_tokens ?? 0)
                  + Number(lu.data?.cache_creation_input_tokens ?? 0)
                  + Number(lu.data?.cache_read_input_tokens ?? 0)
+                 + Number(lu.data?.output_tokens ?? 0)
       const model = lu.data?.model ?? ''
       const window = ROOM_TOKEN_BUDGET
       const pct = window > 0 ? (used / window) * 100 : 0
@@ -3198,7 +3201,8 @@
             if (payload.new.role !== 'ai' && (payload.new.channel || 'main') === 'main') {
               showTyping()
               clearTimeout(typingTimer)
-              typingTimer = setTimeout(() => { hideTyping(); setBridgeStatus(false) }, 60000)
+              // typing 兜底 timeout 拉到 10 分钟（qwen 慢响应 + 命理深推可能 3-5 分钟）
+              typingTimer = setTimeout(() => { hideTyping(); setBridgeStatus(false) }, 600000)
             }
           } else if (!isSelf) {
             // 不在当前 channel + 不是自己发的 → 累计未读
@@ -3886,10 +3890,11 @@
     if (currentChannel !== 'expert_user') {
       showTyping()
       clearTimeout(typingTimer)
+      // typing 兜底 timeout 拉到 10 分钟（qwen 慢响应 + 命理深推可能 3-5 分钟）
       typingTimer = setTimeout(() => {
         hideTyping()
         setBridgeStatus(false)
-      }, 30000)
+      }, 600000)
     }
   }
 
