@@ -1051,7 +1051,7 @@
       background: transparent;
       border: 2px solid #CB3D4A;
       box-sizing: border-box;
-      animation: typing-blink 1.4s ease-in-out infinite;
+      animation: typing-pulse 1.6s ease-out infinite;
     }
     .typing-verb {
       color: #d97706;
@@ -1060,9 +1060,11 @@
     .typing-name { color: var(--text); font-weight: 500; }
     .typing-sep, .typing-elapsed { color: var(--text3); }
     .typing-elapsed { font-size: 11px; }   /* 数字段缩小 1/5(14px → 11.2px) */
-    @keyframes typing-blink {
-      0%, 100% { opacity: 0.35; }
-      50%      { opacity: 1; }
+    /* 雷达 ping 效果：中心一个点 → 扩散为大圆 → 淡出 → 又一个点 */
+    @keyframes typing-pulse {
+      0%   { transform: scale(0.2); opacity: 1; }
+      80%  { transform: scale(1.2); opacity: 0; }
+      100% { transform: scale(0.2); opacity: 0; }
     }
 
     .input-area {
