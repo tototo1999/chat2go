@@ -58,7 +58,7 @@
       -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
-      max-width: 836px;   /* 原 800px,880 太宽回缩 5% → 836 */
+      max-width: 800px;
       margin: 0 auto;
       border-left: 0.5px solid var(--border);
       border-right: 0.5px solid var(--border);
@@ -1053,6 +1053,7 @@
     }
     .typing-name { color: var(--text); font-weight: 500; }
     .typing-sep, .typing-elapsed { color: var(--text3); }
+    .typing-elapsed { font-size: 11px; }   /* 数字段缩小 1/5(14px → 11.2px) */
     @keyframes typing-blink {
       0%, 100% { opacity: 0.35; }
       50%      { opacity: 1; }
