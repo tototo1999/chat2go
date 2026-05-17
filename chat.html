@@ -376,6 +376,18 @@
     }
     .todo-pill .todo-toggle:hover { background: var(--teal-50); color: var(--teal-600); }
     .todo-group.expanded .todo-pill .todo-toggle { transform: rotate(45deg); color: var(--teal-600); }
+    /* 锁住的大题：上一组未全 pass 时显示 🔐，不可展开 */
+    .todo-lock {
+      display: none;
+      width: 15px; height: 15px;
+      align-items: center; justify-content: center;
+      font-size: 11px; flex-shrink: 0;
+    }
+    .todo-group.locked .todo-lock { display: inline-flex; }
+    .todo-group.locked .todo-toggle { display: none; }
+    .todo-group.locked .todo-pill { cursor: not-allowed; opacity: 0.55; }
+    .todo-group.locked .todo-pill:hover { background: var(--bg); }
+    .todo-group.locked .todo-children { display: none !important; }
     /* 子目录 */
     .todo-children {
       display: none;
@@ -2692,10 +2704,15 @@
     body.querySelectorAll('.todo-group.expanded').forEach(g => prevExpanded.add(g.dataset.group))
     body.innerHTML = ''
     let idx = 0
+    const sectionEditing = document.getElementById('todoSection')?.classList.contains('editing')
     ;(payload || []).forEach((group, gi) => {
       const groupEl = document.createElement('div')
       groupEl.className = 'todo-group'
+      // 首次渲染默认锁住 gi>0 的组,避免 refreshQuizState 跑完前的解锁闪烁;
+      // 编辑态不锁;refreshQuizState 之后会按真实 passed 重算
+      if (!sectionEditing && gi > 0) groupEl.classList.add('locked')
       groupEl.dataset.group = `g${gi}`
+      groupEl.dataset.groupStart = String(idx)
       const subsHtml = (group.items || []).map((it, ii) => {
         const cur = idx++
         return `
@@ -2708,6 +2725,7 @@
       groupEl.innerHTML = `
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="todo-lock" aria-hidden="true">&#x1F510;</span>
           <span class="todo-text" data-text="group" data-gi="${gi}">${escHtml(group.label || '')}</span>
           <button type="button" class="todo-row-del" title="删除分组" onclick="event.stopPropagation();deleteTodoGroup(${gi})">×</button>
         </div>
@@ -2731,6 +2749,8 @@
     const sec = document.getElementById('todoSection')
     if (!sec) return
     const editing = sec.classList.contains('editing')
+    // 编辑态:大咖要能改任何大题,先把所有 .locked 清掉(退出编辑时 saveCurrentTemplate → refreshQuizState 会重算)
+    if (editing) sec.querySelectorAll('.todo-group.locked').forEach(g => g.classList.remove('locked'))
     sec.querySelectorAll('.todo-text[data-text]').forEach(el => {
       if (editing) el.setAttribute('contenteditable', 'true')
       else el.removeAttribute('contenteditable')
@@ -2976,6 +2996,7 @@
   function toggleTodoGroup(elOrBtn) {
     const group = elOrBtn.closest('.todo-group')
     if (!group) return
+    if (group.classList.contains('locked')) return
     group.classList.toggle('expanded')
   }
   async function refreshQuizState() {
@@ -3002,6 +3023,14 @@
       const idx = Number(sub.dataset.quizIdx)
       sub.classList.toggle('done', idx < passed)
       sub.classList.toggle('current', idx === passed)
+    })
+    // 大题解锁：当前组的「起始题号」<= passed 才解锁，编辑态强制全解锁
+    const editing = document.getElementById('todoSection')?.classList.contains('editing')
+    document.querySelectorAll('.todo-group').forEach(g => {
+      const start = Number(g.dataset.groupStart || 0)
+      const locked = !editing && passed < start
+      g.classList.toggle('locked', locked)
+      if (locked) g.classList.remove('expanded')
     })
     // 自动展开包含 current 的 group
     const currentSub = document.querySelector('.todo-sub.current')
