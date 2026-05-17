@@ -2793,13 +2793,14 @@
       .from('expert_todo_templates')
       .select('id')
       .eq('owner_id', ownerId)
+      .eq('product', DEMO_PRODUCT)
       .order('created_at', { ascending: true })
       .limit(1)
     if (selErr) { console.warn('[seed templates select]', selErr); return null }
     if (existing?.length) return existing[0].id
     const { data: created, error: insErr } = await sb
       .from('expert_todo_templates')
-      .insert({ owner_id: ownerId, name: '命理八字基础', payload: DEFAULT_TODO_PAYLOAD })
+      .insert({ owner_id: ownerId, name: '命理八字基础', product: DEMO_PRODUCT, payload: DEFAULT_TODO_PAYLOAD })
       .select('id')
       .single()
     if (insErr) { console.warn('[seed templates insert]', insErr); return null }
@@ -2927,6 +2928,7 @@
       .from('expert_todo_templates')
       .select('id, name')
       .eq('owner_id', currentRoom.expert_id)
+      .eq('product', DEMO_PRODUCT)
       .order('created_at', { ascending: true })
     if (error) { console.warn('[load templates]', error); showToast('加载方案失败'); return }
     _todoPopupTemplates = data || []
@@ -2992,7 +2994,7 @@
     const name = (window.prompt('新方案名：', '') || '').trim()
     if (!name) return
     const { data, error } = await sb.from('expert_todo_templates')
-      .insert({ owner_id: currentRoom.expert_id, name, payload: [] })
+      .insert({ owner_id: currentRoom.expert_id, name, product: DEMO_PRODUCT, payload: [] })
       .select('id')
       .single()
     if (error) { showToast('新建失败：' + (error.message || error.code)); return }
