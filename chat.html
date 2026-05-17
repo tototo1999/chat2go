@@ -3042,14 +3042,21 @@
       g.classList.toggle('locked', locked)
       if (locked) g.classList.remove('expanded')
     })
-    // 自动展开包含 current 的 group
+    // 自动展开包含 current 的 group + 自动折叠已完成的 group
     const currentSub = document.querySelector('.todo-sub.current')
-    if (currentSub) {
-      const currentGroup = currentSub.closest('.todo-group')
-      document.querySelectorAll('.todo-group').forEach(g => {
-        if (g === currentGroup) g.classList.add('expanded')
-      })
-    }
+    const currentGroup = currentSub?.closest('.todo-group') || null
+    document.querySelectorAll('.todo-group').forEach(g => {
+      if (g.classList.contains('locked')) return  // 锁定的上面已折叠,不动
+      if (g === currentGroup) {
+        g.classList.add('expanded')
+        return
+      }
+      // 整组都 done → 折叠;有空组(没 sub)不动
+      const subs = g.querySelectorAll('.todo-sub[data-quiz-idx]')
+      if (subs.length > 0 && Array.from(subs).every(s => s.classList.contains('done'))) {
+        g.classList.remove('expanded')
+      }
+    })
   }
 
   function formatTokens(n) {
