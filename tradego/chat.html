@@ -1,0 +1,4461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>跟单 · TradeGO</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23DC2626'/%3E%3Ctext x='32' y='44' font-family='Helvetica,Arial,sans-serif' font-size='30' font-weight='800' text-anchor='middle' fill='%23fff'%3EGO%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+  <script src="/vendor/supabase.js"
+          onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'"></script>
+  <script src="/vendor/marked.min.js"
+          onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/marked@12/marked.min.js'"></script>
+  <script src="/vendor/html2pdf.bundle.min.js"
+          onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal:    #2563eb;
+      --teal-50: #eff6ff;
+      --teal-100:#bfdbfe;
+      --teal-600:#1d4ed8;
+      --teal-800:#1e3a8a;
+      --purple:  #534AB7;
+      --purple-50:#EEEDFE;
+      --purple-100:#CECBF6;
+      --purple-600:#3C3489;
+      --gray-50: #F1EFE8;
+      --gray-100:#D3D1C7;
+      --gray-400:#888780;
+      --bg:      #FAFAF8;
+      --bg2:     #F4F3EF;
+      --border:  rgba(60,58,54,0.12);
+      --border2: rgba(60,58,54,0.22);
+      --text:    #1a1a18;
+      --text2:   #5f5e5a;
+      --text3:   #888780;
+      --radius:  8px;
+      --radius-lg: 12px;
+      --sidebar: 220px;
+      --nav-h:   56px;
+    }
+
+    html { background: #DDDCD6; }
+    html, body { height: 100vh; overflow: hidden; }
+
+    /* body 本身就是 800px 居中容器，跟 index.html 完全一致 */
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      display: flex;
+      flex-direction: column;
+      max-width: 800px;
+      margin: 0 auto;
+      border-left: 0.5px solid var(--border);
+      border-right: 0.5px solid var(--border);
+    }
+
+    /* 不再单独刷 #fff，统一用 var(--bg) #FAFAF8，跟 landing 的 main 底色一致 */
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 2rem;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .nav-left { display: flex; align-items: center; gap: 10px; }
+    .logo {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.3px;
+    }
+    .logo span { color: var(--teal); }
+    .logo .logo-tld { font-size: 0.65em; font-weight: 500; letter-spacing: 0; }
+    .nav-badge {
+      padding: 2px 8px;
+      background: var(--teal-50);
+      color: var(--teal-600);
+      font-size: 10px;
+      font-weight: 500;
+      border-radius: 100px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .btn-logout {
+      padding: 6px 14px;
+      font-size: 12px;
+      border: 0.5px solid var(--border2);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .btn-logout:hover { background: var(--bg2); color: var(--text); }
+    /* nav 右上角图标按钮：仅图标，无文字 */
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0.5px solid var(--border2);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all .15s;
+      font-family: inherit;
+      padding: 0;
+    }
+    .icon-btn:hover { background: var(--bg2); color: var(--text); }
+    .icon-btn i { font-size: 16px; }
+
+    /* ── LAYOUT ── */
+    .layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;   /* 关键：让 .messages 能滚动而不撑高 body */
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar);
+      flex-shrink: 0;
+      border-right: 0.5px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-head {
+      padding: 0 6px;
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-sizing: border-box;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .invite-btn {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 999px;
+      border: 0.5px solid var(--border);
+      background: #fff;
+      color: var(--text2);
+      cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      transition: background .15s, color .15s, transform .12s, box-shadow .15s;
+    }
+    .invite-btn:hover { background: var(--teal-50); color: var(--teal-600); transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,.1); }
+    .invite-btn svg { width: 13px; height: 13px; }
+    /* sidebar 顶部：当前聊天室标题（极简版，无新建按钮） */
+    .sidebar-room-title {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+    .sidebar-room-title-text {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Todo list section（在 + Chat 下方） */
+    .todo-section {
+      padding: 6px;
+      border-bottom: 0.5px solid var(--border);
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .todo-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .todo-head {
+      padding: 7px 10px;
+      background: var(--teal-50);
+      border: 0.5px solid var(--teal-100);
+      border-radius: var(--radius);
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .todo-head-name {
+      flex: 1;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .todo-head-btn {
+      width: 22px; height: 22px;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      color: var(--text2);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      line-height: 1;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .todo-head-btn.visible { display: inline-flex; }
+    .todo-head-btn:hover { background: var(--teal-100); color: var(--teal-600); }
+    .todo-popup {
+      /* fixed 定位避免被 .sidebar overflow:hidden 截断；位置由 JS 跟随 caret 按钮 */
+      position: fixed;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      z-index: 1000;
+      padding: 6px;
+      width: 220px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .todo-popup-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .todo-popup-item:hover { background: var(--teal-50); }
+    .todo-popup-item.active { background: var(--teal-50); color: var(--teal-600); font-weight: 500; }
+    .todo-popup-item .dot { width: 6px; height: 6px; border-radius: 50%; background: transparent; flex-shrink: 0; }
+    .todo-popup-item.active .dot { background: var(--teal-600); }
+    .todo-popup-divider { height: 0.5px; background: var(--border); margin: 4px 0; }
+    .todo-popup-add { color: var(--teal-600); }
+    .todo-popup-del {
+      margin-left: auto;
+      width: 18px; height: 18px;
+      border-radius: 4px;
+      background: transparent;
+      border: 0;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      opacity: 0;
+      transition: opacity .12s, background .12s, color .12s;
+      flex-shrink: 0;
+    }
+    .todo-popup-item:hover .todo-popup-del { opacity: 1; }
+    .todo-popup-del:hover { background: #fee; color: #c00; }
+    /* 编辑态：可改名 + 行尾 ✕ + + 新建 */
+    .todo-section.editing .todo-pill,
+    .todo-section.editing .todo-sub { cursor: default; }
+    .todo-section.editing .todo-text[contenteditable="true"],
+    .todo-section.editing .todo-head-name[contenteditable="true"] {
+      outline: 1px dashed var(--teal-300, #5eead4);
+      border-radius: 4px;
+      padding: 0 3px;
+      cursor: text;
+      background: rgba(255,255,255,0.6);
+    }
+    .todo-row-del {
+      margin-left: auto;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: transparent;
+      border: 0;
+      color: var(--text3);
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .todo-section.editing .todo-row-del { display: inline-flex; }
+    .todo-row-del:hover { background: #fee; color: #c00; }
+    .todo-add-sub, .todo-add-group {
+      padding: 5px 10px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--teal-600);
+      cursor: pointer;
+      display: none;
+      border-radius: 999px;
+      border: 0.5px dashed var(--border2);
+      background: transparent;
+      text-align: center;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .todo-add-sub { margin-left: 32px; }
+    .todo-section.editing .todo-add-sub,
+    .todo-section.editing .todo-add-group { display: block; }
+    .todo-add-sub:hover, .todo-add-group:hover { background: var(--teal-50); }
+    .todo-group { margin-top: 5px; padding-left: 12px; }
+    .todo-pill {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      font-size: 11.5px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .todo-pill:hover { background: var(--teal-50); }
+    .todo-pill .todo-toggle {
+      width: 15px; height: 15px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: transparent;
+      color: var(--text2);
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: inherit;
+      padding: 0;
+      transition: transform .18s, background .15s, color .15s;
+    }
+    .todo-pill .todo-toggle:hover { background: var(--teal-50); color: var(--teal-600); }
+    .todo-group.expanded .todo-pill .todo-toggle { transform: rotate(45deg); color: var(--teal-600); }
+    /* 大题锁状态:gi>0 的组渲染 .todo-lock-state(两个 SVG,CSS 切换);
+       锁态用红色挂锁醒目提示,解锁后切到绿色开锁图标 */
+    .todo-lock-state {
+      display: inline-flex;
+      width: 16px; height: 16px;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .todo-lock-state .lk-closed,
+    .todo-lock-state .lk-open { display: none; }
+    .todo-group.locked .todo-lock-state .lk-closed { display: inline-block; color: #d4380d; }
+    .todo-group:not(.locked) .todo-lock-state .lk-open { display: inline-block; color: var(--teal-600); }
+    .todo-group.locked .todo-toggle { display: none; }
+    .todo-group.locked .todo-pill { cursor: not-allowed; opacity: 0.6; }
+    .todo-group.locked .todo-pill:hover { background: var(--bg); }
+    .todo-group.locked .todo-children { display: none !important; }
+    /* 子目录 */
+    .todo-children {
+      display: none;
+      padding: 4px 0 2px 32px;
+    }
+    .todo-group.expanded .todo-children { display: block; }
+    .todo-sub {
+      padding: 4px 10px;
+      margin-top: 3px;
+      border-radius: 999px;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s, color .15s;
+    }
+    .todo-sub:hover { background: var(--teal-50); }
+    /* 当前正在做的题：橙黄底闪烁 */
+    .todo-sub.current {
+      background: #FEF3C7;
+      border-color: #F59E0B;
+      color: #92400E;
+      animation: quizPulse 1.8s ease-in-out infinite;
+    }
+    .todo-sub.current .check { border-color: #F59E0B; }
+    @keyframes quizPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      50%      { box-shadow: 0 0 0 4px rgba(245,158,11,0); }
+    }
+    .todo-sub .check {
+      width: 12px; height: 12px;
+      border-radius: 3px;
+      border: 1px solid var(--border2);
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      line-height: 1;
+      color: transparent;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .todo-sub.done { color: var(--text3); }
+    .todo-sub.done .todo-text { text-decoration: line-through; }
+    .todo-sub.done .check {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #fff;
+    }
+
+    .rooms-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .rooms-list::-webkit-scrollbar { width: 4px; }
+    .rooms-list::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 4px; }
+
+    .room-item {
+      padding: 10px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+      border: 0.5px solid transparent;
+      margin-bottom: 2px;
+    }
+    .room-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .room-item:hover { background: var(--bg2); }
+    .room-item.active {
+      background: var(--teal-50);
+      border-color: var(--teal-100);
+    }
+    .room-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .room-item.active .room-name { color: var(--teal-800); }
+    /* 大咖 hover 删除按钮 */
+    .room-del {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, background .15s, color .15s;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .room-item:hover .room-del,
+    .room-item:hover .room-edit { opacity: 1; }
+    .room-del:hover { background: #fee2e2; color: #991b1b; }
+    .room-edit {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity .15s, background .15s, color .15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .room-edit:hover { background: var(--teal-50); color: var(--teal-600); }
+    /* 大咖 待审 follow 已挪到 role-badge 弹层（见 .role-popup） */
+    /* 小白：没有房间时显示「选大咖 follow」面板 */
+    .follow-experts {
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+    }
+    .follow-experts-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 17px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .follow-experts-sub { font-size: 12px; color: var(--text3); margin-bottom: 1rem; }
+    .expert-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 8px;
+      background: #fff;
+    }
+    .expert-row-name { flex: 1; text-align: left; font-size: 13px; color: var(--text); }
+    /* follow 胶囊：左 ♥ 右数字，统一与落地页（GO 同款勃艮第红） */
+    .follow-pill {
+      display: inline-flex;
+      align-items: stretch;
+      background: #CB3D4A;
+      color: #fff;
+      border-radius: 999px;
+      overflow: hidden;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .follow-pill button {
+      background: transparent;
+      color: inherit;
+      border: 0;
+      padding: 5px 9px;
+      font: inherit;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .follow-pill button:hover { background: rgba(255,255,255,.18); }
+    .follow-pill button:disabled { opacity: .6; cursor: default; }
+    .follow-pill .pf-heart { font-size: 13px; }
+    .follow-pill .pf-divider { width: 0.5px; background: rgba(255,255,255,.32); }
+    .follow-pill .pf-count { min-width: 22px; text-align: center; font-variant-numeric: tabular-nums; }
+    .follow-pill.joined { background: transparent; color: var(--text3); border: 0.5px solid var(--border2); }
+    .follow-pill.joined .pf-divider { background: var(--border); }
+    .room-meta {
+      font-size: 11px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .room-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .rooms-empty {
+      padding: 2rem 1rem;
+      text-align: center;
+      color: var(--text3);
+      font-size: 13px;
+      line-height: 1.8;
+    }
+
+    /* ── CHAT PANEL ── */
+    .chat-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text3);
+    }
+    .welcome i { font-size: 40px; color: var(--teal-100); margin-bottom: 1rem; }
+    .welcome h3 { font-size: 16px; font-weight: 500; color: var(--text2); margin-bottom: 8px; }
+    .welcome p { font-size: 13px; line-height: 1.7; max-width: 300px; }
+
+    /* chat-head：两行紧凑布局 */
+    .chat-head {
+      padding: 8px 1rem;
+      min-height: 64px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .chat-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    /* Channel 切换 tab：白底胶囊 + 图标 + 阴影（参考 Gemini 风格） */
+    .presence-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 22px;
+    }
+    .presence-tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      height: 26px;
+      min-width: 96px;
+      padding: 0 14px;
+      border-radius: 999px;
+      line-height: 1;
+      color: var(--text);
+      background: #fff;
+      border: 0.5px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: transform .12s, box-shadow .15s, border-color .15s, background .15s;
+    }
+    .presence-tab:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,.1);
+    }
+    .presence-tab.main         { --tab-c: var(--teal); }
+    .presence-tab.peer-expert  { --tab-c: #7C3AED; }
+    .presence-tab.peer-user    { --tab-c: #EA580C; }
+    /* 单聊胶囊默认就带一点 tint，更突出 */
+    .presence-tab.peer-expert,
+    .presence-tab.peer-user {
+      background: color-mix(in srgb, var(--tab-c) 7%, #fff);
+      border-color: color-mix(in srgb, var(--tab-c) 28%, var(--border));
+    }
+    .presence-tab.active {
+      border-color: var(--tab-c);
+      background: color-mix(in srgb, var(--tab-c) 14%, #fff);
+    }
+    .presence-tab .ti { font-size: 16px; color: var(--tab-c); }
+    .presence-tab svg.tab-icon { color: var(--tab-c); display: block; }
+    .presence-tab .group-count {
+      font-size: 11px; font-weight: 600;
+      color: var(--tab-c);
+      min-width: 12px; text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    /* 群成员列表弹层（点群胶囊出现） */
+    .member-list-popover {
+      position: absolute;
+      top: 30px; left: 0;
+      display: none;
+      flex-direction: column;
+      min-width: 220px; max-width: 320px; max-height: 60vh;
+      overflow-y: auto;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      padding: 6px;
+      z-index: 50;
+    }
+    .member-list-popover.open { display: flex; }
+    .member-list-popover .ml-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .member-list-popover .ml-row:hover { background: var(--bg2); }
+    .member-list-popover .ml-av {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600;
+      flex-shrink: 0;
+    }
+    .member-list-popover .ml-av.expert    { background: var(--purple-50); color: var(--purple-600); }
+    .member-list-popover .ml-av.focal     { background: var(--bg2);       color: #B8893A; }
+    .member-list-popover .ml-av.audience  { background: #FFEDD5;          color: #C2410C; }
+    .member-list-popover .ml-av.ai        { background: var(--teal-50);   color: var(--teal-600); }
+    .member-list-popover .ml-name { flex: 1; color: var(--text); }
+    .member-list-popover .ml-role { font-size: 11px; color: var(--text3); }
+    /* 未读数徽章：>0 显示，=0 隐藏；位置在 icon 右侧（gap 控制间距） */
+    .presence-tab .unread {
+      min-width: 14px;
+      height: 14px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #DC2626;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .presence-tab .unread.has { display: inline-flex; }
+    /* metrics + status, 统一小字灰色 */
+    .chat-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text3);
+      font-variant-numeric: tabular-nums;
+    }
+    .chat-metrics .sep { color: var(--border2); }
+    .chat-metrics .warn   { color: #92400e; font-weight: 500; }   /* 60-85% */
+    .chat-metrics .danger { color: #991b1b; font-weight: 600; }   /* >85% */
+    /* token 用量进度环（Claude 客户端风格，圆环填充表示 used/total） */
+    .tokens-ring {
+      color: #10b981;     /* emerald-500，比品牌 teal 更亮更鲜明 */
+      flex-shrink: 0;
+      margin-right: -2px; /* 跟数字稍微贴近，gap:8px 的视觉补偿 */
+    }
+    .tokens-ring circle { transition: stroke-dashoffset .35s ease, stroke .15s; }
+    .chat-metrics.warn   .tokens-ring { color: #f59e0b; }   /* amber-500 */
+    .chat-metrics.danger .tokens-ring { color: #ef4444; }   /* red-500 */
+    /* iPhone 风 context 电池图标 */
+    .ctx-pct {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .ctx-battery {
+      position: relative;
+      display: inline-block;
+      width: 18px;
+      height: 9px;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      padding: 1px;
+      margin-right: 2px;
+      box-sizing: border-box;
+      font-style: normal;
+    }
+    .ctx-battery::after {
+      content: '';
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 4px;
+      background: currentColor;
+      border-radius: 0 1px 1px 0;
+    }
+    .ctx-battery > i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: currentColor;
+      border-radius: 1px;
+      transition: width .25s ease;
+    }
+    /* 模型名嵌在 AI status pill 里，加点 weight 突出 */
+    #bridgeStatus #chatRoomModel { font-weight: 500; color: var(--text2); }
+    #bridgeStatus.online #chatRoomModel { color: var(--teal-600); }
+    /* brain 运行时徽章：深酒红胶囊，温润不刺眼 */
+    .brain-badge {
+      font-size: 10px;
+      font-weight: 700;
+      background: #9F1239;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.4px;
+      text-transform: lowercase;
+      line-height: 1.3;
+    }
+    .chat-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text3);
+      margin-right: 14px;  /* 整组左移，让右边大致与下方消息气泡右边对齐 */
+    }
+    .status-item { display: flex; align-items: center; gap: 5px; }
+    .status-item .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-item.online .dot { background: var(--teal); animation: pulse 2s ease-in-out infinite; }
+    .status-item.offline .dot { background: #DC2626; }
+    /* signal 图标:online 显示满格绿,offline 显示红 ✕ */
+    .status-item.online  svg { color: var(--teal); }
+    .status-item .signal-offline { display: none; }
+    .status-item.offline .signal-online  { display: none; }
+    .status-item.offline .signal-offline { display: inline-block; color: #DC2626; }
+    .online-count {
+      font-size: 10px;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .online-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── 飞书风消息布局：左头像 + 右侧 名字+时间+气泡 ── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 4px; }
+
+    .msg-group {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 4px 0;
+    }
+    .msg-av {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;             /* 飞书风：圆角方形 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .msg-av.user     { background: var(--bg2);       color: var(--text2); }
+    .msg-av.audience { background: #FFEDD5;          color: #C2410C; }   /* 路人：暖橙 */
+    .msg-av.expert   { background: var(--purple-50); color: var(--purple-600); }
+    .msg-av.ai       { background: var(--teal-50);   color: var(--teal-800); }
+
+    .msg-body {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.2;
+    }
+    .msg-sender { font-size: 13px; font-weight: 500; color: var(--text); }
+    .msg-sender.user     { color: #B8893A; }
+    .msg-sender.audience { color: #C2410C; }
+    .msg-sender.expert   { color: var(--purple-600); }
+    .msg-sender.ai       { color: var(--teal-600); }
+    .msg-role-badge {
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .msg-role-badge.user   { background: var(--gray-50); color: var(--gray-400); }
+    .msg-role-badge.expert { background: var(--purple-50); color: var(--purple-600); }
+    .msg-role-badge.ai     { background: var(--teal-50); color: var(--teal-600); }
+    .msg-ts { font-size: 11px; color: var(--text3); }
+
+    /* hover 出现的操作按钮 */
+    .msg-actions {
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity .15s;
+      margin-left: auto;
+    }
+    .msg-group:hover .msg-actions { opacity: 1; }
+    .msg-action-btn {
+      width: 22px; height: 22px;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all .15s;
+    }
+    .msg-action-btn:hover { background: var(--bg2); color: var(--text); }
+    .msg-action-btn.copied { color: var(--teal); }
+
+    /* AI 消息底部 ✓ / ✗ 评价按钮 */
+    .msg-rate-bar {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .msg-rate-btn {
+      width: 20px; height: 20px;
+      border: 0.5px solid transparent;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+      font-family: inherit;
+      padding: 0;
+    }
+    .msg-rate-btn.up   { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
+    .msg-rate-btn.down { background: #FEE2E2;        color: #DC2626;          border-color: #FECACA; }
+    .msg-rate-btn.up:hover   { background: var(--teal-100); }
+    .msg-rate-btn.down:hover { background: #FECACA; }
+    .msg-rate-btn.up.active   { background: var(--teal); color: #fff; border-color: var(--teal); }
+    .msg-rate-btn.down.active { background: #DC2626;     color: #fff; border-color: #DC2626; }
+    .rate-badge {
+      display: inline-flex; align-items: center;
+      margin-left: 8px;
+      padding: 2px 9px;
+      background: var(--teal); color: #fff;
+      border-radius: 999px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.4px;
+      animation: ratePop .3s ease;
+    }
+    /* 单钩状态：浅底深字，仅一个 ✓ */
+    .rate-badge.half {
+      background: var(--teal-50);
+      color: var(--teal-600);
+      border: 0.5px solid var(--teal-100);
+    }
+    @keyframes ratePop {
+      0% { transform: scale(.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .msg-rate-btn.quote,
+    .msg-rate-btn.sync {
+      background: var(--bg2);
+      color: var(--text2);
+      border-color: var(--border);
+      padding: 0;
+    }
+    .msg-rate-btn.quote svg,
+    .msg-rate-btn.sync svg { display: block; }
+    .msg-rate-btn.quote:hover { background: var(--teal-50); color: var(--teal-600); border-color: var(--teal-100); }
+    .msg-rate-btn.sync:hover  { background: #EDE9FE;          color: #7C3AED;            border-color: #DDD6FE; }
+
+    /* 微信风引用卡片：消息气泡下方一个紧凑灰条 */
+    .msg-quote-card {
+      margin-top: 4px;
+      padding: 7px 10px;
+      background: var(--bg2);
+      border-radius: 6px;
+      border-left: 3px solid var(--border2);
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.45;
+      max-width: 320px;
+      align-self: flex-start;
+      cursor: default;
+    }
+    .msg-quote-card .qsender {
+      color: var(--text);
+      font-weight: 500;
+      margin-right: 4px;
+    }
+    .msg-quote-card .qbody {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .msg-bubble {
+      padding: 9px 13px;
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 100%;
+      word-break: break-word;
+      white-space: pre-wrap;
+      align-self: flex-start;
+      border-left: 3px solid transparent;
+    }
+    /* 三色区分，方便扫读 */
+    .msg-bubble.user   { background: #FFF8E7;       border-left-color: #E5B85A; color: var(--text); }
+    .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
+    .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
+
+    .typing-indicator {
+      display: none;
+      padding: 4px 1.5rem 10px;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      /* 等宽字体打头,中文 fallback 到苹方/雅黑,避免 Monaco 拼凑出来的丑中文 */
+      font-family: 'SF Mono', Menlo, Monaco, 'PingFang SC', 'Microsoft YaHei', system-ui, monospace;
+      color: var(--text3);
+      white-space: nowrap;
+      line-height: 1.5;
+    }
+    .typing-indicator.show { display: flex; }
+    .typing-indicator > * { flex-shrink: 0; }
+    /* typing 头部：空心红色描边小圈，跟品牌色一致 */
+    .typing-star {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: transparent;
+      border: 2px solid #CB3D4A;
+      box-sizing: border-box;
+      animation: typing-pulse 1.6s ease-out infinite;
+    }
+    .typing-verb {
+      color: #d97706;
+      font-weight: 500;
+      font-size: 12px;
+    }
+    .typing-name { color: var(--text); font-weight: 500; }
+    .typing-sep, .typing-elapsed { color: var(--text3); }
+    .typing-elapsed { font-size: 11px; }   /* 数字段缩小 1/5(14px → 11.2px) */
+    /* 雷达 ping 效果：中心一个点 → 扩散为大圆 → 淡出 → 又一个点 */
+    @keyframes typing-pulse {
+      0%   { transform: scale(0.2); opacity: 1; }
+      80%  { transform: scale(1.2); opacity: 0; }
+      100% { transform: scale(0.2); opacity: 0; }
+    }
+
+    .input-area {
+      padding: 10px 1rem;
+      border-top: 0.5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .input-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .input-box {
+      flex: 1;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      resize: none;
+      outline: none;
+      transition: border-color .15s;
+      line-height: 1.5;
+      max-height: 120px;
+      min-height: 38px;
+    }
+    .input-box:focus { border-color: var(--teal); background: #fff; }
+    .input-box::placeholder { color: var(--text3); }
+    /* GO 圆形红底按钮 */
+    .send-btn {
+      width: 38px;
+      height: 38px;
+      padding: 0;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: #CB3D4A;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: #A82F3A; }
+    .send-btn:active { transform: scale(0.96); }
+    .send-btn:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
+
+    .input-hint {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text3);
+    }
+
+    /* ── 附件 ── */
+    /* 用户身份徽章：白(小白) / 咖(大咖)，teal 圆底白字，点击进入资料设置 */
+    .role-badge-wrap { position: relative; flex-shrink: 0; }
+    .role-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+      user-select: none;
+      transition: background .15s, transform .1s;
+    }
+    .role-badge:hover { background: var(--teal-600); }
+    .role-badge:active { transform: scale(0.94); }
+    /* 待审 follow 数字气泡：右上角红圆 */
+    .role-badge-count {
+      position: absolute;
+      top: -2px;
+      right: -4px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 999px;
+      background: #DC2626;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border: 1.5px solid var(--bg);
+      pointer-events: none;
+    }
+    .role-badge-count.has { display: inline-flex; }
+    /* 待审 follow 弹层：从 role-badge 上方弹出 */
+    .role-popup {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 0;
+      min-width: 240px;
+      max-width: 320px;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      padding: 8px 10px;
+      display: none;
+      z-index: 50;
+    }
+    .role-popup.show { display: block; }
+    .role-popup-title { font-size: 11px; color: var(--text3); letter-spacing: .3px; margin-bottom: 6px; }
+    .role-popup-empty { color: var(--text3); font-size: 12px; padding: 4px 0; }
+    .role-popup-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 0;
+      border-bottom: 0.5px dashed var(--border);
+      font-size: 12px;
+    }
+    .role-popup-item:last-child { border-bottom: none; }
+    .role-popup-who { flex: 1; color: var(--text2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .role-popup-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      border: 0.5px solid var(--border2);
+      background: #fff;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .role-popup-btn.ok { color: var(--teal-600); border-color: var(--teal); }
+    .role-popup-btn.ok:hover { background: var(--teal); color: #fff; }
+    .role-popup-btn.no:hover { background: #fee2e2; color: #991b1b; }
+    .attach-btn, .voice-btn {
+      width: 34px;
+      height: 38px;
+      flex-shrink: 0;
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s;
+    }
+    .attach-btn:hover, .voice-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
+    .attach-btn i, .voice-btn i { font-size: 16px; }
+
+    .voice-btn.recording {
+      background: #FDE8E8;
+      border-color: #F5A0A0;
+      color: #9B1C1C;
+      animation: voicePulse 1s ease-in-out infinite;
+    }
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(155, 28, 28, 0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(155, 28, 28, 0); }
+    }
+
+    .attach-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .attach-preview:empty { display: none; }
+
+    /* 微信风「回复 X」小条：挂在输入框上方，发送时静默附 quote 到消息末尾 */
+    .quote-preview {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      padding: 6px 10px;
+      background: var(--bg2);
+      border-left: 3px solid var(--teal);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+    .quote-preview i.ti { font-size: 14px; color: var(--teal); flex-shrink: 0; }
+    .quote-preview .qp-sender { color: var(--text); font-weight: 500; flex-shrink: 0; }
+    .quote-preview .qp-body {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .quote-preview .qp-x {
+      width: 20px; height: 20px;
+      border: none;
+      background: transparent;
+      color: var(--text3);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+      padding: 0;
+      font-family: inherit;
+    }
+    .quote-preview .qp-x:hover { background: var(--bg); color: var(--text); }
+    .quote-preview .qp-x i { font-size: 13px; }
+    .attach-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px 5px 10px;
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text);
+    }
+    .attach-chip i.file { font-size: 14px; color: var(--teal); }
+    .attach-chip .thumb { width: 22px; height: 22px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+    .attach-chip .name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attach-chip .size { color: var(--text3); font-size: 10px; }
+    .attach-chip .x {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      cursor: pointer;
+      color: var(--text3);
+      transition: all .15s;
+    }
+    .attach-chip .x:hover { background: var(--gray-100); color: var(--text); }
+    .attach-chip.uploading { opacity: 0.6; }
+    .attach-chip.uploading .name::after { content: ' (上传中…)'; color: var(--text3); font-size: 10px; }
+
+    /* 已发送消息里的附件卡片 */
+    .msg-attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+    .msg-attachment {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #fff;
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      text-decoration: none;
+      color: var(--text);
+      max-width: 300px;
+    }
+    .msg-attachment:hover { border-color: var(--teal-100); background: var(--teal-50); }
+    .msg-attachment i { font-size: 16px; color: var(--teal); flex-shrink: 0; }
+    .msg-attachment .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* 消息内图片直接显示（不走 chip） */
+    .msg-image {
+      display: block;
+      max-width: 320px;
+      max-height: 240px;
+      border-radius: 6px;
+      border: 0.5px solid var(--border);
+      cursor: zoom-in;
+      margin-top: 4px;
+    }
+    .msg-image:hover { border-color: var(--teal-100); }
+
+    /* @ 提及候选弹层 */
+    .mention-popover {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 60px;
+      display: none;
+      background: #fff;
+      border: 0.5px solid var(--border2);
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,.12);
+      min-width: 160px;
+      max-width: 240px;
+      z-index: 60;
+      padding: 4px;
+    }
+    .mention-popover.open { display: block; }
+    .mention-popover button {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 7px 10px;
+      background: transparent; border: 0;
+      font-family: inherit; font-size: 13px; color: var(--text);
+      cursor: pointer; border-radius: 6px;
+      text-align: left;
+    }
+    .mention-popover button:hover { background: var(--bg2); }
+    .mention-popover .mav {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .mention-popover .mav.ai     { background: var(--teal); }
+    .mention-popover .mav.expert { background: var(--purple); }
+    .mention-popover .mav.user   { background: #E5B85A; }
+    /* 消息里渲染出来的 @mention：纯文字色，无底色 / 无阴影 */
+    .mention {
+      color: var(--teal-600);
+      font-weight: 500;
+      text-shadow: none;
+    }
+
+    /* 图片 lightbox */
+    .img-lightbox {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.86);
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 9999;
+      padding: 24px;
+      cursor: zoom-out;
+    }
+    .img-lightbox.open { display: flex; }
+    .img-lightbox img {
+      max-width: 92vw; max-height: 88vh;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    .img-lightbox-close {
+      position: absolute;
+      top: 16px; right: 18px;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .img-lightbox-close:hover { background: rgba(255,255,255,.28); }
+
+    /* ── NEW ROOM MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      width: 100%;
+      max-width: 400px;
+      margin: 1rem;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal h3 {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+    .modal .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .modal label { font-size: 13px; font-weight: 500; color: var(--text2); }
+    .modal input, .modal select {
+      padding: 10px 12px;
+      font-size: 14px;
+      font-family: inherit;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+    }
+    .modal input:focus, .modal select:focus { border-color: var(--teal); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+    .btn-cancel {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-cancel:hover { background: var(--bg2); }
+    .btn-create {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-create:hover { background: var(--teal-600); }
+    .btn-create:disabled { background: var(--gray-100); color: var(--gray-400); cursor: not-allowed; }
+
+    /* ── MARKDOWN 渲染 ── */
+    .msg-bubble.markdown {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+    }
+    .md-body {
+      padding: 10px 14px;
+      background: var(--teal-50);
+      border-left: 3px solid var(--teal);
+      border-radius: 6px;
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 100%;
+      align-self: flex-start;
+    }
+    .md-body > *:first-child { margin-top: 0 !important; }
+    .md-body > *:last-child  { margin-bottom: 0 !important; }
+    .md-body h1, .md-body h2, .md-body h3, .md-body h4 {
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 600;
+      margin: 0.5rem 0 0.15rem;
+      line-height: 1.3;
+    }
+    .md-body h1 { font-size: 14px; border-bottom: 0.5px solid var(--teal-100); padding-bottom: 3px; }
+    .md-body h2 { font-size: 13.5px; }
+    .md-body h3 { font-size: 13px; }
+    .md-body h4 { font-size: 13px; color: var(--text2); margin: 0.35rem 0 0.1rem; }
+    .md-body p  { margin: 0.2rem 0; }
+    .md-body ul, .md-body ol { padding-left: 1.2rem; margin: 0.2rem 0; }
+    .md-body li { margin: 0; }
+    /* 关键：marked 把松散列表的每项包成 <p>，干掉它的边距 */
+    .md-body li > p { margin: 0; }
+    .md-body li + li { margin-top: 1px; }
+    .md-body strong { font-weight: 600; }
+    .md-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.4rem 0;
+      font-size: 12px;
+    }
+    .md-body th, .md-body td {
+      border: 0.5px solid var(--teal-100);
+      padding: 3px 7px;
+      text-align: left;
+    }
+    .md-body th { background: var(--teal-100); font-weight: 500; }
+    .md-body tr:nth-child(even) { background: rgba(29,158,117,0.04); }
+    .md-body code {
+      background: rgba(29,158,117,0.1);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 11px;
+    }
+    .md-body pre { background: #1a1a18; border-radius: 6px; padding: 6px 9px; overflow-x: auto; margin: 0.3rem 0; }
+    .md-body pre code { background: none; color: #e8e6e0; font-size: 11px; }
+    .md-body blockquote {
+      border-left: 2px solid var(--teal-100);
+      padding: 1px 8px;
+      color: var(--text2);
+      margin: 0.3rem 0;
+      font-size: 12px;
+    }
+    .md-body hr { border: none; border-top: 0.5px solid var(--teal-100); margin: 0.5rem 0; }
+    /* 连续空行折叠 */
+    .md-body br + br { display: none; }
+
+    .pdf-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 500;
+      background: transparent;
+      color: var(--teal-600);
+      border: 0.5px solid var(--teal-100);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-pdf:hover { background: var(--teal-50); }
+    .btn-pdf i { font-size: 12px; }
+    .pdf-hint { font-size: 10px; color: var(--text3); }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--gray-50) 50%, var(--bg2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+      border-radius: var(--radius);
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-room { height: 52px; margin-bottom: 4px; }
+
+    .toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      padding: 10px 18px;
+      background: var(--text);
+      color: #fff;
+      border-radius: var(--radius);
+      font-size: 13px;
+      z-index: 2000;
+      opacity: 0;
+      transition: all .25s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 640px) {
+      .sidebar { display: none; }
+      .sidebar.mobile-show { display: flex; position: fixed; inset: 0; z-index: 50; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <a href="/" class="logo">Chat<span>2GO</span><span class="logo-tld">.ai</span></a>
+  </div>
+  <div class="nav-right">
+    <button class="icon-btn" id="settingsBtn" onclick="openSettings()" title="设置" style="display:none;">
+      <i class="ti ti-settings"></i>
+    </button>
+    <button class="icon-btn" onclick="handleLogout()" title="退出">
+      <i class="ti ti-logout"></i>
+    </button>
+  </div>
+</nav>
+
+<!-- Settings Modal（仅大咖可见，含 Agent Keys 管理）-->
+<div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
+  <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
+    <h3 id="settingsTitle">设置</h3>
+
+    <!-- 管理员入口（仅白名单邮箱可见）—— 置顶，避免拉到底 -->
+    <div id="adminSection" style="display:none;margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:0.5px solid var(--border);">
+      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">管理员</h4>
+      <p style="margin:0 0 .8rem;font-size:13px;color:var(--text2);">
+        访问站点后台：用户/房间/Bridge 状态、计费汇总。
+      </p>
+      <a href="/admin.html" target="_blank"
+         style="display:inline-flex;align-items:center;gap:6px;padding:.5rem 1rem;background:#1a1a18;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:500;">
+        进入 Admin 后台 →
+      </a>
+    </div>
+
+    <!-- 个人资料 -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+      <h4 style="margin:0;font-size:14px;font-weight:600;">个人资料</h4>
+      <button class="btn-cancel" onclick="saveProfile()" style="flex:0 0 auto;padding:.45rem 1rem;font-size:13px;">保存</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.6rem;margin-bottom:1.2rem;">
+      <label style="font-size:12px;color:var(--text2);">显示名</label>
+      <input type="text" id="profileDisplayName" placeholder="给自己起个名字" style="padding:.5rem;font-size:13px;">
+      <label style="font-size:12px;color:var(--text2);margin-top:.3rem;">邮箱</label>
+      <input type="text" id="profileEmail" disabled style="padding:.5rem;font-size:13px;background:var(--bg);color:var(--text3);">
+
+      <!-- 当前房间标题 inline；仅大咖在自己房间内时显示 -->
+      <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.3rem;margin-top:.3rem;">
+        <label style="font-size:12px;color:var(--text2);">当前房间标题（最多 13 字，留空用昵称兜底）</label>
+        <input type="text" id="roomSidebarTitle" maxlength="13" placeholder="留空则用昵称" style="padding:.5rem;font-size:13px;">
+      </div>
+    </div>
+
+    <!-- Agent Keys（仅大咖可见） -->
+    <div id="agentKeysSection" style="display:none;">
+      <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
+      <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);">
+        把本地 chat2go-agent 接入这个账号。每把密钥独立可撤销，建议每台机器一把。
+      </p>
+
+      <div id="agentKeysList" style="font-size:13px;">加载中...</div>
+
+      <div style="margin-top:1rem;display:flex;gap:.5rem;">
+        <input type="text" id="newKeyName" placeholder="密钥名称（如：我的 Mac）" style="flex:1;">
+        <button class="btn-cancel" onclick="generateKey()" style="padding:.5rem 1rem;white-space:nowrap;">生成新密钥</button>
+      </div>
+
+      <div id="newKeyDisplay" style="display:none;margin-top:1rem;padding:1rem;background:#fef3c7;border-radius:8px;border:1px solid #f59e0b;">
+        <strong style="color:#92400e;font-size:13px;">⚠️ 这是你新生成的密钥，只此一次显示，请立即保存：</strong>
+        <pre id="newKeyValue" style="margin:.5rem 0;padding:.5rem;background:#fff;border-radius:4px;overflow-x:auto;font-size:11px;font-family:'SF Mono',Monaco,monospace;"></pre>
+        <button onclick="copyNewKey()" style="padding:.4rem .8rem;cursor:pointer;font-size:12px;">复制密钥</button>
+        <p style="margin:.5rem 0 0;font-size:12px;color:var(--text2);line-height:1.7;">
+          安装步骤:<br>
+          ① <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">pip install -e ~/chat2go-agent</code><br>
+          ② <code style="background:#fff;padding:.1rem .3rem;border-radius:3px;">chat2go-agent connect &lt;粘贴密钥&gt;</code><br>
+          ③ 启动 bridge（launchd / start.sh）
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-room-title" id="sidebarRoomTitle">
+        <span class="sidebar-room-title-text" id="sidebarRoomTitleText">Chat</span>
+      </div>
+    </div>
+    <div class="todo-section" id="todoSection">
+      <div class="todo-head" id="todoHead">
+        <button type="button" class="todo-head-btn" id="todoEditBtn" title="编辑方案" onclick="toggleTodoEditing()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </button>
+        <span class="todo-head-name" id="todoHeadName">Todo</span>
+        <button type="button" class="todo-head-btn" id="todoCaretBtn" title="切换方案" onclick="toggleTodoPopup()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="todo-popup" id="todoPopup" style="display:none;"></div>
+      <div class="todo-body" id="todoBody"></div>
+      <div class="todo-add-group" onclick="addTodoGroup()">+ 新建分组</div>
+    </div>
+    <!-- 极简版：sidebar 不再渲染聊天室列表，房间在右侧主区自动打开 -->
+    <div class="rooms-list" id="roomsList" style="display:none;"></div>
+  </aside>
+
+  <div class="chat-panel" id="chatPanel">
+    <div class="welcome" id="welcomeState"></div>
+
+    <div id="activeChat" style="display:none; flex-direction:column; flex:1; overflow:hidden; min-height:0;">
+      <div class="chat-head">
+        <!-- 在线头像 -->
+        <div class="presence-row" style="position:relative;">
+          <div id="presenceRow" style="display:flex;align-items:center;gap:6px;"></div>
+          <div id="memberListPopover" class="member-list-popover"></div>
+          <button id="inviteBtn" class="invite-btn" title="复制邀请链接" onclick="copyInviteLink()" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6.5 9.5a3 3 0 0 0 4.5 0l2-2a3 3 0 0 0-4.5-4.5l-1 1"/>
+              <path d="M9.5 6.5a3 3 0 0 0-4.5 0l-2 2a3 3 0 0 0 4.5 4.5l1-1"/>
+            </svg>
+          </button>
+          <button id="resetRoomBtn" class="invite-btn" title="重置房间（踢光小白/路人 + 清消息 + 重新发邀请）" onclick="resetRoom()" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/>
+              <path d="M13.5 2.5v3h-3"/>
+            </svg>
+          </button>
+        </div>
+        <!-- metrics + status -->
+        <div class="chat-head-row">
+          <div class="chat-metrics">
+            <svg class="tokens-ring" width="17" height="17" viewBox="0 0 32 32" aria-hidden="true">
+              <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"/>
+              <circle id="chatTokensRingFill" cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="87.96" stroke-dashoffset="87.96" transform="rotate(-90 16 16)"/>
+            </svg>
+            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10.00M Token</span>
+            <span class="ctx-pct" id="chatCtxWrap" style="display:none;">
+              <span id="chatRoomCtx"></span>
+              <i class="ctx-battery"><i id="ctxBatteryFill"></i></i>
+            </span>
+          </div>
+          <div class="chat-status">
+            <div class="status-item offline" id="bridgeStatus" title="AI 未连接 · 点击请求重启" onclick="requestBridgeRestart()" style="cursor:pointer;">
+              <div class="dot"></div>
+              <span class="brain-badge" id="brainBadge" title="重启 hermes！">hermes</span>
+              <span id="chatRoomModel">AI</span>
+              <svg class="signal-online" width="14" height="11" viewBox="0 0 14 11" fill="currentColor" aria-hidden="true">
+                <rect x="1"   y="7" width="3" height="3" rx="0.5"/>
+                <rect x="5.5" y="4" width="3" height="6" rx="0.5"/>
+                <rect x="10"  y="1" width="3" height="9" rx="0.5"/>
+              </svg>
+              <svg class="signal-offline" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <line x1="3" y1="3" x2="9" y2="9"/>
+                <line x1="9" y1="3" x2="3" y2="9"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="messages" id="messagesList"></div>
+
+      <div class="typing-indicator" id="typingIndicator">
+        <span class="typing-star"></span>
+        <span class="typing-name" id="typingName">AI</span>
+        <span class="typing-sep">·</span>
+        <span class="typing-verb" id="typingVerb">思考中</span>
+        <span class="typing-verb">…</span>
+        <span class="typing-elapsed" id="typingElapsed">(0s)</span>
+      </div>
+
+      <div class="input-area">
+        <!-- 待上传的附件预览 -->
+        <div class="attach-preview" id="attachPreview"></div>
+        <!-- 待发送引用预览（微信样式：发送时静默附在消息末尾） -->
+        <div class="quote-preview" id="quotePreview" style="display:none;">
+          <i class="ti ti-corner-up-left"></i>
+          <span class="qp-sender" id="qpSender"></span>
+          <span class="qp-body" id="qpBody"></span>
+          <button class="qp-x" title="取消引用" onclick="clearPendingQuote()"><i class="ti ti-x"></i></button>
+        </div>
+
+        <div class="input-wrap" style="position:relative;">
+          <!-- @ 提及候选弹层（输入 @ 时显示） -->
+          <div class="mention-popover" id="mentionPopover"></div>
+          <div class="role-badge-wrap">
+            <div class="role-badge" id="roleBadge" title="你的身份" onclick="onRoleBadgeClick()">—</div>
+          </div>
+          <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="上传文件给 AI 看">
+            <i class="ti ti-paperclip"></i>
+          </button>
+          <input type="file" id="fileInput" multiple style="display:none"
+                 accept=".txt,.md,.pdf,.docx,.csv,.json,.html,.htm,.xml,image/*"
+                 onchange="onFilePick(event)">
+          <textarea
+            class="input-box"
+            id="msgInput"
+            placeholder=""
+            rows="1"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this);onMentionInput(event)"
+            onkeyup="onMentionKeyup(event)"
+            onblur="setTimeout(hideMentionPopover, 150)"
+            onpaste="onPasteImage(event)"
+          ></textarea>
+          <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
+            <i class="ti ti-microphone"></i>
+          </button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            GO
+          </button>
+        </div>
+        <div class="input-hint" id="roleHint" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="newRoomModal" onclick="closeNewRoomModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>新建 Chat</h3>
+    <div class="field">
+      <label>Chat 名称</label>
+      <input type="text" id="newRoomName" placeholder="例：森山大道san命理教室">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNewRoomModal()">取消</button>
+      <button class="btn-create" id="createRoomBtn" onclick="createRoom()">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Followers list modal -->
+<div class="modal-overlay" id="followersListModal" onclick="closeFollowersListChat(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Followers</span>
+      <button onclick="closeFollowersListChat()" style="background:none;border:0;font-size:18px;color:var(--text3);cursor:pointer;">×</button>
+    </h3>
+    <div id="followersListBody" style="max-height:60vh;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- Invite landing：?invite=<token> 触发，匿名进场填昵称 -->
+<div class="modal-overlay" id="inviteModal" style="z-index:2000;">
+  <div class="modal" style="max-width:380px;" onclick="event.stopPropagation()">
+    <h3 style="margin:0 0 1rem;">欢迎进入聊天室</h3>
+    <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);line-height:1.6;">
+      给自己起个昵称，进入大咖的房间。
+    </p>
+    <input type="text" id="inviteNickname" placeholder="昵称（如：小明）" maxlength="20"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();submitInvite()}"
+           style="width:100%;padding:.6rem .8rem;font-size:14px;border:0.5px solid var(--border2);border-radius:6px;background:#fff;outline:none;">
+    <div id="inviteError" style="font-size:12px;color:#DC2626;margin-top:.4rem;display:none;"></div>
+    <div class="modal-actions" style="margin-top:1.2rem;">
+      <button class="btn-cancel" onclick="dismissInvite()">取消</button>
+      <button class="btn-cancel" id="inviteSubmitBtn" onclick="submitInvite()" style="background:var(--teal);color:#fff;border-color:var(--teal);">进入</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8'
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+  let currentUser = null
+  let currentRoom = null
+  let currentRoomRole = null  // 'expert' | 'focal' | 'audience' | 'none'，每次 openRoom 刷新
+  let realtimeChannel = null
+  let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
+  let currentDisplayName = '' // 自己的 display_name，用于消息头展示
+  const profilesByUid = {}    // 房间内成员 display_name 缓存 {user_id: name}
+  let currentChannel = 'main'  // 当前消息频道: 'main' | 'expert_user'
+  let unreadCounts = { main: 0, expert_user: 0 }  // 每个 channel 的未读计数（本会话）
+
+  async function init() {
+    const inviteToken = new URLSearchParams(location.search).get('invite')
+    const { data: { session } } = await sb.auth.getSession()
+    // 无 session 且带 invite token → 匿名进场流程；否则按老逻辑去登录
+    if (!session) {
+      if (inviteToken) {
+        showInviteModal(inviteToken)
+        return
+      }
+      window.location.href = '/tradego/login.html'; return
+    }
+    // 已登录 + URL 带 invite token：邀请进入 = 加入新房的主动动作，
+    // 不论是否已有 display_name 都弹昵称 modal 让确认（input 预填现有名，可改可直进）
+    // 注意大咖自己点自己的邀请链接也会被弹，少见但无害（点取消会跳 login.html，刷新走老逻辑）
+    if (inviteToken) {
+      try {
+        const { data: profile } = await sb.from('profiles')
+          .select('role,display_name').eq('user_id', session.user.id).maybeSingle()
+        const dn = (profile?.display_name || '').trim()
+        // 大咖账号点邀请链接：不弹昵称 modal，避免误改大咖 display_name 污染数据
+        // （比如大咖在浏览器复制了自己房间的邀请链接给小白测试，结果自己先点了）
+        if (profile?.role === 'expert') {
+          const { data: roomId } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
+          if (roomId) history.replaceState({}, '', `/tradego/chat.html?room=${roomId}`)
+          // 继续走老登录逻辑（不 return），让 init 后续渲染设置 currentUser/currentRole 等
+        } else {
+          showInviteModal(inviteToken, 'existing', dn)
+          return
+        }
+      } catch (e) {
+        console.warn('[invite preload profile]', e)
+        showInviteModal(inviteToken, 'existing', '')
+        return
+      }
+    }
+    currentUser = session.user
+
+    // bridge 心跳轮询：每 6 秒拉一次 last_seen 状态
+    startBridgeHeartbeatPolling()
+
+    const email = currentUser.email
+
+    // 检查角色：大咖才显示设置按钮
+    try {
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('role,display_name')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      currentRole = profile?.role || 'user'
+      currentDisplayName = profile?.display_name || ''
+      // 输入区身份徽章: 大咖 → 咖, 小白 → 白
+      const badge = document.getElementById('roleBadge')
+      if (badge) {
+        badge.textContent = currentRole === 'expert' ? '咖' : '白'
+        badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
+      }
+      // 大咖 或 admin 都看得到设置入口
+      if (currentRole === 'expert' || ADMIN_EMAILS.includes(currentUser?.email)) {
+        document.getElementById('settingsBtn').style.display = ''
+      }
+    } catch (e) { console.warn('[role] failed:', e) }
+
+    // 大咖：没有房就自动建一个（每个大咖固定 1 个房）
+    if (currentRole === 'expert') {
+      await ensureExpertRoom()
+    }
+
+    // 一次性清理：自己名下叫 "Todo list" 的房（早期测试残留）
+    try {
+      await sb.from('rooms').delete()
+        .eq('expert_id', currentUser.id)
+        .eq('name', 'Todo list')
+    } catch (e) { console.warn('[cleanup todo room]', e) }
+
+    await loadRooms()
+
+    // 小白：订阅 room_members 变动（用于其它入口加入的房间也能同步）
+    if (currentRole !== 'expert') subscribeMyMemberships()
+
+    // 仅 ?room=<id>：直接尝试打开（要求是成员，否则 RLS 静默拒绝）
+    const params = new URLSearchParams(window.location.search)
+    const roomParam = params.get('room')
+    if (roomParam) {
+      await openRoomById(roomParam)
+    }
+  }
+
+  let currentRole = 'user'  // 'user' | 'expert'
+
+  // (invite-token 流程已废弃，统一用 follow/approve 模型)
+
+  async function openRoomById(roomId) {
+    try {
+      const { data: room, error } = await sb
+        .from('rooms').select('*').eq('id', roomId).maybeSingle()
+      if (error || !room) {
+        console.warn('[openRoomById] not found:', roomId, error)
+        return
+      }
+      // 大咖只能打开自己的房；外来 ?room= 链接忽略
+      if (currentRole === 'expert' && room.expert_id !== currentUser?.id) {
+        console.warn('[openRoomById] expert blocked from foreign room:', roomId)
+        return
+      }
+      // 小白通过链接来的房间：如果还不在列表里，临时塞进列表
+      const list = document.getElementById('roomsList')
+      if (!list.querySelector(`[data-id="${room.id}"]`)) {
+        renderRoomItem(room)
+      }
+      await openRoom(room)
+    } catch (e) {
+      console.warn('[openRoomById] failed:', e)
+    }
+  }
+
+  // ── Settings 模态框（大咖独享）──
+  async function openSettings() {
+    document.getElementById('settingsModal').classList.add('show')
+    // 标题随角色变化
+    document.getElementById('settingsTitle').textContent =
+      currentRole === 'expert' ? '大咖设置' : '小白设置'
+    // 邮箱（只读）
+    document.getElementById('profileEmail').value = currentUser?.email || ''
+    // 拉当前 display_name（并同步到全局 currentDisplayName，修复 init 时 fetch 失败的情况）
+    try {
+      const { data } = await sb.from('profiles')
+        .select('display_name')
+        .eq('user_id', currentUser.id)
+        .maybeSingle()
+      const dn = data?.display_name || ''
+      document.getElementById('profileDisplayName').value = dn
+      if (dn && dn !== currentDisplayName) {
+        currentDisplayName = dn
+        document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
+          if (el.textContent === '我') el.textContent = dn
+        })
+      }
+    } catch (e) { console.warn('[profile load]', e) }
+    // Agent Keys 仅大咖
+    document.getElementById('agentKeysSection').style.display =
+      currentRole === 'expert' ? '' : 'none'
+    if (currentRole === 'expert') loadAgentKeys()
+    // 当前房间标题：仅当处在自己作为大咖的房间内时显示
+    const showRoomTitle = !!currentRoom && isExpert(currentRoom)
+    const roomTitleSection = document.getElementById('roomTitleSection')
+    if (roomTitleSection) roomTitleSection.style.display = showRoomTitle ? 'flex' : 'none'
+    if (showRoomTitle) {
+      document.getElementById('roomSidebarTitle').value = (currentRoom.sidebar_title || '').slice(0, 13)
+    }
+    // 管理员入口仅 admin 白名单可见
+    document.getElementById('adminSection').style.display =
+      ADMIN_EMAILS.includes(currentUser?.email) ? '' : 'none'
+  }
+  function closeSettings(e) {
+    if (e && e.currentTarget !== e.target) return
+    document.getElementById('settingsModal').classList.remove('show')
+    const keyDisplay = document.getElementById('newKeyDisplay')
+    if (keyDisplay) keyDisplay.style.display = 'none'
+    const keyName = document.getElementById('newKeyName')
+    if (keyName) keyName.value = ''
+  }
+  async function deleteRoom(roomId, btnEl) {
+    const room = btnEl?.closest('.room-item')
+    const name = room?.querySelector('.room-name')?.textContent || '这个 Chat'
+    if (!confirm(`确定删除「${name}」？\n所有消息、计费记录都会一起删除，不可恢复。`)) return
+    try {
+      // .select() 让 PostgREST 返回被删的行，能区分「RLS 拦截」vs「真的删了」
+      const { data, error } = await sb.from('rooms').delete().eq('id', roomId).select()
+      if (error) throw error
+      if (!data || data.length === 0) {
+        showToast('删除失败：没有权限（RLS 拦截）或房间已不存在')
+        return
+      }
+      // 如果删的是当前打开的房间，清掉聊天面板
+      if (currentRoom?.id === roomId) {
+        currentRoom = null
+        document.getElementById('activeChat').style.display = 'none'
+        document.getElementById('welcomeState').style.display = ''
+      }
+      await loadRooms()
+      showToast('已删除')
+    } catch (e) {
+      console.warn('[delete room]', e)
+      showToast('删除失败：' + (e.message || e))
+    }
+  }
+
+  async function editAIName() {
+    if (!currentRoom || !isExpert(currentRoom)) return
+    const cur = currentRoom.ai_name || ''
+    const name = prompt('给本房间的 AI 助手起个名字（留空恢复默认）：', cur)
+    if (name === null) return
+    const newName = name.trim()
+    try {
+      const { error } = await sb.from('rooms')
+        .update({ ai_name: newName || null })
+        .eq('id', currentRoom.id)
+      if (error) throw error
+      currentRoom.ai_name = newName || null
+      const displayName = newName || 'AI 助手'
+      // 当前已渲染的 AI sender 全部刷新
+      document.querySelectorAll('.msg-sender.ai').forEach(el => {
+        el.textContent = displayName
+      })
+      showToast('AI 名字已更新')
+    } catch (e) {
+      console.warn('[ai_name save]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
+  }
+
+  async function saveProfile() {
+    const name = document.getElementById('profileDisplayName').value.trim()
+    if (!name) { showToast('显示名不能为空'); return }
+    try {
+      const { error } = await sb.from('profiles')
+        .update({ display_name: name })
+        .eq('user_id', currentUser.id)
+      if (error) throw error
+      currentDisplayName = name
+      // 把当前已渲染的自己消息的 sender 名同步刷新
+      document.querySelectorAll('.msg-sender[data-own="1"]').forEach(el => {
+        el.textContent = name
+      })
+      // 同时保存当前房间标题（如果可见）
+      const roomSection = document.getElementById('roomTitleSection')
+      if (roomSection && roomSection.style.display !== 'none' && currentRoom && isExpert(currentRoom)) {
+        await saveRoomSidebarTitle(name)
+      } else {
+        showToast('资料已保存')
+      }
+      // 保存成功后自动关 modal（极简；想取消改动可点 modal 外部）
+      document.getElementById('settingsModal').classList.remove('show')
+    } catch (e) {
+      console.warn('[profile save]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
+  }
+
+  async function loadAgentKeys() {
+    const el = document.getElementById('agentKeysList')
+    el.innerHTML = '加载中...'
+    try {
+      const { data, error } = await sb.rpc('list_agent_keys')
+      if (error) throw error
+      if (!data || data.length === 0) {
+        el.innerHTML = '<div style="padding:1rem;color:var(--text3);text-align:center;">还没有密钥，点下方"生成新密钥"创建第一把</div>'
+        return
+      }
+      el.innerHTML = data.map(k => {
+        const status = k.revoked_at ? '已撤销' : (k.last_used_at ? `上次使用：${formatRelativeTime(k.last_used_at)}` : '从未使用')
+        const ip = k.last_used_ip ? ` from ${k.last_used_ip}` : ''
+        const isActive = !k.revoked_at
+        return `
+          <div style="border:1px solid var(--border2);border-radius:8px;padding:.75rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;${k.revoked_at?'opacity:.4;':''}">
+            <div>
+              <div style="font-weight:600;">${escHtml(k.name)}</div>
+              <div style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px;">${escHtml(k.prefix)}…</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px;">${status}${ip}</div>
+            </div>
+            ${isActive ? `<button onclick="revokeKey('${k.id}')" style="padding:.3rem .6rem;font-size:12px;cursor:pointer;color:#dc2626;background:#fff;border:1px solid #fca5a5;border-radius:4px;">撤销</button>` : '<span style="font-size:11px;color:#dc2626;">REVOKED</span>'}
+          </div>`
+      }).join('')
+    } catch (e) {
+      el.innerHTML = `<div style="color:#dc2626;">加载失败：${escHtml(e.message || String(e))}</div>`
+    }
+  }
+
+  async function generateKey() {
+    const nameInput = document.getElementById('newKeyName')
+    const name = (nameInput.value || '').trim() || `${navigator.platform || 'Device'}`
+    try {
+      const { data, error } = await sb.rpc('generate_agent_key', { p_name: name })
+      if (error) throw error
+      const row = (data || [])[0]
+      if (!row) throw new Error('RPC 没有返回新 key')
+
+      const display = document.getElementById('newKeyDisplay')
+      display.style.display = ''
+      document.getElementById('newKeyValue').textContent = row.token
+      window._lastKey = row.token  // 给 copy 用
+      nameInput.value = ''
+      await loadAgentKeys()
+    } catch (e) {
+      alert('生成失败：' + (e.message || String(e)))
+    }
+  }
+
+  function copyNewKey() {
+    const key = window._lastKey
+    if (!key) return
+    navigator.clipboard.writeText(key).then(
+      () => alert('已复制到剪贴板'),
+      () => alert('复制失败，请手动选择文本复制')
+    )
+  }
+
+  async function revokeKey(id) {
+    if (!confirm('撤销后这把密钥立即失效，确定？')) return
+    try {
+      const { error } = await sb.rpc('revoke_agent_key', { p_id: id })
+      if (error) throw error
+      await loadAgentKeys()
+    } catch (e) {
+      alert('撤销失败：' + (e.message || String(e)))
+    }
+  }
+
+  function formatRelativeTime(iso) {
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000
+    if (diff < 60) return '刚刚'
+    if (diff < 3600) return Math.floor(diff/60) + ' 分钟前'
+    if (diff < 86400) return Math.floor(diff/3600) + ' 小时前'
+    return Math.floor(diff/86400) + ' 天前'
+  }
+
+  // demo 阶段：只放 fortune teller 这条线
+  const DEMO_INDUSTRY = '外贸跟单'
+
+  // admin 邮箱白名单（与 admin.html / is_admin() RPC 保持一致）
+  const ADMIN_EMAILS = ['lirui88888862@gmail.com']
+
+  async function loadRooms() {
+    const list = document.getElementById('roomsList')
+    list.innerHTML = ''
+
+    let rooms = []
+    if (currentRole === 'expert') {
+      // 大咖：自己 owned 的房（理论上只有 1 个）
+      const { data, error } = await sb
+        .from('rooms').select('*')
+        .eq('expert_id', currentUser.id)
+        .order('created_at', { ascending: false })
+      if (error) { console.warn('[loadRooms expert] error:', error); return }
+      rooms = data || []
+    } else {
+      // 小白：RLS 已经限定为成员才可读，直接拉就行
+      const { data, error } = await sb
+        .from('rooms').select('*')
+        .order('created_at', { ascending: false })
+      if (error) { console.warn('[loadRooms user] error:', error); return }
+      rooms = data || []
+    }
+
+    if (rooms.length === 0) {
+      if (currentRole === 'expert') {
+        list.innerHTML = `<div class="rooms-empty">还没有 Chat（自动创建中…）</div>`
+      } else {
+        // 小白：没房 → 显示「选大咖 follow」面板
+        await renderFollowExpertsPanel()
+      }
+      return
+    }
+
+    rooms.forEach(room => renderRoomItem(room))
+
+    // 自动打开第一个房间（小白和大咖都一样），但已经有打开的就不动
+    if (!currentRoom && rooms.length > 0) {
+      openRoom(rooms[0])
+    }
+  }
+
+  // ── 大咖：首次登录自动建一个房（每个大咖固定 1 个）──
+  async function ensureExpertRoom() {
+    const { data: existing, error } = await sb
+      .from('rooms').select('id').eq('expert_id', currentUser.id).limit(1)
+    if (error) { console.warn('[ensureExpertRoom] check failed:', error); return }
+    if (existing && existing.length > 0) return
+    const name = (currentDisplayName ? `${currentDisplayName} 的 Chat` : '我的 Chat')
+    const { error: insErr } = await sb.from('rooms').insert({
+      expert_id: currentUser.id,
+      name,
+      industry: DEMO_INDUSTRY,
+      status: 'active',
+    })
+    if (insErr) console.warn('[ensureExpertRoom] insert failed:', insErr)
+  }
+
+  // role-badge 点击：直接开 settings（待审 follow 流程已废弃）
+  function onRoleBadgeClick() {
+    openSettings()
+  }
+
+  // ── 小白：订阅自己的 room_members 变动（兜底同步其它入口加入的房间）──
+  let myMembershipChannel = null
+  function subscribeMyMemberships() {
+    if (myMembershipChannel) sb.removeChannel(myMembershipChannel)
+    myMembershipChannel = sb
+      .channel(`my-memberships-${currentUser.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'room_members',
+        filter: `user_id=eq.${currentUser.id}`,
+      }, async () => {
+        await loadRooms()
+      })
+      .subscribe()
+  }
+
+  // ── 小白：没有房 → 列出可 follow 的大咖 ──
+  async function renderFollowExpertsPanel() {
+    const list = document.getElementById('roomsList')
+    const [expertsResp, requestsResp] = await Promise.all([
+      sb.from('profiles').select('user_id, display_name').eq('role', 'expert'),
+      sb.from('follow_requests').select('expert_id, status').eq('user_id', currentUser.id),
+    ])
+    const experts = expertsResp.data || []
+    const requests = requestsResp.data || []
+    const pendingMap = {}
+    requests.forEach(r => { pendingMap[r.expert_id] = r.status })
+
+    if (experts.length === 0) {
+      list.innerHTML = `<div class="follow-experts"><div class="follow-experts-title">暂无大咖</div></div>`
+      return
+    }
+    const rows = experts.map(e => {
+      const status = pendingMap[e.user_id]
+      const label = e.display_name || e.user_id.slice(0, 8) + '…'
+      const joined = status === 'approved'
+      const pill = joined
+        ? `<div class="follow-pill joined" data-expert="${e.user_id}">
+             <button class="pf-heart" disabled title="已加入">&#9829;</button>
+             <span class="pf-divider"></span>
+             <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
+           </div>`
+        : `<div class="follow-pill" data-expert="${e.user_id}">
+             <button class="pf-heart" title="关注大咖" onclick="requestFollow('${e.user_id}', this)">&#9829;</button>
+             <span class="pf-divider"></span>
+             <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
+           </div>`
+      return `
+        <div class="expert-row">
+          <div class="expert-row-name">${escHtml(label)}</div>
+          ${pill}
+        </div>`
+    }).join('')
+    list.innerHTML = `
+      <div class="follow-experts">
+        <div class="follow-experts-title">选位大咖</div>
+        <div class="follow-experts-sub">选一位大咖，进入对话</div>
+        ${rows}
+      </div>`
+    // 异步填充每个大咖的 follower 数
+    experts.forEach(async e => {
+      const { data } = await sb.rpc('get_expert_follower_count', { p_expert_id: e.user_id })
+      const el = list.querySelector(`.follow-pill[data-expert="${e.user_id}"] .pf-count`)
+      if (el) el.textContent = data ?? 0
+    })
+  }
+
+  async function openFollowersListChat(expertId, btnEl) {
+    const modal = document.getElementById('followersListModal')
+    const body = document.getElementById('followersListBody')
+    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">加载中…</div>'
+    modal.classList.add('show')
+    const { data, error } = await sb.rpc('get_expert_followers', { p_expert_id: expertId })
+    if (error) { body.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">加载失败：${escHtml(error.message)}</div>`; return }
+    if (!data || !data.length) { body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;">还没有 follower</div>'; return }
+    body.innerHTML = data.map(f => {
+      const name = escHtml(f.display_name || '小白')
+      const initial = (f.display_name || '?').charAt(0).toUpperCase()
+      return `<div style="display:flex;align-items:center;gap:12px;padding:10px 4px;font-size:13px;border-bottom:0.5px solid var(--border);">
+        <span style="width:28px;height:28px;border-radius:50%;background:var(--teal-50);color:var(--teal-600);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;">${escHtml(initial)}</span>
+        <span style="flex:1;color:var(--text);">${name}</span>
+      </div>`
+    }).join('')
+  }
+  function closeFollowersListChat(e) {
+    if (e && e.target !== document.getElementById('followersListModal')) return
+    document.getElementById('followersListModal').classList.remove('show')
+  }
+
+  // ── Invite landing：匿名进场填昵称 → 进群 ──
+  let _pendingInviteToken = null
+  let _inviteMode = 'anon'  // 'anon' (无 session 走 signInAnonymously) | 'existing' (已登录走 update display_name)
+  function showInviteModal(token, mode = 'anon', prefilledName = '') {
+    _pendingInviteToken = token
+    _inviteMode = mode
+    const modal = document.getElementById('inviteModal')
+    const input = document.getElementById('inviteNickname')
+    if (input) input.value = prefilledName || ''
+    modal.classList.add('show')
+    setTimeout(() => {
+      input?.focus()
+      input?.select()  // 选中预填文本，方便直接覆盖
+    }, 50)
+  }
+  function dismissInvite() {
+    document.getElementById('inviteModal').classList.remove('show')
+    location.href = '/tradego/login.html'
+  }
+  async function submitInvite() {
+    const nickInput = document.getElementById('inviteNickname')
+    const err = document.getElementById('inviteError')
+    const submitBtn = document.getElementById('inviteSubmitBtn')
+    err.style.display = 'none'
+    const nickname = (nickInput.value || '').trim()
+    if (!nickname) { err.textContent = '昵称不能空'; err.style.display = 'block'; return }
+    if (!_pendingInviteToken) { err.textContent = '邀请链接失效'; err.style.display = 'block'; return }
+    submitBtn.disabled = true
+    submitBtn.textContent = '进入中...'
+    try {
+      // 'anon' 模式：先匿名登录；'existing' 模式：已登录用户只补 display_name
+      if (_inviteMode === 'anon') {
+        const { error: signErr } = await sb.auth.signInAnonymously({
+          options: { data: { display_name: nickname } }
+        })
+        if (signErr) {
+          err.textContent = '匿名登录失败：' + (signErr.message || signErr.code)
+                         + '（管理员需在 Supabase Dashboard 打开 Anonymous Sign-Ins）'
+          err.style.display = 'block'
+          return
+        }
+      }
+      // 写 profiles.display_name
+      const { data: { user } } = await sb.auth.getUser()
+      if (user) {
+        if (_inviteMode === 'anon') {
+          // 新匿名用户：profile 行可能 trigger 还没建好（race），upsert + role='user' 兜底
+          const { error: pErr } = await sb.from('profiles')
+            .upsert({ user_id: user.id, role: 'user', display_name: nickname }, { onConflict: 'user_id' })
+          if (pErr) {
+            err.textContent = '保存昵称失败：' + (pErr.message || pErr.code)
+            err.style.display = 'block'
+            return
+          }
+        } else {
+          // existing：profile 必有行，只 update display_name 不动 role（避免覆盖大咖角色）
+          const { error: pErr } = await sb.from('profiles')
+            .update({ display_name: nickname })
+            .eq('user_id', user.id)
+          if (pErr) {
+            err.textContent = '保存昵称失败：' + (pErr.message || pErr.code)
+            err.style.display = 'block'
+            return
+          }
+        }
+      }
+      // 进房
+      const { data: roomId, error: joinErr } = await sb.rpc('join_room_by_token', { p_token: _pendingInviteToken })
+      if (joinErr || !roomId) {
+        const msg = joinErr?.message || ''
+        if (msg.includes('invite_used') || msg.includes('focal already locked')) {
+          err.textContent = '这个邀请链接已被使用（小白名额已满）。请向小白索要新的「路人邀请链接」'
+        } else if (msg.includes('invalid invite token')) {
+          err.textContent = '邀请链接无效或已失效'
+        } else {
+          err.textContent = '加入房间失败：' + (msg || '未知')
+        }
+        err.style.display = 'block'
+        return
+      }
+      // 关 modal，刷新页面跳到房（避免重写 init 流程）
+      location.href = `/tradego/chat.html?room=${roomId}`
+    } catch (e) {
+      err.textContent = '出错：' + (e.message || e)
+      err.style.display = 'block'
+    } finally {
+      submitBtn.disabled = false
+      submitBtn.textContent = '进入'
+    }
+  }
+
+  async function requestFollow(expertId, btnEl) {
+    btnEl.disabled = true
+    const { data: room, error: e1 } = await sb
+      .from('rooms').select('id').eq('expert_id', expertId).limit(1).maybeSingle()
+    if (e1 || !room) {
+      showToast('找不到大咖的 Chat')
+      btnEl.disabled = false
+      return
+    }
+    const { error: e2 } = await sb.from('room_members').insert({
+      room_id: room.id, user_id: currentUser.id,
+    })
+    if (e2 && e2.code !== '23505') {
+      showToast('加入失败：' + e2.message)
+      btnEl.disabled = false
+      return
+    }
+    showToast('已加入大咖的 Chat')
+    await loadRooms()
+    await openRoomById(room.id)
+  }
+
+  function renderRoomItem(room) {
+    // 大咖只看自己 owned 的房：拒绝渲染外来房（兜底 openRoomById 等旁路）
+    if (currentRole === 'expert' && room.expert_id !== currentUser?.id) return
+    const list = document.getElementById('roomsList')
+    const empty = list.querySelector('.rooms-empty')
+    if (empty) empty.remove()
+
+    const el = document.createElement('div')
+    el.className = 'room-item'
+    el.dataset.id = room.id
+    const isOwner = isExpert(room)
+    el.innerHTML = `
+      <div class="room-name" ${isOwner ? `ondblclick="event.stopPropagation(); renameRoom('${room.id}', this)"` : ''}>${escHtml(room.name)}</div>
+      ${isOwner ? `<button class="room-edit" title="重命名 Chat" onclick="event.stopPropagation(); renameRoom('${room.id}', this)"><i class="ti ti-pencil"></i></button>` : ''}
+      ${isOwner ? `<button class="room-del" title="删除该 Chat" onclick="event.stopPropagation(); deleteRoom('${room.id}', this)">×</button>` : ''}
+    `
+    el.onclick = () => openRoom(room)
+    list.appendChild(el)
+  }
+
+  async function renameRoom(roomId, btnEl) {
+    const item = btnEl?.closest('.room-item')
+    const nameEl = item?.querySelector('.room-name')
+    const cur = nameEl?.textContent || ''
+    const input = prompt('重命名 Chat：', cur)
+    if (input === null) return
+    const name = input.trim()
+    if (!name) { showToast('名字不能为空'); return }
+    if (name === cur) return
+    try {
+      const { error } = await sb.from('rooms')
+        .update({ name })
+        .eq('id', roomId)
+      if (error) throw error
+      if (nameEl) nameEl.textContent = name
+      if (currentRoom?.id === roomId) currentRoom.name = name
+      showToast('已重命名')
+    } catch (e) {
+      console.warn('[renameRoom]', e)
+      showToast('保存失败：' + (e.message || e))
+    }
+  }
+
+  function isExpert(room) {
+    return room.expert_id === currentUser?.id
+  }
+
+  async function saveRoomSidebarTitle(fallbackName) {
+    if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的大咖能改'); return }
+    const inputEl = document.getElementById('roomSidebarTitle')
+    const newTitle = (inputEl?.value || '').trim().slice(0, 13)  // 兜底再截 13 字，防绕过 maxlength
+    const { error } = await sb.from('rooms')
+      .update({ sidebar_title: newTitle || null })
+      .eq('id', currentRoom.id)
+    if (error) { showToast('保存失败：' + (error.message || error.code)); return }
+    currentRoom.sidebar_title = newTitle || null
+    const titleTextEl = document.getElementById('sidebarRoomTitleText')
+    if (titleTextEl) {
+      titleTextEl.textContent = newTitle || (fallbackName || '').trim() || 'Chat'
+    }
+    showToast('已保存')
+  }
+
+  async function openRoom(room) {
+    currentRoom = room
+    currentChannel = 'main'
+    unreadCounts = { main: 0, expert_user: 0 }
+    // 切房间清掉 profile name 缓存（让 display_name 改名后下次进房能拿到最新值）
+    Object.keys(profilesByUid).forEach(k => delete profilesByUid[k])
+
+    // 查询本房角色：'expert' | 'focal' | 'audience' | 'none'
+    try {
+      const { data: roleData } = await sb.rpc('get_my_room_role', { p_room_id: room.id })
+      currentRoomRole = roleData || 'audience'
+    } catch (e) {
+      console.warn('[get_my_room_role]', e)
+      currentRoomRole = 'audience'
+    }
+
+    document.querySelectorAll('.room-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === room.id)
+    })
+
+    // sidebar 顶部房间标题：rooms.sidebar_title 优先，否则 fallback 到 expert.display_name
+    // 编辑入口在「设置 → 当前房间标题」（仅大咖在房间内可见）
+    const titleTextEl = document.getElementById('sidebarRoomTitleText')
+    if (titleTextEl) {
+      let title = (room.sidebar_title || '').trim()
+      if (!title && room.expert_id) {
+        try {
+          const { data } = await sb.from('profiles')
+            .select('display_name').eq('user_id', room.expert_id).maybeSingle()
+          title = (data?.display_name || '').trim()
+        } catch (e) { console.warn('[sidebar title]', e) }
+      }
+      titleTextEl.textContent = title || 'Chat'
+    }
+
+    updateInputPlaceholder()
+
+    document.getElementById('welcomeState').style.display = 'none'
+    const ac = document.getElementById('activeChat')
+    ac.style.display = 'flex'
+
+    // 大咖 / 小白 显示邀请按钮；路人隐藏
+    const inviteBtn = document.getElementById('inviteBtn')
+    if (inviteBtn) {
+      inviteBtn.style.display = (currentRoomRole === 'expert' || currentRoomRole === 'focal') ? '' : 'none'
+      inviteBtn.title = currentRoomRole === 'expert' ? '复制邀请链接（发给小白）' : '复制邀请链接（发给路人）'
+    }
+    // 重置按钮仅大咖看到
+    const resetBtn = document.getElementById('resetRoomBtn')
+    if (resetBtn) resetBtn.style.display = currentRoomRole === 'expert' ? '' : 'none'
+    // 输入栏身份徽章按房内角色(expert/focal/audience)显示，跟消息头像保持一致
+    const badge = document.getElementById('roleBadge')
+    if (badge) {
+      const map = { expert: '咖', focal: '白', audience: '路' }
+      badge.textContent = map[currentRoomRole] || '白'
+      const titleMap = {
+        expert: '大咖 · 点击修改资料',
+        focal:  '小白 · 点击修改资料',
+        audience: '路人 · 点击修改资料',
+      }
+      badge.title = titleMap[currentRoomRole] || '点击修改资料'
+    }
+
+    await refreshRoomMembers()  // 拉群人数 + 成员列表（同时补 profilesByUid 让 @ 列表完整）
+    renderPresence()  // 先把 tab 行画出来（不依赖 realtime presence）
+    await loadActiveTodoTemplate(room)  // sidebar todo 渲染要在 refreshQuizState 之前
+    await loadMessages(room.id)
+    await loadRoomCost(room.id)
+    subscribeRoom(room.id)
+    document.getElementById('msgInput').focus()
+  }
+
+  async function resetRoom() {
+    if (!currentRoom) return
+    if (currentRoomRole !== 'expert') { showToast('只有大咖能重置房间'); return }
+    const ok = confirm('重置这个房间？\n\n会做：\n• 踢掉所有小白和路人\n• 清空全部消息\n• 重新生成邀请链接（旧链接失效）\n\n不可恢复。')
+    if (!ok) return
+    const { error } = await sb.rpc('reset_room', { p_room_id: currentRoom.id })
+    if (error) { showToast('重置失败：' + (error.message || error.code)); return }
+    showToast('已重置，刷新中…')
+    setTimeout(() => location.reload(), 800)
+  }
+
+  async function copyInviteLink() {
+    if (!currentRoom) return
+    // 大咖 → 小白邀请（单次，invite_token）；小白 → 路人邀请（多次，audience_invite_token）
+    const token = currentRoomRole === 'expert'
+      ? currentRoom.invite_token
+      : currentRoom.audience_invite_token
+    if (!token) { showToast('当前房间无邀请 token'); return }
+    const url = `${location.origin}/tradego/chat.html?invite=${token}`
+    const tag = currentRoomRole === 'expert' ? '小白邀请链接' : '路人邀请链接'
+    try {
+      await navigator.clipboard.writeText(url)
+      showToast(tag + '已复制（' + (currentRoomRole === 'expert' ? '仅限一位小白' : '可分享给多个路人') + '）')
+    } catch (e) {
+      window.prompt('复制下面的' + tag + '：', url)
+    }
+  }
+
+  function updateInputPlaceholder() {
+    const el = document.getElementById('msgInput')
+    if (!el) return
+    el.placeholder = ''
+  }
+
+  async function switchChannel(ch) {
+    if (!currentRoom || ch === currentChannel) return
+    currentChannel = ch
+    unreadCounts[ch] = 0
+    // 切换 channel 一并清掉残留的 typing 指示
+    clearTimeout(typingTimer)
+    hideTyping()
+    renderPresence()
+    updateUnreadBadge(ch)
+    updateInputPlaceholder()
+    await loadMessages(currentRoom.id)
+  }
+
+  function updateUnreadBadge(ch) {
+    const el = document.querySelector(`.unread[data-ch="${ch}"]`)
+    if (!el) return
+    const n = unreadCounts[ch] || 0
+    el.textContent = n > 99 ? '99+' : String(n)
+    el.classList.toggle('has', n > 0)
+  }
+
+  // 房间 token 预算（不再是物理 context window，而是产品维度的"一房一桌"用量上限）
+  const ROOM_TOKEN_BUDGET = 10_000_000  // 10M tokens per room
+
+  // ── 做题模式 ──
+  // 题序由 active todo 方案的 items.flat() 顺序决定（data-quiz-idx 在 renderTodos 里自动派生）。
+  // 某条 AI 消息的 messages.ratings 里 'up' >= 2 → pass 一题，指针前进。
+  // sidebar 子项 [0..passed-1] 标 done；第 passed 项 highlight 为「当前题」。
+  const DEFAULT_TODO_PAYLOAD = [
+    { label: '五行', items: [{ label: '强弱' }, { label: '冷暖' }, { label: '流通' }] },
+    { label: '格局', items: [{ label: '格局' }, { label: '喜' }, { label: '忌' }] },
+    { label: 'check', items: [{ label: '1' }, { label: '2' }, { label: '3' }] },
+  ]
+  let currentTemplate = null  // {id, name, payload} —— 当前房间挂的方案（小白也持有副本，仅大咖可改）
+  let todoPopupOpen = false
+  let _todoPopupTemplates = []  // showTodoPopup 缓存的方案列表，供 deleteTemplate 查名字用
+
+  function renderTodos(payload) {
+    const body = document.getElementById('todoBody')
+    if (!body) return
+    // 重渲染保留每组展开状态（addTodoSub 等编辑操作会触发 rerender，
+    // 否则用户在非首组加子项时该组会被默认折叠逻辑收起）
+    const prevExpanded = new Set()
+    body.querySelectorAll('.todo-group.expanded').forEach(g => prevExpanded.add(g.dataset.group))
+    body.innerHTML = ''
+    let idx = 0
+    const sectionEditing = document.getElementById('todoSection')?.classList.contains('editing')
+    ;(payload || []).forEach((group, gi) => {
+      const groupEl = document.createElement('div')
+      groupEl.className = 'todo-group'
+      // 首次渲染默认锁住 gi>0 的组,避免 refreshQuizState 跑完前的解锁闪烁;
+      // 编辑态不锁;refreshQuizState 之后会按真实 passed 重算
+      if (!sectionEditing && gi > 0) groupEl.classList.add('locked')
+      groupEl.dataset.group = `g${gi}`
+      groupEl.dataset.groupStart = String(idx)
+      const subsHtml = (group.items || []).map((it, ii) => {
+        const cur = idx++
+        return `
+          <div class="todo-sub" data-quiz-idx="${cur}">
+            <span class="check">&#10003;</span>
+            <span class="todo-text" data-text="sub" data-gi="${gi}" data-ii="${ii}">${escHtml(it.label || '')}</span>
+            <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
+          </div>`
+      }).join('')
+      // gi=0 永远不锁,不渲染锁图标;gi>0 渲染左侧 lock-state(红挂锁/绿开锁,CSS 按 .locked 切换)
+      const lockHtml = gi > 0 ? `
+          <span class="todo-lock-state" aria-hidden="true">
+            <svg class="lk-closed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <svg class="lk-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+          </span>` : ''
+      groupEl.innerHTML = `
+        <div class="todo-pill" onclick="toggleTodoGroup(this)">
+          ${lockHtml}
+          <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
+          <span class="todo-text" data-text="group" data-gi="${gi}">${escHtml(group.label || '')}</span>
+          <button type="button" class="todo-row-del" title="删除分组" onclick="event.stopPropagation();deleteTodoGroup(${gi})">×</button>
+        </div>
+        <div class="todo-children">
+          ${subsHtml}
+          <div class="todo-add-sub" onclick="addTodoSub(${gi})">+ 新建</div>
+        </div>`
+      body.appendChild(groupEl)
+    })
+    if (prevExpanded.size === 0) {
+      body.querySelector('.todo-group')?.classList.add('expanded')
+    } else {
+      prevExpanded.forEach(key => {
+        body.querySelector(`.todo-group[data-group="${key}"]`)?.classList.add('expanded')
+      })
+    }
+    applyEditingMode()
+  }
+
+  function applyEditingMode() {
+    const sec = document.getElementById('todoSection')
+    if (!sec) return
+    const editing = sec.classList.contains('editing')
+    // 编辑态:大咖要能改任何大题,先把所有 .locked 清掉(退出编辑时 saveCurrentTemplate → refreshQuizState 会重算)
+    if (editing) sec.querySelectorAll('.todo-group.locked').forEach(g => g.classList.remove('locked'))
+    sec.querySelectorAll('.todo-text[data-text]').forEach(el => {
+      if (editing) el.setAttribute('contenteditable', 'true')
+      else el.removeAttribute('contenteditable')
+    })
+    // 方案名（todoHeadName）也可改
+    const nameEl = document.getElementById('todoHeadName')
+    if (nameEl) {
+      if (editing) nameEl.setAttribute('contenteditable', 'true')
+      else nameEl.removeAttribute('contenteditable')
+    }
+    // 编辑按钮在编辑态变成对勾「确认/保存」
+    const btn = document.getElementById('todoEditBtn')
+    if (btn) {
+      btn.title = editing ? '完成编辑（保存）' : '编辑方案'
+      btn.innerHTML = editing
+        ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>'
+        : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
+      btn.style.color = editing ? 'var(--teal-600)' : ''
+    }
+  }
+
+  async function ensureExpertHasDefaultTemplate(ownerId) {
+    const { data: existing, error: selErr } = await sb
+      .from('expert_todo_templates')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: true })
+      .limit(1)
+    if (selErr) { console.warn('[seed templates select]', selErr); return null }
+    if (existing?.length) return existing[0].id
+    const { data: created, error: insErr } = await sb
+      .from('expert_todo_templates')
+      .insert({ owner_id: ownerId, name: '命理八字基础', payload: DEFAULT_TODO_PAYLOAD })
+      .select('id')
+      .single()
+    if (insErr) { console.warn('[seed templates insert]', insErr); return null }
+    return created.id
+  }
+
+  async function loadActiveTodoTemplate(room) {
+    let templateId = room.active_todo_template_id
+
+    // 大咖在自己房：没 active 就 seed 个人首个方案并设为 active
+    if (!templateId && isExpert(room)) {
+      templateId = await ensureExpertHasDefaultTemplate(room.expert_id)
+      if (templateId) {
+        const { error } = await sb.from('rooms')
+          .update({ active_todo_template_id: templateId })
+          .eq('id', room.id)
+        if (!error) {
+          room.active_todo_template_id = templateId
+          if (currentRoom?.id === room.id) currentRoom.active_todo_template_id = templateId
+        }
+      }
+    }
+
+    currentTemplate = null
+    if (templateId) {
+      const { data } = await sb
+        .from('expert_todo_templates')
+        .select('id, payload, name')
+        .eq('id', templateId)
+        .maybeSingle()
+      if (data) currentTemplate = { id: data.id, name: data.name || 'Todo', payload: data.payload || [] }
+    }
+
+    document.getElementById('todoHeadName').textContent = currentTemplate?.name || 'Todo'
+
+    const expert = isExpert(room)
+    document.getElementById('todoEditBtn')?.classList.toggle('visible', expert && !!currentTemplate)
+    document.getElementById('todoCaretBtn')?.classList.toggle('visible', expert)
+
+    document.getElementById('todoSection')?.classList.remove('editing')
+    hideTodoPopup()
+
+    renderTodos(currentTemplate ? currentTemplate.payload : DEFAULT_TODO_PAYLOAD)
+  }
+
+  async function toggleTodoEditing() {
+    if (!currentRoom || !isExpert(currentRoom) || !currentTemplate) return
+    const sec = document.getElementById('todoSection')
+    if (!sec) return
+    const wasEditing = sec.classList.contains('editing')
+    sec.classList.toggle('editing')
+    applyEditingMode()
+    hideTodoPopup()
+    if (wasEditing) await saveCurrentTemplate()
+  }
+
+  async function saveCurrentTemplate() {
+    if (!currentTemplate?.id) return
+    const sec = document.getElementById('todoSection')
+    sec.querySelectorAll('.todo-text[data-text="group"]').forEach(el => {
+      const gi = Number(el.dataset.gi)
+      if (currentTemplate.payload[gi]) currentTemplate.payload[gi].label = el.textContent.trim()
+    })
+    sec.querySelectorAll('.todo-text[data-text="sub"]').forEach(el => {
+      const gi = Number(el.dataset.gi), ii = Number(el.dataset.ii)
+      const it = currentTemplate.payload[gi]?.items?.[ii]
+      if (it) it.label = el.textContent.trim()
+    })
+    // 同步方案名（清空则回退到原名，避免存空字符串）
+    const nameEl = document.getElementById('todoHeadName')
+    const newName = (nameEl?.textContent || '').trim() || currentTemplate.name || 'Todo'
+    currentTemplate.name = newName
+    if (nameEl) nameEl.textContent = newName
+    const { error } = await sb.from('expert_todo_templates')
+      .update({ payload: currentTemplate.payload, name: currentTemplate.name })
+      .eq('id', currentTemplate.id)
+    if (error) { console.warn('[save template]', error); showToast('保存失败：' + (error.message || error.code)); return }
+    showToast('已保存')
+    await refreshQuizState()
+  }
+
+  function addTodoGroup() {
+    if (!currentTemplate) return
+    const label = (window.prompt('新分组名：', '') || '').trim()
+    if (!label) return
+    currentTemplate.payload.push({ label, items: [] })
+    renderTodos(currentTemplate.payload)
+  }
+
+  function addTodoSub(gi) {
+    if (!currentTemplate?.payload?.[gi]) return
+    const label = (window.prompt('新子项名：', '') || '').trim()
+    if (!label) return
+    currentTemplate.payload[gi].items = currentTemplate.payload[gi].items || []
+    currentTemplate.payload[gi].items.push({ label })
+    renderTodos(currentTemplate.payload)
+  }
+
+  function deleteTodoGroup(gi) {
+    const g = currentTemplate?.payload?.[gi]
+    if (!g) return
+    if (!confirm(`删除分组「${g.label}」及其所有子项？`)) return
+    currentTemplate.payload.splice(gi, 1)
+    renderTodos(currentTemplate.payload)
+  }
+
+  function deleteTodoItem(gi, ii) {
+    const items = currentTemplate?.payload?.[gi]?.items
+    if (!items?.[ii]) return
+    items.splice(ii, 1)
+    renderTodos(currentTemplate.payload)
+  }
+
+  async function toggleTodoPopup() {
+    if (!currentRoom || !isExpert(currentRoom)) return
+    if (todoPopupOpen) { hideTodoPopup(); return }
+    await showTodoPopup()
+  }
+
+  async function showTodoPopup() {
+    const popup = document.getElementById('todoPopup')
+    const caret = document.getElementById('todoCaretBtn')
+    if (!popup || !caret) return
+    const { data, error } = await sb
+      .from('expert_todo_templates')
+      .select('id, name')
+      .eq('owner_id', currentRoom.expert_id)
+      .order('created_at', { ascending: true })
+    if (error) { console.warn('[load templates]', error); showToast('加载方案失败'); return }
+    _todoPopupTemplates = data || []
+    const items = (data || []).map(t => `
+      <div class="todo-popup-item ${t.id === currentTemplate?.id ? 'active' : ''}" onclick="switchActiveTemplate('${t.id}')">
+        <span class="dot"></span><span>${escHtml(t.name)}</span>
+        <button type="button" class="todo-popup-del" title="删除方案" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>
+      </div>`).join('')
+    popup.innerHTML = `
+      ${items || '<div class="todo-popup-item" style="color:var(--text3);cursor:default;">还没有方案</div>'}
+      <div class="todo-popup-divider"></div>
+      <div class="todo-popup-item todo-popup-add" onclick="createNewTemplate()">
+        <span class="dot"></span><span>+ 新建方案</span>
+      </div>`
+    // 跟随 caret 按钮定位（fixed → 视口坐标），右对齐 caret 右沿
+    const r = caret.getBoundingClientRect()
+    popup.style.top = (r.bottom + 4) + 'px'
+    popup.style.left = Math.max(8, r.right - 220) + 'px'
+    popup.style.display = 'block'
+    todoPopupOpen = true
+  }
+
+  function hideTodoPopup() {
+    const popup = document.getElementById('todoPopup')
+    if (popup) popup.style.display = 'none'
+    todoPopupOpen = false
+  }
+
+  async function switchActiveTemplate(templateId) {
+    if (!currentRoom) return
+    hideTodoPopup()
+    if (templateId === currentRoom.active_todo_template_id) return
+    const { error } = await sb.from('rooms')
+      .update({ active_todo_template_id: templateId })
+      .eq('id', currentRoom.id)
+    if (error) { showToast('切换失败：' + (error.message || error.code)); return }
+    currentRoom.active_todo_template_id = templateId
+    await loadActiveTodoTemplate(currentRoom)
+    await refreshQuizState()
+  }
+
+  async function deleteTemplate(templateId) {
+    if (!currentRoom) return
+    const t = _todoPopupTemplates.find(x => x.id === templateId)
+    const name = t?.name || '该方案'
+    if (!confirm(`删除方案「${name}」？\n所有引用它的房间会回到默认 todo。`)) return
+    hideTodoPopup()
+    const wasActive = (currentRoom.active_todo_template_id === templateId)
+    const { error } = await sb.from('expert_todo_templates').delete().eq('id', templateId)
+    if (error) { showToast('删除失败：' + (error.message || error.code)); return }
+    showToast('已删除')
+    if (wasActive) {
+      // rooms.active_todo_template_id 已被 fk on delete set null
+      currentRoom.active_todo_template_id = null
+      await loadActiveTodoTemplate(currentRoom)
+      await refreshQuizState()
+    }
+  }
+
+  async function createNewTemplate() {
+    if (!currentRoom) return
+    hideTodoPopup()
+    const name = (window.prompt('新方案名：', '') || '').trim()
+    if (!name) return
+    const { data, error } = await sb.from('expert_todo_templates')
+      .insert({ owner_id: currentRoom.expert_id, name, payload: [] })
+      .select('id')
+      .single()
+    if (error) { showToast('新建失败：' + (error.message || error.code)); return }
+    await switchActiveTemplate(data.id)
+    document.getElementById('todoSection')?.classList.add('editing')
+    applyEditingMode()
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!todoPopupOpen) return
+    const popup = document.getElementById('todoPopup')
+    const caret = document.getElementById('todoCaretBtn')
+    if (popup?.contains(e.target) || caret?.contains(e.target)) return
+    hideTodoPopup()
+  })
+
+  function toggleTodoGroup(elOrBtn) {
+    const group = elOrBtn.closest('.todo-group')
+    if (!group) return
+    if (group.classList.contains('locked')) return
+    group.classList.toggle('expanded')
+  }
+  async function refreshQuizState() {
+    // 直接查 DB：本房 main 频道 AI 消息里 ratings 'up' >= 2 的条数
+    // 不依赖当前 DOM —— 这样在私聊频道下 todo 进度也能同步（私聊频道 DOM 里没有 AI 消息）
+    if (!currentRoom) return
+    const { data, error } = await sb
+      .from('messages')
+      .select('ratings')
+      .eq('room_id', currentRoom.id)
+      .eq('role', 'ai')
+      .eq('channel', 'main')
+      .order('created_at', { ascending: true })
+    if (error || !data) return
+    let passed = 0
+    data.forEach(m => {
+      const r = m.ratings || {}
+      const upCount = Object.values(r).filter(v => v === 'up').length
+      if (upCount >= 2) passed++
+    })
+    const total = document.querySelectorAll('.todo-sub[data-quiz-idx]').length
+    passed = Math.min(passed, total)
+    document.querySelectorAll('.todo-sub[data-quiz-idx]').forEach(sub => {
+      const idx = Number(sub.dataset.quizIdx)
+      sub.classList.toggle('done', idx < passed)
+      sub.classList.toggle('current', idx === passed)
+    })
+    // 大题解锁：当前组的「起始题号」<= passed 才解锁，编辑态强制全解锁
+    const editing = document.getElementById('todoSection')?.classList.contains('editing')
+    document.querySelectorAll('.todo-group').forEach(g => {
+      const start = Number(g.dataset.groupStart || 0)
+      const locked = !editing && passed < start
+      g.classList.toggle('locked', locked)
+      if (locked) g.classList.remove('expanded')
+    })
+    // 自动展开包含 current 的 group + 自动折叠已完成的 group
+    const currentSub = document.querySelector('.todo-sub.current')
+    const currentGroup = currentSub?.closest('.todo-group') || null
+    document.querySelectorAll('.todo-group').forEach(g => {
+      if (g.classList.contains('locked')) return  // 锁定的上面已折叠,不动
+      if (g === currentGroup) {
+        g.classList.add('expanded')
+        return
+      }
+      // 整组都 done → 折叠;有空组(没 sub)不动
+      const subs = g.querySelectorAll('.todo-sub[data-quiz-idx]')
+      if (subs.length > 0 && Array.from(subs).every(s => s.classList.contains('done'))) {
+        g.classList.remove('expanded')
+      }
+    })
+  }
+
+  function formatTokens(n) {
+    n = Number(n) || 0
+    if (n < 1000) return `${n}`
+    if (n < 1_000_000) return `${(n / 1000).toFixed(1)}K`
+    return `${(n / 1_000_000).toFixed(2)}M`
+  }
+
+  const PROVIDER_LABELS = {
+    openai: 'OpenAI', anthropic: 'Anthropic', google: 'Google',
+    deepseek: 'DeepSeek', qwen: 'Qwen', kimi: 'Kimi', glm: 'GLM', gemini: 'Gemini',
+  }
+  function shortModelName(model) {
+    if (!model) return '—'
+    // openrouter 只是聚合层，不是真正的 LLM 提供方，去掉前缀只保留底层 provider/model
+    model = model.replace(/^openrouter\//, '')
+    const parts = model.split('/')
+    const tail = parts[parts.length - 1]
+      .replace(/^claude-/, '')
+      .replace(/^gpt-/, 'GPT-')
+      .replace(/(\d+)-(\d+)/g, '$1.$2')
+    const tailNice = tail.split('-')
+      .map(s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s)
+      .join(' ')
+    if (parts.length > 1) {
+      const p = parts[0].toLowerCase()
+      const provider = PROVIDER_LABELS[p] || (p.charAt(0).toUpperCase() + p.slice(1))
+      return `${provider} · ${tailNice}`
+    }
+    // 只有 provider 没有具体 model（如 'google'），保留 provider 名
+    const lone = (model || '').toLowerCase()
+    return PROVIDER_LABELS[lone] || tailNice
+  }
+
+  async function loadRoomCost(roomId) {
+    // 并行拉 room_costs（汇总）+ 最近一条 model_usage（context 占用）
+    const [rc, lu] = await Promise.all([
+      sb.from('room_costs')
+        .select('total_charge_cny,total_input_tokens,total_output_tokens')
+        .eq('room_id', roomId)
+        .maybeSingle(),
+      sb.from('model_usage')
+        .select('input_tokens,cache_creation_input_tokens,cache_read_input_tokens,output_tokens,model')
+        .eq('room_id', roomId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    // 单次计算 context 占用（三档之和），同时驱动模型名 / 已用-上限 / 百分比
+    try {
+      // 顶部进度环 = 本房间累计 token (跟 typing 气泡的 ↑↓ 累计估算语义对齐)
+      // 不再用 model_usage 最近一条 (那只是单次 input 占用),用 room_costs 视图累计
+      const used = Number(rc.data?.total_input_tokens ?? 0)
+                 + Number(rc.data?.total_output_tokens ?? 0)
+      const model = lu.data?.model ?? ''
+      const window = ROOM_TOKEN_BUDGET
+      const pct = window > 0 ? (used / window) * 100 : 0
+
+      // 累计 token（input+output）作为悬停详情
+      const inTok = Number(rc.data?.total_input_tokens ?? 0)
+      const outTok = Number(rc.data?.total_output_tokens ?? 0)
+      const totalIO = inTok + outTok
+      const cny = Number(rc.data?.total_charge_cny ?? 0)
+
+      // 模型名
+      const modelEl = document.getElementById('chatRoomModel')
+      modelEl.textContent = shortModelName(model)
+      modelEl.title = model || '尚未对话'
+
+      // 已用 / 上限
+      const tokensEl = document.getElementById('chatRoomTokens')
+      tokensEl.textContent = `${formatTokens(used)} / ${formatTokens(window)} Token`
+      tokensEl.title = `本轮 context: ${used.toLocaleString()} / ${window.toLocaleString()} tokens`
+        + `\n累计 I/O: ${formatTokens(totalIO)} (${inTok.toLocaleString()} in + ${outTok.toLocaleString()} out)`
+        + `\n累计消费: ¥${cny.toFixed(2)}`
+
+      // 进度环填充（dashoffset = C × (1 - pct/100)，pct 已是百分数）
+      const ring = document.getElementById('chatTokensRingFill')
+      if (ring) {
+        const C = 2 * Math.PI * 14
+        ring.style.strokeDasharray = String(C)
+        ring.style.strokeDashoffset = String(C * (1 - Math.min(pct, 100) / 100))
+      }
+      // chat-metrics 容器跟随 warn/danger 着色（让环跟随）
+      const metricsEl = document.querySelector('.chat-metrics')
+      if (metricsEl) {
+        metricsEl.classList.toggle('warn',   pct >= 60 && pct < 85)
+        metricsEl.classList.toggle('danger', pct >= 85)
+      }
+
+      // 剩余百分比 + 电池图标（语义对齐：显示「还剩多少」）
+      const remPct = Math.min(Math.max(100 - pct, 0), 100)
+      const pctEl = document.getElementById('chatRoomCtx')
+      pctEl.textContent = `${remPct.toFixed(0)}%`
+      pctEl.title = `context 剩余 ${remPct.toFixed(1)}% · 已用 ${pct.toFixed(1)}%`
+      const wrap = document.getElementById('chatCtxWrap')
+      wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
+      wrap.classList.toggle('danger', pct >= 85)
+      const fill = document.getElementById('ctxBatteryFill')
+      if (fill) fill.style.width = `${remPct}%`
+    } catch (e) { console.warn('[metrics] failed:', e) }
+  }
+
+  async function loadMessages(roomId) {
+    document.getElementById('messagesList').innerHTML = ''
+
+    const { data: msgs, error } = await sb
+      .from('messages')
+      .select('*')
+      .eq('room_id', roomId)
+      .eq('channel', currentChannel)
+      .order('created_at', { ascending: true })
+
+    if (error) { showToast('加载消息失败'); return }
+    if (msgs) msgs.forEach(m => appendMessage(m))
+    refreshQuizState()
+    scrollToBottom()
+
+    // 用心跳真实反映 bridge 状态（不再靠「最近 10 分钟有 AI 消息」猜）
+    refreshBridgeStatus()
+  }
+
+  async function maybeRefreshRoomFocal(payloadNew) {
+    // user role 消息到达时，若前端 currentRoom.focal_user_id 跟实际不一致(trigger 已在
+    // DB 端锁了 focal 但前端 snapshot stale)，refetch + 重画已渲染 user 头像
+    if (!currentRoom || !payloadNew || payloadNew.role !== 'user') return
+    const oldFocal = currentRoom.focal_user_id
+    try {
+      const { data } = await sb.from('rooms')
+        .select('focal_user_id, ai_name')
+        .eq('id', currentRoom.id).maybeSingle()
+      if (!data) return
+      if (data.focal_user_id === oldFocal) return
+      currentRoom.focal_user_id = data.focal_user_id
+      const fid = data.focal_user_id
+      document.querySelectorAll('.msg-group[data-role="user"]').forEach(g => {
+        const uid = g.dataset.userId
+        const isFoc = uid && fid && uid === fid
+        const role = fid && !isFoc ? 'audience' : 'user'
+        const av = g.querySelector('.msg-av')
+        if (av) {
+          av.className = av.className.replace(/\b(user|audience)\b/g, '').trim() + ' ' + role
+          av.textContent = role === 'audience' ? '路' : '白'
+        }
+        const sn = g.querySelector('.msg-sender')
+        if (sn) sn.className = sn.className.replace(/\b(user|audience)\b/g, '').trim() + ' ' + role
+      })
+    } catch (e) { console.warn('[refresh focal]', e) }
+  }
+
+  function subscribeRoom(roomId) {
+    if (realtimeChannel) sb.removeChannel(realtimeChannel)
+
+    realtimeChannel = sb
+      .channel(`room-${roomId}`, { config: { presence: { key: currentUser.id } } })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度
+        if (payload.new?.role === 'ai') {
+          applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
+          refreshQuizState()
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        // 系统 marker 消息：不渲染、不计未读（trigger 自动写的双钩 pass 推进信号）
+        if (payload.new?.content === '__SYS_ADVANCE_QUIZ__') return
+        // 只渲染当前 channel 的消息；其它 channel 累计未读计数
+        const msgChannel = payload.new.channel || 'main'
+        const inCurChannel = msgChannel === currentChannel
+        const isSelf = payload.new.user_id === currentUser?.id && payload.new.role !== 'ai'
+        const exists = document.querySelector(`[data-msg-id="${payload.new.id}"]`)
+        if (!exists) {
+          if (payload.new.role === 'ai') {
+            // typing 是全局 UI，任何 AI 消息到达都清掉（避免切 channel 残留）
+            clearTimeout(typingTimer)
+            hideTyping()
+            setBridgeStatus(true)
+            lastAiMessageAt = Date.now()
+            // AI 回复完成 → bridge 刚写完 model_usage 行 → 刷新成本徽章
+            // 延迟 500ms 等 model_usage insert 落地
+            setTimeout(() => loadRoomCost(roomId), 500)
+          }
+          if (inCurChannel) {
+            appendMessage(payload.new)
+            scrollToBottom()
+            // user role 消息可能触发了 focal 锁定，refetch 同步 + 重画
+            if (payload.new.role === 'user') maybeRefreshRoomFocal(payload.new)
+            // 非 AI 消息进入 main 频道 → AI 会响应，所有观众都显示 typing
+            if (payload.new.role !== 'ai' && (payload.new.channel || 'main') === 'main') {
+              showTyping()
+              clearTimeout(typingTimer)
+              // typing 兜底 timeout 拉到 10 分钟（qwen 慢响应 + 命理深推可能 3-5 分钟）
+              typingTimer = setTimeout(() => { hideTyping(); setBridgeStatus(false) }, 600000)
+            }
+          } else if (!isSelf) {
+            // 不在当前 channel + 不是自己发的 → 累计未读
+            unreadCounts[msgChannel] = (unreadCounts[msgChannel] || 0) + 1
+            updateUnreadBadge(msgChannel)
+          }
+        }
+      })
+      .on('presence', { event: 'sync' }, () => {
+        renderPresence(realtimeChannel.presenceState())
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await realtimeChannel.track({
+            user_id: currentUser.id,
+            display_name: currentDisplayName || (currentUser.email || '').split('@')[0],
+            role: currentRole,
+          })
+        }
+      })
+  }
+
+  function renderPresence(_state) {
+    // 白底胶囊 channel tab：图标 only + 未读徽章位
+    const row = document.getElementById('presenceRow')
+    if (!row) return
+    const isExp = isExpert(currentRoom)
+    const aiName = currentRoom?.ai_name || 'AI'
+    // 群聊：原 ti-users 风格 + 第三个人头 → 手写 SVG 3 头
+    const groupIconSvg = `<svg class="tab-icon" width="20" height="16" viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="2.4"/><circle cx="13" cy="4" r="2.8"/><circle cx="21" cy="5" r="2.4"/><path d="M1 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 9 13.8V15"/><path d="M8.4 15v-1.4A3 3 0 0 1 11.4 10.6h3.2a3 3 0 0 1 3 3V15"/><path d="M17 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 25 13.8V15"/></svg>`
+    const groupCountHtml = `<span class="group-count" id="groupMemberCount">${roomMemberCount ?? ''}</span>`
+    // 私聊永远是大咖 + 小白 = 焦点锁了就 2，否则只有大咖 = 1
+    const peerCount = currentRoom?.focal_user_id ? 2 : 1
+    const peerCountHtml = `<span class="group-count">${peerCount}</span>`
+    const tabs = [
+      { cls: 'main', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）`, iconHtml: groupCountHtml + groupIconSvg },
+    ]
+    // 私聊 tab 只对大咖和八字主（focal）开放；路人看不到
+    if (currentRoomRole === 'expert' || currentRoomRole === 'focal') {
+      // 私聊：图标在左，数字在右
+      const peerInner = `<i class="ti ti-user"></i>` + peerCountHtml
+      tabs.push(isExp
+        ? { cls: 'peer-user',   ch: 'expert_user', title: '与小白私聊（AI 不参与）', iconHtml: peerInner }
+        : { cls: 'peer-expert', ch: 'expert_user', title: '与大咖私聊（AI 不参与）', iconHtml: peerInner })
+    }
+    row.innerHTML = tabs.map(t => {
+      const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
+      const iconHtml = t.iconHtml || `<i class="ti ${t.icon}"></i>`
+      // 群胶囊：点了切到 main + 弹成员列表；其它胶囊只切频道
+      const clickHandler = t.ch === 'main'
+        ? "switchChannel('main');openMemberListPopover();event.stopPropagation();"
+        : `switchChannel('${t.ch}')`
+      return `<div class="${cls}" data-ch="${t.ch}" onclick="${clickHandler}" title="${escHtml(t.title)}">`
+        + iconHtml
+        + `<span class="unread" data-ch="${t.ch}">0</span>`
+        + `</div>`
+    }).join('')
+    // 重渲染后把现有未读计数同步到 DOM
+    Object.keys(unreadCounts).forEach(updateUnreadBadge)
+  }
+
+  let roomMemberCount = null
+  let _roomMembersCache = []
+  async function refreshRoomMembers() {
+    // 拉本房成员（用 SECURITY DEFINER RPC 绕开 room_members RLS），顺带塞 profilesByUid 让 @ 列表完整
+    if (!currentRoom) return
+    const { data, error } = await sb.rpc('get_room_members', { p_room_id: currentRoom.id })
+    if (error) { console.warn('[room members]', error); return }
+    _roomMembersCache = data || []
+    roomMemberCount = _roomMembersCache.length + 1  // +1: AI 也算一个成员
+    const el = document.getElementById('groupMemberCount')
+    if (el) el.textContent = roomMemberCount
+    _roomMembersCache.forEach(m => {
+      if (m.display_name && !profilesByUid[m.user_id]) profilesByUid[m.user_id] = m.display_name
+    })
+  }
+  // 兼容旧调用入口
+  async function refreshRoomMemberCount() { return refreshRoomMembers() }
+
+  // 点群胶囊：除了切换频道，还弹出成员清单
+  function openMemberListPopover() {
+    const pop = document.getElementById('memberListPopover')
+    if (!pop) return
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    // AI 永远在场，单独加一行；点行 = @ 这个名字进输入框
+    const rows = []
+    rows.push(`<div class="ml-row" data-mention="${escHtml(aiName)}"><span class="ml-av ai">AI</span><span class="ml-name">${escHtml(aiName)}</span><span class="ml-role">AI 助手</span></div>`)
+    _roomMembersCache.forEach(m => {
+      // 自己不出现在 @ 列表里（避免 @ 自己）
+      if (m.user_id === currentUser?.id) return
+      const roleCls = m.role
+      const initial = m.role === 'expert' ? '咖' : (m.role === 'audience' ? '路' : '白')
+      const roleLabel = m.role === 'expert' ? '大咖' : (m.role === 'focal' ? '小白' : '路人')
+      rows.push(`<div class="ml-row" data-mention="${escHtml(m.display_name)}"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
+    })
+    pop.innerHTML = rows.join('')
+    pop.querySelectorAll('.ml-row[data-mention]').forEach(r => {
+      r.style.cursor = 'pointer'
+      r.addEventListener('mousedown', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const name = r.dataset.mention
+        if (name) {
+          insertMention(name)
+          pop.classList.remove('open')
+        }
+      })
+    })
+    pop.classList.add('open')
+    // 点外部关闭
+    setTimeout(() => document.addEventListener('click', _onDocClickCloseMemberList, { once: true }), 0)
+  }
+  function _onDocClickCloseMemberList(e) {
+    const pop = document.getElementById('memberListPopover')
+    if (!pop) return
+    if (pop.contains(e.target)) {
+      // 在弹层内点击就保持打开，再挂一次 once 监听
+      setTimeout(() => document.addEventListener('click', _onDocClickCloseMemberList, { once: true }), 0)
+      return
+    }
+    pop.classList.remove('open')
+  }
+
+  function appendMessage(msg) {
+    // 系统 marker 消息：双钩 pass 触发 bridge 让 AI 进入下一题，前端不渲染
+    if (msg.content === '__SYS_ADVANCE_QUIZ__') return
+    const list = document.getElementById('messagesList')
+    const role = msg.role
+    const isOwn = msg.user_id === currentUser?.id
+    const isMarkdown = msg.type === 'markdown' || (role === 'ai' && looksLikeMarkdown(msg.content))
+
+    // 三角色：role='user' 且 user_id 非 focal_user_id → 路人；其余按 role
+    // 兜底：focal_user_id 未锁定(null)时所有 user 默认显示「小白」而不是「路人」，
+    // 防止前端 currentRoom 数据 stale(trigger 在 DB 端锁了 focal 但前端没刷)误标头像
+    const isFocal = msg.user_id && currentRoom?.focal_user_id && msg.user_id === currentRoom.focal_user_id
+    const displayRole = (role === 'user' && currentRoom?.focal_user_id && !isFocal) ? 'audience' : role
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    const roleLabels = { user: '小白', audience: '路人', expert: '大咖', ai: aiName }
+    const roleLabel = roleLabels[displayRole] || displayRole
+    const avText = displayRole === 'ai' ? 'AI' : displayRole === 'expert' ? '咖' : displayRole === 'audience' ? '路' : '白'
+    // 头像点击：AI 头像(仅大咖)→编辑 AI 名；自己头像(非 AI)→进设置；其它头像不可点
+    let avClick = ''
+    if (role === 'ai' && isExpert(currentRoom)) {
+      avClick = ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"'
+    } else if (isOwn && role !== 'ai') {
+      avClick = ' onclick="openSettings()" title="点击进入设置" style="cursor:pointer;"'
+    }
+    const aiAvClick = avClick
+    // 显示名优先级：自己 → currentDisplayName；他人 → profilesByUid 缓存 → roleLabel
+    let senderName
+    if (role === 'ai') {
+      senderName = roleLabel
+    } else if (isOwn) {
+      senderName = currentDisplayName || roleLabel
+    } else {
+      senderName = profilesByUid[msg.user_id] || roleLabel
+      // 没缓存就异步拉一下，回来再更新 DOM
+      if (!profilesByUid[msg.user_id]) ensureProfileName(msg.user_id)
+    }
+    const ts = formatTime(msg.created_at)
+
+    const el = document.createElement('div')
+    el.className = 'msg-group'
+    el.dataset.msgId = msg.id
+    el.dataset.role = msg.role
+    el.dataset.userId = msg.user_id || ''
+    el.dataset.ratings = JSON.stringify(msg.ratings || {})
+
+    const attachments = Array.isArray(msg.attachments) ? msg.attachments : []
+    const attachHtml = attachments.length ? `
+      <div class="msg-attachments">
+        ${attachments.map(a => {
+          const isImage = (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+          if (isImage) {
+            return `<img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}" onclick="openImageLightbox('${escHtml(a.url)}')">`
+          }
+          return `
+            <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
+              <i class="ti ti-file"></i>
+              <span class="name">${escHtml(a.name)}</span>
+              <span style="color:var(--text3);font-size:10px;">${formatSize(a.size || 0)}</span>
+            </a>`
+        }).join('')}
+      </div>` : ''
+
+    const isPlaceholderMsg = attachments.length > 0 && /^\[发送了 \d+ 个文件\]$/.test(msg.content)
+
+    // 微信风：抽出尾部 markdown 引用块，渲染成气泡下的灰色卡片（只对非 markdown 消息做）
+    let displayContent = msg.content || ''
+    let quoteCardHtml = ''
+    if (!isMarkdown) {
+      const QUOTE_TRAILER_RE = /\n\n> \*\*(.+?)\*\*：\n((?:>.*(?:\n|$))+)\s*$/
+      const m = displayContent.match(QUOTE_TRAILER_RE)
+      if (m) {
+        displayContent = displayContent.slice(0, m.index).trimEnd()
+        const qSender = m[1]
+        const lines = m[2].split('\n').map(l => l.replace(/^>\s?/, '')).filter(s => s !== '')
+        let preview = lines.join(' ').replace(/\s+/g, ' ').trim()
+        if (preview.length > 120) preview = preview.slice(0, 120) + '…'
+        quoteCardHtml = `<div class="msg-quote-card"><span class="qsender">${escHtml(qSender)}：</span><span class="qbody">${escHtml(preview)}</span></div>`
+      }
+    }
+
+    const bubbleHtml = isMarkdown
+      ? `<div class="msg-bubble markdown" style="padding:0;background:transparent;border:none;">
+           <div class="md-body" id="md-${msg.id}">${marked.parse(msg.content)}</div>
+         </div>`
+      : (isPlaceholderMsg
+          ? ''  // 纯文件消息不显示气泡，只显示附件卡片
+          : (displayContent
+              ? `<div class="msg-bubble ${role}">${highlightMentions(escHtml(displayContent))}</div>`
+              : ''))
+
+    // 把原始文本存起来供复制（HTML 转义后再 unescape 不可靠，直接 base64 编码绕过）
+    const rawB64 = btoa(unescape(encodeURIComponent(msg.content || '')))
+
+    const quoteSender = escHtml(senderName).replace(/'/g, "&#39;")
+    const quoteBtnHtml = `<button class="msg-rate-btn quote" title="引用到输入框" onclick="quoteMessage('${rawB64}', '${quoteSender}')"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><circle cx="2" cy="5" r="1"/><circle cx="5" cy="5" r="1"/><circle cx="8" cy="5" r="1"/></svg></button>`
+    // 同步到私聊按钮：只在主窗渲染时出现
+    const syncBtnHtml = currentChannel === 'main'
+      ? `<button class="msg-rate-btn sync" title="同步到私聊" onclick="syncToPrivate('${msg.id}', this)"><svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9v2.5A1.5 1.5 0 0 0 4.5 13h5A1.5 1.5 0 0 0 11 11.5V9"/><path d="M7 9V2"/><path d="M4 5l3-3 3 3"/></svg></button>`
+      : ''
+    const rateBarHtml = role === 'ai' ? `
+      <div class="msg-rate-bar" data-rate-msg-id="${msg.id}">
+        <button class="msg-rate-btn up" title="说得对 · 一键赞美 + 引用" onclick="rateMessage(this, '${msg.id}', 'up', '${rawB64}', '${quoteSender}')">&#10003;</button>
+        <button class="msg-rate-btn down" title="说错了 · 一键纠错 + 引用" onclick="rateMessage(this, '${msg.id}', 'down', '${rawB64}', '${quoteSender}')">&#10005;</button>
+        ${quoteBtnHtml}
+        ${syncBtnHtml}
+      </div>` : `
+      <div class="msg-rate-bar">
+        ${quoteBtnHtml}
+        ${syncBtnHtml}
+      </div>`
+
+    el.innerHTML = `
+      <div class="msg-av ${displayRole}"${aiAvClick}>${avText}</div>
+      <div class="msg-body">
+        <div class="msg-meta">
+          <span class="msg-sender ${displayRole}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${senderName}</span>
+          <span class="msg-ts">${ts}</span>
+          <div class="msg-actions">
+            <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
+              <i class="ti ti-copy"></i>
+            </button>
+          </div>
+        </div>
+        ${bubbleHtml}
+        ${quoteCardHtml}
+        ${attachHtml}
+        ${rateBarHtml}
+      </div>
+    `
+    list.appendChild(el)
+    if (role === 'ai') applyRatingsToMsg(msg.id, msg.ratings || {})
+  }
+
+  // 评 ✓ / ✗ 时自动 prepend 的赞美 / 纠错短句
+  const RATE_PRAISES = [
+    '说得对！这条说到点子上了。',
+    '完全正确，就是这样。',
+    '准。我也是这么理解的。',
+    '对，没毛病，继续。',
+    '这条挺准，我同意。',
+    '讲到点子上了，赞一个。',
+    '嗯，这条说得很到位。',
+    '这条很妙，正是关键。',
+  ]
+  const RATE_CRITIQUES = [
+    '这条不对，完全错了，纠正一下：',
+    '错了，事实不是这样：',
+    '不，这里说偏了，应该是：',
+    '这条判断有问题，需要修正：',
+    '完全错，下面是我的看法：',
+    '这条偏离了，重新理解一下：',
+    '不对，这里得改改：',
+    '这一段有误，正确理解是：',
+  ]
+  // 双钩 pass 后自动发到群里的正面回应（最后那个 ✓ 的人发，触发 AI 自然继续话题）
+  // 风格：江湖/茶馆/老炮儿气，短句、抽象、不直白说对
+  const PASS_PRAISES = [
+    '✓✓ 没错了，下一段',
+    '✓✓ go 不 go，下一题',
+    '✓✓ 这味儿正',
+    '✓✓ 嗯…有点意思',
+    '✓✓ 这一口记下了',
+    '✓✓ 有回甘',
+    '✓✓ 火候到了，下一锅',
+    '✓✓ 嚼一嚼，往下',
+    '✓✓ 这一笔，妙',
+    '✓✓ 嗯——继续',
+    '✓✓ 接着往下抖',
+    '✓✓ 听明白了，继续讲',
+    '✓✓ 抓住了，下一段',
+    '✓✓ 顺着这条线，再讲',
+    '✓✓ 这话有嚼头',
+    '✓✓ 翻篇，下一段',
+    '✓✓ 这一段稳，往下',
+    '✓✓ 心领了，继续',
+    '✓✓ 收着，再来',
+    '✓✓ 这点子妙',
+  ]
+  function pickPhrase(arr) { return arr[Math.floor(Math.random() * arr.length)] }
+
+  // 记录上次 rate 自动 prepend 的字符串，便于下次 rate（切换 ✓/✗ 或取消）时先剥掉
+  let lastRatePrepend = ''
+
+  // 待发送引用（微信样式：输入框里看不到，发送时静默附在消息末尾）
+  // { b64, sender, preview } | null
+  let pendingQuote = null
+
+  function setPendingQuote(b64, sender) {
+    let text = ''
+    try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
+    let preview = text.replace(/\s+/g, ' ').trim()
+    if (preview.length > 80) preview = preview.slice(0, 80) + '…'
+    pendingQuote = { b64, sender, preview }
+    const wrap = document.getElementById('quotePreview')
+    if (!wrap) return
+    document.getElementById('qpSender').textContent = sender + '：'
+    document.getElementById('qpBody').textContent = preview
+    wrap.style.display = ''
+  }
+
+  function clearPendingQuote() {
+    pendingQuote = null
+    const wrap = document.getElementById('quotePreview')
+    if (wrap) wrap.style.display = 'none'
+  }
+
+  function buildQuoteBlock(b64, sender) {
+    let text = ''
+    try { text = decodeURIComponent(escape(atob(b64))) } catch (e) { text = atob(b64) }
+    const lines = text.split('\n').slice(0, 4)
+    let preview = lines.map(l => '> ' + l).join('\n')
+    if (text.split('\n').length > 4 || text.length > 200) preview += '\n> …'
+    return `> **${sender}**：\n${preview}`
+  }
+
+  // 评价 AI 消息：调 rate_message RPC，状态走 messages.ratings（双方共识，Realtime 同步）
+  async function rateMessage(btn, msgId, val, b64, sender) {
+    const bar = btn.closest('.msg-rate-bar')
+    if (!bar) return
+    const myUid = currentUser?.id
+    if (!myUid) return
+    const group = bar.closest('.msg-group')
+    let ratings = {}
+    try { ratings = JSON.parse(group?.dataset.ratings || '{}') } catch (e) {}
+    const oldUp = Object.values(ratings).filter(v => v === 'up').length
+    const cur = ratings[myUid] || ''
+    const next = (cur === val) ? '' : val   // 再点取消
+    const { data, error } = await sb.rpc('rate_message', { p_msg_id: msgId, p_val: next })
+    if (error) { showToast('评价失败：' + error.message); return }
+    applyRatingsToMsg(msgId, data || {})
+    refreshQuizState()
+    // 我刚把 up 数从 <2 推到 >=2 → 摘要 copy 私聊 + main 频道随机发一句正面回应让 AI 自然推进
+    const newUp = Object.values(data || {}).filter(v => v === 'up').length
+    if (newUp >= 2 && oldUp < 2) {
+      relayPassToPrivate(msgId).catch(e => console.warn('[relay pass]', e))
+      const phrase = pickPhrase(PASS_PRAISES)
+      sb.from('messages').insert({
+        room_id: currentRoom?.id,
+        user_id: myUid,
+        role: currentRole === 'expert' ? 'expert' : 'user',
+        channel: 'main',
+        content: phrase,
+        type: 'text',
+      }).then(({ error: e }) => { if (e) console.warn('[pass praise insert]', e) })
+    }
+    // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
+    const input = document.getElementById('msgInput')
+    if (input) {
+      if (lastRatePrepend && input.value.startsWith(lastRatePrepend)) {
+        input.value = input.value.slice(lastRatePrepend.length)
+      }
+      // 仅 ✗ 时挂引用 + 评论；✓ 不打扰输入框
+      if (next === 'down' && b64 && sender) {
+        const phrase = pickPhrase(RATE_CRITIQUES)
+        const block = `❌ ${phrase}\n\n`
+        input.value = block + (input.value || '')
+        lastRatePrepend = block
+        setPendingQuote(b64, sender)
+        autoResize(input)
+        input.focus()
+        const pos = block.length
+        try { input.setSelectionRange(pos, pos) } catch (e) {}
+        input.scrollTop = 0
+      } else {
+        lastRatePrepend = ''
+        clearPendingQuote()
+        autoResize(input)
+      }
+    }
+  }
+  // 把 messages.ratings 应用到 AI 消息 UI（DOM 状态 + 按钮 active + 双钩 badge）
+  function applyRatingsToMsg(msgId, ratings) {
+    const group = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
+    if (!group) return
+    group.dataset.ratings = JSON.stringify(ratings || {})
+    const bar = group.querySelector('.msg-rate-bar')
+    if (!bar) return
+    const myUid = currentUser?.id
+    const myVal = (ratings && myUid && ratings[myUid]) || ''
+    bar.querySelectorAll('.msg-rate-btn').forEach(b => b.classList.remove('active'))
+    if (myVal === 'up' || myVal === 'down') {
+      bar.querySelector('.msg-rate-btn.' + myVal)?.classList.add('active')
+    }
+    const upCount = Object.values(ratings || {}).filter(v => v === 'up').length
+    let badge = bar.querySelector('.rate-badge')
+    if (upCount === 0) {
+      if (badge) badge.remove()
+    } else {
+      if (!badge) {
+        badge = document.createElement('span')
+        badge.className = 'rate-badge'
+        bar.appendChild(badge)
+      }
+      if (upCount >= 2) {
+        badge.className = 'rate-badge'
+        badge.textContent = '✓✓ pass'
+      } else {
+        badge.className = 'rate-badge half'
+        badge.textContent = '✓'
+      }
+    }
+  }
+  // 旧 applyRateState 兼容：appendMessage 渲染完调，把 ratings 从消息对象写回
+  function applyRateState(msgId, container) {
+    // 真正的状态来源是消息数据，appendMessage 时通过 applyRatingsToMsg 写回
+  }
+  // 拉某用户的 display_name 并回写所有已渲染的他/她的消息头
+  const _pendingNameFetches = new Set()
+  async function ensureProfileName(uid) {
+    if (!uid || profilesByUid[uid] || _pendingNameFetches.has(uid)) return
+    _pendingNameFetches.add(uid)
+    try {
+      const { data } = await sb.from('profiles')
+        .select('display_name').eq('user_id', uid).maybeSingle()
+      const name = (data?.display_name || '').trim()
+      if (name) {
+        profilesByUid[uid] = name
+        // 回写所有该用户的已渲染消息 sender 文字
+        document.querySelectorAll('.msg-group').forEach(g => {
+          const senderEl = g.querySelector('.msg-sender')
+          if (senderEl && g.dataset.userId === uid && !senderEl.dataset.own) {
+            senderEl.textContent = name
+          }
+        })
+      }
+    } catch (e) { console.warn('[ensureProfileName]', e) }
+    finally { _pendingNameFetches.delete(uid) }
+  }
+
+  // ── @ 提及功能 ──
+  function getMentionCandidates() {
+    const aiName = currentRoom?.ai_name || 'AI 助手'
+    const list = [{ name: aiName, kind: 'ai', initial: 'AI' }]
+    Object.entries(profilesByUid).forEach(([uid, name]) => {
+      if (uid === currentUser?.id || !name) return
+      const isExp = uid === currentRoom?.expert_id
+      list.push({ name, kind: isExp ? 'expert' : 'user', initial: isExp ? '咖' : '白' })
+    })
+    return list
+  }
+  function showMentionPopover() {
+    const pop = document.getElementById('mentionPopover')
+    if (!pop) return
+    const list = getMentionCandidates()
+    if (!list.length) { pop.classList.remove('open'); return }
+    pop.innerHTML = list.map(c => `
+      <button type="button" data-name="${escHtml(c.name)}">
+        <span class="mav ${c.kind}">${c.initial}</span>${escHtml(c.name)}
+      </button>`).join('')
+    pop.querySelectorAll('button').forEach(b => {
+      b.addEventListener('mousedown', e => {
+        e.preventDefault()
+        insertMention(b.dataset.name)
+      })
+    })
+    pop.classList.add('open')
+  }
+  function hideMentionPopover() {
+    document.getElementById('mentionPopover')?.classList.remove('open')
+  }
+  function insertMention(name) {
+    const input = document.getElementById('msgInput')
+    if (!input) return
+    const val = input.value
+    const pos = input.selectionStart
+    const before = val.slice(0, pos)
+    const after = val.slice(pos)
+    const lastAt = before.lastIndexOf('@')
+    // 只有 @ 到光标之间无空格才算「正在打的 @ token」，替换它；否则在光标位置插入新 @
+    const activeAt = lastAt >= 0 && !/\s/.test(before.slice(lastAt + 1))
+    let newPos
+    if (activeAt) {
+      input.value = before.slice(0, lastAt) + '@' + name + ' ' + after
+      newPos = lastAt + 1 + name.length + 1
+    } else {
+      input.value = before + '@' + name + ' ' + after
+      newPos = pos + 1 + name.length + 1
+    }
+    input.setSelectionRange(newPos, newPos)
+    hideMentionPopover()
+    autoResize(input)
+    input.focus()
+  }
+  function onMentionInput(e) {
+    // 在 oninput 时也检测一次（粘贴 / 输入法都走这里）
+    onMentionKeyup(e)
+  }
+  function onMentionKeyup(e) {
+    const input = e.target
+    const pos = input.selectionStart
+    const before = input.value.slice(0, pos)
+    const lastAt = before.lastIndexOf('@')
+    if (lastAt < 0) return hideMentionPopover()
+    // @ 前面：行头 / 空格 / 中文 / 标点 都行；只在前面是 ASCII 字母数字时拦截（避邮箱 user@host 误触）
+    const charBefore = lastAt > 0 ? before[lastAt - 1] : ''
+    if (charBefore && /[A-Za-z0-9._-]/.test(charBefore)) return hideMentionPopover()
+    // @ 到光标之间不能有空格
+    if (/\s/.test(before.slice(lastAt + 1))) return hideMentionPopover()
+    showMentionPopover()
+  }
+  // 把消息文本里的 @xxx 高亮
+  function highlightMentions(html) {
+    // 匹配 @ + 后面 1-30 非空白/标点字符
+    return html.replace(/@([^\s@<>,，。?？!！]{1,30})/g, '<span class="mention">@$1</span>')
+  }
+
+  // 手动同步一条主窗消息到私聊（每条消息底部的「→私聊」按钮）
+  async function syncToPrivate(msgId, btn) {
+    if (!currentRoom) return
+    if (btn) btn.disabled = true
+    try {
+      const { data: src, error: e1 } = await sb
+        .from('messages')
+        .select('content,attachments,user_id,role')
+        .eq('id', msgId)
+        .maybeSingle()
+      if (e1 || !src) { showToast('找不到原消息'); return }
+      let senderName
+      if (src.role === 'ai') senderName = currentRoom?.ai_name || 'AI 助手'
+      else if (src.user_id === currentUser?.id) senderName = currentDisplayName || '我'
+      else senderName = profilesByUid[src.user_id] || (src.role === 'expert' ? '大咖' : '小白')
+      const myRole = isExpert(currentRoom) ? 'expert' : 'user'
+      const full = (src.content || '').trim()
+      const newContent = `↪ 同步自 ${senderName}：${full || '[附件]'}`
+      const { error: e2 } = await sb.from('messages').insert({
+        room_id: currentRoom.id,
+        user_id: currentUser.id,
+        role: myRole,
+        channel: 'expert_user',
+        content: newContent,
+        attachments: src.attachments || [],
+      })
+      if (e2) {
+        console.error('[sync to private]', e2)
+        showToast('同步失败：' + (e2.message || e2.code))
+        return
+      }
+      showToast('已同步到私聊')
+    } finally {
+      if (btn) btn.disabled = false
+    }
+  }
+
+  // 把刚 pass 的 AI 消息摘要 copy 到 expert_user 私聊频道
+  async function relayPassToPrivate(msgId) {
+    if (!currentRoom) return
+    const group = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
+    if (!group) return
+    const md = group.querySelector('.md-body')
+    const bubble = group.querySelector('.msg-bubble')
+    const raw = (md?.innerText || bubble?.innerText || '').trim()
+    const summary = '✓✓ pass · ' + raw
+    await sb.from('messages').insert({
+      room_id: currentRoom.id,
+      user_id: currentUser.id,
+      role: 'ai',
+      channel: 'expert_user',
+      content: summary,
+      type: 'text',
+    })
+  }
+
+  function looksLikeMarkdown(text) {
+    return /^#{1,3} /m.test(text) || /\|.+\|.+\|/.test(text) || /^[-*] /m.test(text)
+  }
+
+  function exportPdf(elemId, filename) {
+    const el = document.getElementById(elemId)
+    if (!el) return
+    const opt = {
+      margin:      [12, 14, 12, 14],
+      filename:    filename + '_' + new Date().toISOString().slice(0,10) + '.pdf',
+      image:       { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }
+    html2pdf().set(opt).from(el).save()
+  }
+
+  function scrollToBottom() {
+    const list = document.getElementById('messagesList')
+    list.scrollTop = list.scrollHeight
+  }
+
+  // Track when we last saw an AI message, to infer bridge online status
+  let lastAiMessageAt = 0
+  let typingTimer = null
+
+  async function sendMessage() {
+    if (!currentRoom) return
+    const input = document.getElementById('msgInput')
+    const content = input.value.trim()
+    // 必须有内容或附件之一
+    if (!content && pendingAttachments.length === 0) return
+
+    // 等所有附件上传完
+    if (pendingAttachments.some(a => a.uploading)) {
+      showToast('附件还在上传中，请稍候')
+      return
+    }
+
+    input.value = ''
+    autoResize(input)
+    lastRatePrepend = ''
+    // 清空语音识别的累积缓存，防止录音中发送后旧文本被 onresult 写回
+    voiceTextBefore = ''
+    // 把当前为止的所有 result 都标记为「已发」，后续 onresult 跳过它们（防 interim→final 延迟写回）
+    voiceSkipBeforeIdx = voiceLastResultsLen
+
+    const sendBtn = document.getElementById('sendBtn')
+    sendBtn.disabled = true
+
+    const role = isExpert(currentRoom) ? 'expert' : 'user'
+    // 微信样式引用：如果有 pendingQuote，把 trailer 静默附在消息末尾，
+    // 渲染时会被 appendMessage 抽出渲染为气泡下方灰卡片
+    let bodyContent = content
+    if (pendingQuote && bodyContent) {
+      bodyContent = bodyContent + '\n\n' + buildQuoteBlock(pendingQuote.b64, pendingQuote.sender)
+    }
+    // 大咖带引用 = 私下纠正语义，强制发到 expert_user 频道，AI 不公开回复
+    // （main 频道里 AI 错了不当众纠正，避免小白看到错误公开化）
+    const hadQuote = !!pendingQuote
+    const isExpertQuoteCorrection = hadQuote && role === 'expert'
+    const targetChannel = isExpertQuoteCorrection ? 'expert_user' : currentChannel
+    const finalContent = bodyContent || `[发送了 ${pendingAttachments.length} 个文件]`
+    clearPendingQuote()
+    const attachments = pendingAttachments.map(a => ({
+      name: a.name, url: a.url, size: a.size, mime_type: a.mime_type, storage_path: a.storage_path
+    }))
+
+    const { data: msgData, error } = await sb.from('messages').insert({
+      room_id: currentRoom.id,
+      user_id: currentUser.id,
+      role,
+      channel: targetChannel,
+      content: finalContent,
+      attachments
+    }).select().single()
+
+    if (error) {
+      console.error('insert message failed:', error)
+      showToast('发送失败：' + (error.message || error.details || JSON.stringify(error)).slice(0, 100))
+      sendBtn.disabled = false
+      return
+    }
+
+    pendingAttachments = []
+    renderAttachPreview()
+
+    sendBtn.disabled = false
+    input.focus()
+
+    // 大咖私聊纠正：toast 提示已发到私聊，避免在 main 找不到困惑
+    if (isExpertQuoteCorrection && targetChannel !== currentChannel) {
+      showToast('已发到「大咖↔小白」私聊纠正')
+    }
+
+    appendMessage(msgData)
+    scrollToBottom()
+
+    // AI 在 main / expert_ai 频道响应；expert_user 频道（大咖 ↔ 小白）AI 不参与
+    if (currentChannel !== 'expert_user') {
+      showTyping()
+      clearTimeout(typingTimer)
+      // typing 兜底 timeout 拉到 10 分钟（qwen 慢响应 + 命理深推可能 3-5 分钟）
+      typingTimer = setTimeout(() => {
+        hideTyping()
+        setBridgeStatus(false)
+      }, 600000)
+    }
+  }
+
+  function setBridgeStatus(online) {
+    const el = document.getElementById('bridgeStatus')
+    el.className = 'status-item ' + (online ? 'online' : 'offline')
+    const canRestart = currentRoomRole === 'expert'
+    el.title = canRestart
+      ? (online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启')
+      : (online ? 'AI 已连接' : 'AI 未连接 · 仅大咖可重启')
+    el.style.cursor = canRestart ? 'pointer' : 'default'
+  }
+
+  // ── bridge 心跳轮询 ──（每 6 秒拉 bridge_state.last_seen，> 30 秒未更新当离线）
+  let _bridgeHeartbeatTimer = null
+  let _bridgeStatusFailCount = 0  // 连续异常计数；> 3 强制 offline，避免无限保留旧绿状态
+  async function refreshBridgeStatus() {
+    try {
+      const { data, error } = await sb
+        .from('bridge_state').select('last_seen').eq('id', 'singleton').maybeSingle()
+      _bridgeStatusFailCount = 0
+      if (error || !data || !data.last_seen) { setBridgeStatus(false); return }
+      const lastSeenMs = new Date(data.last_seen).getTime()
+      const ageSec = (Date.now() - lastSeenMs) / 1000
+      setBridgeStatus(ageSec < 30)
+    } catch (e) {
+      _bridgeStatusFailCount++
+      console.warn('[bridge status]', e)
+      // 连续 3 次失败（约 18 秒）后转 offline，防止 bridge 中风但 UI 永远满格
+      if (_bridgeStatusFailCount >= 3) setBridgeStatus(false)
+    }
+  }
+  function startBridgeHeartbeatPolling() {
+    if (_bridgeHeartbeatTimer) return
+    refreshBridgeStatus()
+    _bridgeHeartbeatTimer = setInterval(refreshBridgeStatus, 6000)
+  }
+
+  // 点击图标 → 请求 bridge 重启（落入 bridge_state.restart_requested_at，bridge 下一轮自我退出，launchd 拉起）
+  async function requestBridgeRestart() {
+    if (currentRoomRole !== 'expert') { showToast('只有大咖能重启 AI'); return }
+    const ok = confirm('AI 桥接重启一次？（适用于 AI 不响应）')
+    if (!ok) return
+    const { error } = await sb.rpc('request_bridge_restart')
+    if (error) { showToast('请求失败：' + (error.message || error.code)); return }
+    showToast('已请求重启，5~10 秒后生效')
+    // 立刻刷一下状态（lasts_seen 还没更新，会显示离线，等 bridge 拉起再变绿）
+    refreshBridgeStatus()
+  }
+
+  // Claude Code 风 typing 词池(中文,3-6 字,~500 个)。正经命理 + 玄学搞笑 + 茶馆江湖 + 思辨修行混搭。
+  const TYPING_VERBS = [
+    // —— 正经命理 / 推演 ——
+    '思考中','推演中','排盘中','翻书中','琢磨中','掐指中','落子中','复盘中','推算中','校核中',
+    '拆解中','揣摩中','推敲中','描盘中','翻典中','起卦中','校验中','算筹中','盘算中','点墨中',
+    '听风中','观象中','推论中','推理中','推导中','推断中','思辨中','思量中','忖度中','揣度中',
+    '忖思中','思忖中','深思中','潜思中','沉思中','凝思中','静思中','暗思中','默思中','沉吟中',
+    // —— 卦象 / 爻位 ——
+    '问卦中','解卦中','断卦中','推卦中','转卦中','变卦中','看卦中','读卦中','布卦中','卜卦中',
+    '推爻中','布爻中','定爻中','查爻中','解爻中','读爻中','观爻中','断爻中','看支中','读支中',
+    '看相中','摸骨中','测命中','算命中','推命中','察气中','观气中','望气中','闻气中','纳气中',
+    // —— 翻阅 / 查典 / 引证 ——
+    '翻卷中','翻篇中','翻页中','查典中','查册中','查阅中','查证中','查考中','引经中','据典中',
+    '研读中','品读中','细读中','精读中','研习中','研究中','研磨中','钻研中','溯源中','溯典中',
+    // —— 排盘 / 起盘 ——
+    '起盘中','布盘中','立盘中','定盘中','调盘中','推盘中','看盘中','读盘中','解盘中','破盘中',
+    // —— 棋艺 / 谋势 ——
+    '布局中','谋势中','布阵中','行棋中','运子中','立子中','定势中','看势中','推势中','察势中',
+    '造势中','蓄势中','谋篇中','谋章中','谋断中','决策中','决断中','定计中','定策中','定夺中',
+    '衡量中','权衡中','择路中','择策中','拣选中','甄选中','筛选中','抉择中','取舍中','取证中',
+    // —— 茶 / 香 / 品味 ——
+    '温茶中','煮茶中','烹茶中','点茶中','斟茶中','品茶中','嚼茶中','咽茶中','回甘中','闻香中',
+    '试味中','寻香中','嗅花中','嗅气中','试火中','洗杯中','焙茶中','烘豆中','磨豆中','滤渣中',
+    '煮酒中','温酒中','斟酒中','品酒中','嚼酒中','咂酒中','闻酒中','试酒中','烫酒中','调酒中',
+    // —— 书法 / 写作 / 润色 ——
+    '落笔中','磨墨中','铺纸中','运笔中','提笔中','收笔中','定稿中','删改中','推稿中','润色中',
+    '雕饰中','修饰中','调整中','细化中','调和中','调匀中','构思中','构图中','立意中','起兴中',
+    '起意中','起念中','起势中','布意中','起手中','收势中','落势中','收尾中','开篇中','谋篇中',
+    // —— 玄学动作 ——
+    '通灵中','召唤中','烧香中','摇签中','转碟中','招魂中','念咒中','画符中','焚信中','烫太极中',
+    '借阴气中','找龙脉中','撒符纸中','翻黄历中','看耳垂中','数脚趾中','闻八字中','嗅命格中','舔铜钱中','摇魂铃中',
+    '拜土地公中','问土地婆中','求关公中','拜天蓬中','找仙姑中','喊大仙中','测脑波中','量耳长中','看面相中','摸脉中',
+    '数胎毛中','听心跳中','嗅胎记中','问祖宗中','翻族谱中','请神中','送神中','开光中','点睛中','驱鬼中',
+    // —— 搞笑不靠谱 ——
+    '占星中','看星象中','抛硬币中','摇骰子中','抽乱码中','翻塔罗中','问GPT中','找借口中','编故事中','装大师中',
+    '套话中','凑字数中','抠脑袋中','翻八卦中','翻易经中','摇铜钱中','数蚂蚁中','闻茶香中','听蛙叫中','测风水中',
+    '解梦中','化煞中','借东风中','借西风中','翻日记中','问宿命中','抓鸡占卜中','数米粒中','翻日历中','问灶王爷中',
+    '喊财神中','拨算盘中','编一段中','蒙一卦中','装神弄鬼中','念念有词中','摸下巴中','翻祖宗信中','看脚印中','找命书中',
+    '念真经中','打瞌睡中','装高深中','装作懂中','吹牛中','凑热闹中','蒙混过关中','糊弄一下中','哄一哄中','给个面子中',
+    // —— 江湖 / 化解 / 招式 ——
+    '化解中','对招中','试招中','出招中','过招中','收招中','运气中','运劲中','调息中','运转中',
+    '合气中','聚气中','凝气中','蓄气中','发劲中','收劲中','化劲中','卸力中','拆招中','破招中',
+    // —— 修行 / 静坐 / 入定 ——
+    '闭关中','入定中','参禅中','悟道中','修心中','养神中','行功中','内修中','外炼中','调神中',
+    '凝神中','屏息中','静坐中','端坐中','默坐中','凝坐中','入座中','焚香中','抚琴中','抚卷中',
+    '抚案中','抚书中','抚扇中','抚须中','摇扇中','颔首中','蹙眉中','凝眉中','拧眉中','抚额中',
+    // —— 雕琢 / 打磨 / 锻造 ——
+    '磨刀中','淬火中','锻打中','雕琢中','打磨中','细琢中','精雕中','调色中','和泥中','捏陶中',
+    '炼丹中','合药中','配方中','调方中','改方中','搓药中','晒药中','晾药中','研末中','切片中',
+    // —— 审视 / 校核 / 求证 ——
+    '核对中','辨伪中','稽查中','检视中','复查中','核实中','求证中','印证中','证伪中','求真中',
+    '求实中','求道中','求理中','求源中','求本中','求骨中','求脉中','求气中','求势中','求形中',
+    // —— 摸索 / 探查 / 寻迹 ——
+    '寻迹中','寻形中','寻势中','寻幽中','寻骨中','寻根中','寻脉中','摸索中','摸排中','勘查中',
+    '勘验中','勘察中','审度中','审视中','审思中','深察中','深究中','深掘中','深挖中','钻探中',
+    '探寻中','探索中','探查中','探微中','探幽中','拣字中','抽芽中','接驳中','缝合中','编织中',
+    '串联中','拼合中','拼图中','缝补中','整理中','梳理中','梳齐中','理顺中','理清中','辨析中',
+    '辨明中','辨字中','辨义中','辨意中','分辨中','分判中','分剖中','分解中','拆分中','解构中',
+    '解析中','剥析中','破解中','破译中','参悟中','顿悟中','开悟中','发呆中','出神中','返照中',
+    '盘膝中','盘坐中','盘点中',
+    // —— 4-5 字片段 ——
+    '细细推敲','慢慢琢磨','反复推算','细细品味','慢慢回味','徐徐落子','慢慢起卦','字斟句酌','抽丝剥茧','一字一句',
+    '慢条斯理','小心翼翼','反复揣摩','细细品读','一笔一划','反复对照','慢慢盘问','默默盘算','静静推敲','沉吟片刻',
+    '沉思良久','默默思忖','闭目沉吟','抚须沉思','屏息凝神','凝神细想','静坐思考','围炉煮茶','烹茶论道','焚香静思',
+    '焚香煮茶','抚琴静思','闭关推演','推磨细算','抹去重写','推倒重来','顺藤摸瓜','顺水推舟','拨云见日','寻幽探微',
+    '触类旁通','举一反三','见微知著','字字推敲','字字斟酌','字字珠玑','一字千金','一念之间','一思一念','灵机一动',
+    // —— 5-6 字 ——
+    '默默推算中','默默盘点中','默念秘诀中','默念心经中','凝神推算中','凝神细数中','闭目细数中','屏息掐算中','屏息凝想中','屏息细听中',
+    '抓住一脉中','抓住一线中','抓住一点中','抓住要点中','抓住关键中','抓住命脉中','抓住眉目中','拨开云雾中','拨开迷雾中','撕开层层中',
+    '揭开真相中','揭开面纱中','揭开谜底中','揭穿谜团中','解开心结中','解开谜团中','解开难题中','化解疑团中','化解千结中','调和阴阳中',
+    '调和五行中','调和气血中','调和水土中','平衡阴阳中','平衡气数中','平衡五行中','平衡气场中','找出破绽中','找出关键中','找出端倪中',
+    '找出真相中','摸清底细中','摸清脉络中','摸清骨架中','摸清章法中','摸清门道中','摸到关键中','摸到命门中','摸到脉门中','接住一脉中',
+    '顺藤而下中','顺势而为中','顺势推进中','借势推演中','借势布局中','借力打力中','化险为夷中','化繁为简中','由表及里中','由浅入深中',
+    '由近及远中','由小见大中','由古知今中','古为今用中','推古及今中','鉴往知来中','抚今追昔中','翻古查今中','探究本源中','寻章摘句中',
+    '抠字推敲中','反复推敲中','反复琢磨中','反复品读中','反复品味中','反复回味中','反复揣摩中','反复斟酌中','反复商榷中','反复掂量中',
+    '反复打量中','反复审视中','反复核对中','反复验证中','反复试算中','反复演算中','反复推演中','反复整理中','反复梳理中','反复甄选中',
+    '反复筛选中','渐入佳境中','渐有头绪中','渐有眉目中','渐有起色中','略有所思中','略有思路中','略有所悟中','略有所感中','隐有所悟中',
+    '暗自盘算中','暗自揣测中','私下推算中','静夜思人中','月下品味中','月下推演中','灯下苦思中','烛下沉吟中','烛下推算中','红炉烹雪中',
+    '推敲数遍中','反复诵读中','反复修订中','来回打磨中','慢慢咀嚼中','默默打磨中','慢慢理顺中','渐次展开中','缓缓铺陈中','徐徐落墨中',
+    '缓缓收笔中','一气呵成中','一笔挥就中','字字千金中','千思万虑中','千锤百炼中','千回百转中','三思之中','三省其身中','三复斯言中',
+    '反反复复中','来来回回中','进进退退中','上下求索中','望天而思中','仰天长叹中','抚掌而笑中','拍案叫绝中','抚膝而坐中','凝眉深思中',
+    '抬头望月中','俯首沉思中','闭目养神中','凝神细听中','静听心跳中','静听风声中','听竹声中','听涛声中','听松声中','听溪声中',
+    '听经声中','听蝉声中','听水声中','看落叶中','看流水中','看青烟中','看暮色中','看晨曦中','看星河中','看月圆中',
+    '看月缺中','看春风中','看秋月中','看落雪中','望月思人中','凭栏远眺中','倚窗听雨中','闭目听涛中',
+  ]
+  let _typingVerbTimer = null
+  let _typingElapsedTimer = null
+  let _typingStartAt = 0
+  // 估算 token:中文约 1.5 char/token,英文约 4 char/token(粗略,真值得等 Hermes brain 回传)
+  function estimateTokens(text) {
+    if (!text) return 0
+    let zh = 0, other = 0
+    for (const ch of text) {
+      if (/[一-鿿]/.test(ch)) zh++; else other++
+    }
+    return Math.round(zh / 1.5 + other / 4)
+  }
+  // 估算本房间当前送给 LLM 的 input context tokens
+  function estimateContextTokens() {
+    let total = 200  // system prompt 粗估
+    document.querySelectorAll('#messagesList .msg-bubble').forEach(el => {
+      total += estimateTokens(el.textContent || '')
+    })
+    return total
+  }
+  function showTyping() {
+    const el = document.getElementById('typingIndicator')
+    if (!el) return
+    // 已在显示就只重置计时器，不重置 startAt（保留累计秒数）
+    const alreadyOn = el.classList.contains('show')
+    if (!alreadyOn) {
+      _typingStartAt = Date.now()
+      el.classList.add('show')
+    }
+    const nameEl = document.getElementById('typingName')
+    if (nameEl) nameEl.textContent = currentRoom?.ai_name || 'AI'
+    const verbEl = document.getElementById('typingVerb')
+    const cycle = () => {
+      if (verbEl) verbEl.textContent = TYPING_VERBS[Math.floor(Math.random() * TYPING_VERBS.length)]
+    }
+    if (!alreadyOn) cycle()
+    clearInterval(_typingVerbTimer)
+    _typingVerbTimer = setInterval(cycle, 2500)
+    const elapsedEl = document.getElementById('typingElapsed')
+    const baseInput = estimateContextTokens()
+    const tick = () => {
+      const s = Math.floor((Date.now() - _typingStartAt) / 1000)
+      // 伪流式 output:Claude API 大致 60 tokens/s,加 ±15 抖动让数字真"动"
+      const out = Math.max(0, Math.floor(s * 60 + (Math.random() * 30 - 15)))
+      if (elapsedEl) {
+        elapsedEl.textContent = baseInput > 0
+          ? `(${s}s · ↑ ~${formatTokens(baseInput)} · ↓ ~${formatTokens(out)} tokens)`
+          : `(${s}s)`
+      }
+    }
+    tick()
+    clearInterval(_typingElapsedTimer)
+    _typingElapsedTimer = setInterval(tick, 1000)
+    scrollToBottom()
+  }
+  function hideTyping() {
+    document.getElementById('typingIndicator').classList.remove('show')
+    clearInterval(_typingVerbTimer); _typingVerbTimer = null
+    clearInterval(_typingElapsedTimer); _typingElapsedTimer = null
+  }
+
+  function openNewRoomModal() {
+    document.getElementById('newRoomModal').classList.add('show')
+    document.getElementById('newRoomName').focus()
+  }
+  function closeNewRoomModal(e) {
+    if (e && e.target !== document.getElementById('newRoomModal')) return
+    document.getElementById('newRoomModal').classList.remove('show')
+  }
+
+  async function createRoom() {
+    const name = document.getElementById('newRoomName').value.trim()
+    const industry = DEMO_INDUSTRY
+    if (!name) { document.getElementById('newRoomName').focus(); return }
+
+    const btn = document.getElementById('createRoomBtn')
+    btn.disabled = true; btn.textContent = '创建中...'
+
+    const { data: room, error } = await sb.from('rooms').insert({
+      name,
+      industry,
+      expert_id: currentUser.id,
+      status: 'active'
+    }).select().single()
+
+    btn.disabled = false; btn.textContent = '创建'
+
+    if (error) { showToast('创建失败：' + error.message); return }
+
+    document.getElementById('newRoomModal').classList.remove('show')
+    document.getElementById('newRoomName').value = ''
+
+    renderRoomItem(room)
+    openRoom(room)
+    showToast('Chat 创建成功')
+  }
+
+  async function handleLogout() {
+    await sb.auth.signOut()
+    window.location.href = '/tradego/login.html'
+  }
+
+  function handleKey(e) {
+    // 中文输入法组词时按回车是"确认候选词"，不应触发发送
+    if (e.isComposing || e.keyCode === 229) return
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px'
+  }
+
+  // ── 附件上传 ──
+  async function onPasteImage(e) {
+    const items = (e.clipboardData || window.clipboardData)?.items
+    if (!items) return
+    const images = []
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        const file = item.getAsFile()
+        if (file) images.push(file)
+      }
+    }
+    if (images.length === 0) return  // 普通文字粘贴，让默认行为发生
+    e.preventDefault()
+    for (const blob of images) {
+      const ext = (blob.type.split('/')[1] || 'png').replace('+xml', '')
+      const named = new File([blob], `截图_${Date.now()}.${ext}`, { type: blob.type })
+      await uploadOneFile(named)
+    }
+  }
+
+  async function onFilePick(e) {
+    const files = Array.from(e.target.files || [])
+    e.target.value = ''  // 允许重复选同一个文件
+    for (const file of files) {
+      await uploadOneFile(file)
+    }
+  }
+
+  async function uploadOneFile(file) {
+    if (file.size > 20 * 1024 * 1024) {
+      showToast(`${file.name} 超过 20MB，跳过`); return
+    }
+    const stub = {
+      name: file.name, size: file.size, mime_type: file.type || 'application/octet-stream',
+      url: '', storage_path: '', uploading: true,
+      // 本地预览（图片用 dataURL，纯前端，不依赖网络）
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : ''
+    }
+    pendingAttachments.push(stub)
+    renderAttachPreview()
+    try {
+        // 清洗文件名：保留扩展名，非 ASCII / 特殊字符替换为下划线
+        // （Supabase Storage 对路径里的非 ASCII 字符不友好，会 400）
+        const ext = (file.name.match(/\.[^.]+$/) || [''])[0].toLowerCase()
+        const safeBase = file.name
+          .replace(/\.[^.]+$/, '')               // 去扩展名
+          .replace(/[^\w\-]+/g, '_')              // 非字母数字下划线连字符 → _
+          .replace(/_+/g, '_')                    // 连续 _ 合并
+          .replace(/^_+|_+$/g, '')                // 首尾 _ 去掉
+          .slice(0, 40) || 'file'                 // 限长
+        const safeName = `${safeBase}${ext}`
+        const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safeName}`
+
+        const { error } = await sb.storage.from('chat-uploads').upload(path, file, {
+          cacheControl: '3600', upsert: false, contentType: file.type || 'application/octet-stream'
+        })
+        if (error) throw error
+        // 私有 bucket：用 1 年过期的 signed URL 写进消息（防止公开 URL 泄露）
+        const { data: signed, error: signErr } = await sb.storage
+          .from('chat-uploads').createSignedUrl(path, 365 * 24 * 3600)
+        if (signErr) throw signErr
+        stub.url = signed.signedUrl
+        stub.storage_path = path
+        stub.uploading = false
+    } catch (err) {
+      console.error('upload failed:', err)
+      showToast(`上传失败：${file.name} - ${err.message || err}`)
+      pendingAttachments = pendingAttachments.filter(a => a !== stub)
+    }
+    renderAttachPreview()
+  }
+
+  function renderAttachPreview() {
+    const wrap = document.getElementById('attachPreview')
+    wrap.innerHTML = pendingAttachments.map((a, i) => {
+      const thumb = a.preview
+        ? `<img src="${a.preview}" class="thumb" alt="">`
+        : `<i class="ti ti-file file"></i>`
+      return `
+        <div class="attach-chip ${a.uploading ? 'uploading' : ''}">
+          ${thumb}
+          <span class="name">${escHtml(a.name)}</span>
+          <span class="size">${formatSize(a.size)}</span>
+          <span class="x" onclick="removeAttachment(${i})"><i class="ti ti-x"></i></span>
+        </div>`
+    }).join('')
+  }
+
+  function removeAttachment(i) {
+    pendingAttachments.splice(i, 1)
+    renderAttachPreview()
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + 'B'
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + 'KB'
+    return (bytes / 1024 / 1024).toFixed(1) + 'MB'
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+  }
+
+  function formatTime(iso) {
+    const d = new Date(iso)
+    const h = d.getHours().toString().padStart(2, '0')
+    const m = d.getMinutes().toString().padStart(2, '0')
+    return `${h}:${m}`
+  }
+
+  // ── 语音输入 ──
+  let recognition = null
+  let isRecording = false
+  let voiceTextBefore = ''       // 开始录音前输入框已有的内容
+  let voiceLastResultsLen = 0    // 上次 onresult 看到的 results.length（发送时用作分水岭）
+  let voiceSkipBeforeIdx = 0     // 任何 < 这个 idx 的 result 都视为「已发过」，跳过
+
+  function getRecognition() {
+    if (recognition) return recognition
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) return null
+    recognition = new SR()
+    recognition.lang = 'zh-CN'
+    recognition.continuous = true
+    recognition.interimResults = true   // 边说边出文字
+
+    recognition.onresult = (event) => {
+      voiceLastResultsLen = event.results.length
+      let finalText = ''
+      let interimText = ''
+      const startIdx = Math.max(event.resultIndex, voiceSkipBeforeIdx)
+      for (let i = startIdx; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) finalText += transcript
+        else interimText += transcript
+      }
+      const input = document.getElementById('msgInput')
+      input.value = (voiceTextBefore + finalText + interimText).trim()
+      autoResize(input)
+      // 累积已确认的部分
+      if (finalText) voiceTextBefore = (voiceTextBefore + finalText).trim() + ' '
+    }
+
+    recognition.onerror = (e) => {
+      console.error('voice error:', e)
+      stopVoice()
+      if (e.error === 'not-allowed') showToast('麦克风权限被拒，请到 chrome://settings 允许 chat2go.cn 使用麦克风')
+      else if (e.error === 'no-speech') {} // 无语音不报错
+      else showToast('语音识别错误：' + e.error)
+    }
+
+    recognition.onend = () => {
+      // 用户停止说话后浏览器会自动 onend，再次 start 才能继续
+      if (isRecording) {
+        try { recognition.start() } catch(e) {}
+      }
+    }
+    return recognition
+  }
+
+  function toggleVoice() {
+    if (isRecording) stopVoice()
+    else startVoice()
+  }
+
+  function startVoice() {
+    const r = getRecognition()
+    if (!r) {
+      showToast('当前浏览器不支持语音识别（建议 Chrome / Edge / Safari）')
+      return
+    }
+    voiceTextBefore = document.getElementById('msgInput').value
+    if (voiceTextBefore && !voiceTextBefore.endsWith(' ')) voiceTextBefore += ' '
+    isRecording = true
+    document.getElementById('voiceBtn').classList.add('recording')
+    try { r.start() } catch(e) { console.warn(e) }
+    showToast('开始说话…')
+  }
+
+  function stopVoice() {
+    isRecording = false
+    document.getElementById('voiceBtn').classList.remove('recording')
+    if (recognition) {
+      try { recognition.stop() } catch(e) {}
+    }
+  }
+
+  function quoteMessage(b64, sender) {
+    // 微信样式：不再往 input.value 里塞，挂到上方小条，发送时静默附 trailer
+    setPendingQuote(b64, sender)
+    const input = document.getElementById('msgInput')
+    if (input) input.focus()
+  }
+
+  async function copyMessage(btn, b64) {
+    let text = ''
+    try {
+      text = decodeURIComponent(escape(atob(b64)))
+    } catch (e) { text = atob(b64) }
+    try {
+      await navigator.clipboard.writeText(text)
+      btn.classList.add('copied')
+      btn.innerHTML = '<i class="ti ti-check"></i>'
+      showToast('已复制')
+      setTimeout(() => {
+        btn.classList.remove('copied')
+        btn.innerHTML = '<i class="ti ti-copy"></i>'
+      }, 1500)
+    } catch (e) {
+      // 降级方案：fallback to textarea
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'; ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      try { document.execCommand('copy'); showToast('已复制') }
+      catch { showToast('复制失败') }
+      ta.remove()
+    }
+  }
+
+  function showToast(msg) {
+    const el = document.getElementById('toast')
+    el.textContent = msg
+    el.classList.add('show')
+    setTimeout(() => el.classList.remove('show'), 2500)
+  }
+
+  // 图片 lightbox：点对话框里的图 → 内嵌大图查看
+  function openImageLightbox(url) {
+    const box = document.getElementById('imgLightbox')
+    if (!box) return
+    box.querySelector('img').src = url
+    box.classList.add('open')
+  }
+  function closeImageLightbox(ev) {
+    if (ev && ev.target.tagName === 'IMG') return  // 点图片本身不关
+    document.getElementById('imgLightbox')?.classList.remove('open')
+  }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeImageLightbox()
+  })
+
+  init()
+</script>
+<div class="img-lightbox" id="imgLightbox" onclick="closeImageLightbox(event)">
+  <button class="img-lightbox-close" onclick="closeImageLightbox()" title="关闭 (Esc)">×</button>
+  <img alt="">
+</div>
+</body>
+</html>
