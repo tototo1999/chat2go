@@ -3468,6 +3468,17 @@
     '不对，这里得改改：',
     '这一段有误，正确理解是：',
   ]
+  // 双钩 pass 后自动发到群里的正面回应（最后那个 ✓ 的人发，触发 AI 自然继续话题）
+  const PASS_PRAISES = [
+    '✓✓ 这条说到我们心坎里了',
+    '✓✓ 大家都认可，继续往下走',
+    '✓✓ 没毛病，往下聊',
+    '✓✓ 说得透，下一步',
+    '✓✓ 都对，接着深入',
+    '✓✓ 这条过了，继续',
+    '✓✓ 通过！下一个话题',
+    '✓✓ 学到了，往下',
+  ]
   function pickPhrase(arr) { return arr[Math.floor(Math.random() * arr.length)] }
 
   // 记录上次 rate 自动 prepend 的字符串，便于下次 rate（切换 ✓/✗ 或取消）时先剥掉
@@ -3521,19 +3532,19 @@
     if (error) { showToast('评价失败：' + error.message); return }
     applyRatingsToMsg(msgId, data || {})
     refreshQuizState()
-    // 我刚把 up 数从 <2 推到 >=2 → 把摘要 copy 到私聊频道 + main 频道发一条 "pass" 让 bridge 触发 AI 推进
+    // 我刚把 up 数从 <2 推到 >=2 → 摘要 copy 私聊 + main 频道随机发一句正面回应让 AI 自然推进
     const newUp = Object.values(data || {}).filter(v => v === 'up').length
     if (newUp >= 2 && oldUp < 2) {
       relayPassToPrivate(msgId).catch(e => console.warn('[relay pass]', e))
-      // 当前用户在 main 频道实发一条 "pass" — bridge 必然响应，AI 看到 quiz-state passed+1 自动进入下一题
+      const phrase = pickPhrase(PASS_PRAISES)
       sb.from('messages').insert({
         room_id: currentRoom?.id,
         user_id: myUid,
         role: currentRole === 'expert' ? 'expert' : 'user',
         channel: 'main',
-        content: 'pass',
+        content: phrase,
         type: 'text',
-      }).then(({ error: e }) => { if (e) console.warn('[advance pass insert]', e) })
+      }).then(({ error: e }) => { if (e) console.warn('[pass praise insert]', e) })
     }
     // 处理输入框：先把上次自动 prepend 的内容剥掉，再按需 prepend 新的
     const input = document.getElementById('msgInput')
