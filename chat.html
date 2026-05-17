@@ -1042,9 +1042,19 @@
     }
     .typing-indicator.show { display: flex; }
     .typing-indicator > * { flex-shrink: 0; }
+    /* GO 圈 — 小号 send-btn 同款（chat2go 品牌红圈）*/
     .typing-star {
-      color: #d97706;        /* amber-600，像 Claude Code 那个橙 * */
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: #CB3D4A;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
       animation: typing-blink 1.4s ease-in-out infinite;
     }
     .typing-verb {
@@ -1767,7 +1777,7 @@
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
-        <span class="typing-star">*</span>
+        <span class="typing-star">GO</span>
         <span class="typing-name" id="typingName">AI</span>
         <span class="typing-sep">·</span>
         <span class="typing-verb" id="typingVerb">思考中</span>
@@ -3054,12 +3064,10 @@
 
     // 单次计算 context 占用（三档之和），同时驱动模型名 / 已用-上限 / 百分比
     try {
-      // input_tokens 来源：hermes brain 暂时不回传，bridge 写 0；
-      // output_tokens 是 bridge 按消息内容长度估算。两者都算进 used 让进度环有数据
-      const used = Number(lu.data?.input_tokens ?? 0)
-                 + Number(lu.data?.cache_creation_input_tokens ?? 0)
-                 + Number(lu.data?.cache_read_input_tokens ?? 0)
-                 + Number(lu.data?.output_tokens ?? 0)
+      // 顶部进度环 = 本房间累计 token (跟 typing 气泡的 ↑↓ 累计估算语义对齐)
+      // 不再用 model_usage 最近一条 (那只是单次 input 占用),用 room_costs 视图累计
+      const used = Number(rc.data?.total_input_tokens ?? 0)
+                 + Number(rc.data?.total_output_tokens ?? 0)
       const model = lu.data?.model ?? ''
       const window = ROOM_TOKEN_BUDGET
       const pct = window > 0 ? (used / window) * 100 : 0
