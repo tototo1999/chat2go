@@ -1745,7 +1745,7 @@
               <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-opacity="0.25" stroke-width="4"/>
               <circle id="chatTokensRingFill" cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-dasharray="87.96" stroke-dashoffset="87.96" transform="rotate(-90 16 16)"/>
             </svg>
-            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10K Token</span>
+            <span id="chatRoomTokens" title="本轮 context 已用 / 房间预算">0 / 10.00M Token</span>
             <span class="ctx-pct" id="chatCtxWrap" style="display:none;">
               <span id="chatRoomCtx"></span>
               <i class="ctx-battery"><i id="ctxBatteryFill"></i></i>
@@ -2665,7 +2665,7 @@
   }
 
   // 房间 token 预算（不再是物理 context window，而是产品维度的"一房一桌"用量上限）
-  const ROOM_TOKEN_BUDGET = 10000
+  const ROOM_TOKEN_BUDGET = 10_000_000  // 10M tokens per room
 
   // ── 做题模式 ──
   // 题序由 active todo 方案的 items.flat() 顺序决定（data-quiz-idx 在 renderTodos 里自动派生）。
