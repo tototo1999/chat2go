@@ -3940,12 +3940,29 @@
     refreshBridgeStatus()
   }
 
-  // Claude Code 风 typing 词池（中文，命理 / 推演 / 思辨语义）
+  // Claude Code 风 typing 词池(中文)。命理玄学打底 + 搞笑不靠谱方向,100 组。
+  // 大咖看到"舔铜钱中""喊财神中"应该会笑,实战中给客户也松弛一下。
   const TYPING_VERBS = [
+    // 正经命理(22)
     '思考中', '推演中', '排盘中', '翻书中', '琢磨中', '掐指中',
     '落子中', '复盘中', '推算中', '校核中', '拆解中', '揣摩中',
     '推敲中', '描盘中', '翻典中', '起卦中', '校验中', '算筹中',
     '盘算中', '点墨中', '听风中', '观象中',
+    // 玄学动作(36)
+    '通灵中', '召唤中', '烧香中', '摇签中', '转碟中', '招魂中',
+    '借阴气中', '找龙脉中', '撒符纸中', '翻黄历中', '摸骨中', '看耳垂中',
+    '数脚趾中', '闻八字中', '嗅命格中', '舔铜钱中', '拜土地公中', '问土地婆中',
+    '求关公中', '拜天蓬中', '念咒中', '画符中', '焚信中', '烫太极中',
+    '测脑波中', '量耳长中', '看面相中', '摸脉中', '数胎毛中', '听心跳中',
+    '嗅胎记中', '问祖宗中', '翻族谱中', '找仙姑中', '喊大仙中', '摇魂铃中',
+    // 搞笑不靠谱(42)
+    '占星中', '看星象中', '抛硬币中', '摇骰子中', '抽乱码中', '翻塔罗中',
+    '问GPT中', '找借口中', '编故事中', '装大师中', '套话中', '凑字数中',
+    '抠脑袋中', '翻八卦中', '翻易经中', '摇铜钱中', '数蚂蚁中', '闻茶香中',
+    '听蛙叫中', '测风水中', '望气中', '解梦中', '化煞中', '借东风中',
+    '借西风中', '翻日记中', '问宿命中', '抓鸡占卜中', '数米粒中', '翻日历中',
+    '问灶王爷中', '喊财神中', '拨算盘中', '编一段中', '蒙一卦中', '装神弄鬼中',
+    '念念有词中', '摸下巴中', '翻祖宗信中', '看脚印中', '找命书中', '念真经中',
   ]
   let _typingVerbTimer = null
   let _typingElapsedTimer = null
@@ -3986,12 +4003,14 @@
     clearInterval(_typingVerbTimer)
     _typingVerbTimer = setInterval(cycle, 2500)
     const elapsedEl = document.getElementById('typingElapsed')
-    const estTokens = estimateContextTokens()
+    const baseInput = estimateContextTokens()
     const tick = () => {
       const s = Math.floor((Date.now() - _typingStartAt) / 1000)
+      // 伪流式 output:Claude API 大致 60 tokens/s,加 ±15 抖动让数字真"动"
+      const out = Math.max(0, Math.floor(s * 60 + (Math.random() * 30 - 15)))
       if (elapsedEl) {
-        elapsedEl.textContent = estTokens > 0
-          ? `(${s}s · ↑ ~${formatTokens(estTokens)} tokens)`
+        elapsedEl.textContent = baseInput > 0
+          ? `(${s}s · ↑ ~${formatTokens(baseInput)} · ↓ ~${formatTokens(out)} tokens)`
           : `(${s}s)`
       }
     }
