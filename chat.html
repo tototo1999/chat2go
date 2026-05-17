@@ -1033,11 +1033,17 @@
       padding: 4px 1.5rem 10px;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
-      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      font-size: 14px;
+      /* 等宽字体打头,中文 fallback 到苹方/雅黑,避免 Monaco 拼凑出来的丑中文 */
+      font-family: 'SF Mono', Menlo, Monaco, 'PingFang SC', 'Microsoft YaHei', system-ui, monospace;
       color: var(--text3);
+      white-space: nowrap;
+      line-height: 1.5;
+      flex-wrap: wrap;   /* 真极窄屏整 span 换行,但单 span 不断字 */
+      row-gap: 2px;
     }
     .typing-indicator.show { display: flex; }
+    .typing-indicator > * { flex-shrink: 0; }
     .typing-star {
       color: #d97706;        /* amber-600，像 Claude Code 那个橙 * */
       font-weight: 600;
