@@ -1042,19 +1042,15 @@
     }
     .typing-indicator.show { display: flex; }
     .typing-indicator > * { flex-shrink: 0; }
-    /* GO 圈 — 小号 send-btn 同款（chat2go 品牌红圈）*/
+    /* typing 头部：空心红色描边小圈，跟品牌色一致 */
     .typing-star {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 14px;
-      height: 14px;
+      display: inline-block;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      background: #CB3D4A;
-      color: #fff;
-      font-size: 7px;
-      font-weight: 800;
-      letter-spacing: 0.2px;
+      background: transparent;
+      border: 2px solid #CB3D4A;
+      box-sizing: border-box;
       animation: typing-blink 1.4s ease-in-out infinite;
     }
     .typing-verb {
@@ -1777,7 +1773,7 @@
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
-        <span class="typing-star">GO</span>
+        <span class="typing-star"></span>
         <span class="typing-name" id="typingName">AI</span>
         <span class="typing-sep">·</span>
         <span class="typing-verb" id="typingVerb">思考中</span>
