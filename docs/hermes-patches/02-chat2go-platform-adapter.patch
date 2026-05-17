@@ -1,6 +1,6 @@
---- /dev/null	2026-05-16 12:20:45
-+++ gateway/platforms/chat2go.py	2026-05-16 10:26:40
-@@ -0,0 +1,707 @@
+--- /dev/null	2026-05-16 21:51:40
++++ gateway/platforms/chat2go.py	2026-05-16 20:26:41
+@@ -0,0 +1,926 @@
 +"""
 +Chat2GO platform adapter for Hermes.
 +
@@ -43,6 +43,29 @@
 +)
 +
 +logger = logging.getLogger(__name__)
++
++
++def _read_hermes_default_model() -> Optional[str]:
++    """从 ~/.hermes/config.yaml 读 model.provider/model.default 拼成 'provider/model'。
++    任何异常都返回 None,让上层回退到硬编码兜底。"""
++    try:
++        import yaml
++        path = os.path.expanduser("~/.hermes/config.yaml")
++        with open(path, "r", encoding="utf-8") as f:
++            cfg = yaml.safe_load(f) or {}
++        m = (cfg.get("model") or {})
++        prov = m.get("provider")
++        default = m.get("default")
++        if not default:
++            return None
++        if prov == "openrouter":
++            return default
++        if prov:
++            return f"{prov}/{default}"
++        return default
++    except Exception:
++        return None
++
 +
 +# 默认 chat2go.cn Supabase 端点（覆盖通过 CHAT2GO_SUPABASE_URL / _ANON_KEY 环境变量）
 +DEFAULT_SUPABASE_URL = "https://qjnagbzqhoansixqharb.supabase.co"
@@ -96,7 +119,8 @@
 +        self._last_trigger: Dict[str, Dict[str, str]] = {}
 +        # AI 写回 chat2go 用的默认模型标识（前端 shortModelName 会美化）
 +        # 真正的 token 数 hermes brain 没回传给 adapter，这里写 stub 0 让 UI 能渲染。
-+        self._stub_model = os.getenv("CHAT2GO_STUB_MODEL", "anthropic/claude-sonnet-4-6")
++        # 优先级：CHAT2GO_STUB_MODEL env > ~/.hermes/config.yaml 的 model.provider/default > 兜底
++        self._stub_model = os.getenv("CHAT2GO_STUB_MODEL") or _read_hermes_default_model() or "anthropic/claude-sonnet-4-6"
 +
 +        logger.info(
 +            "Chat2GO initialized: url=%s token=%s***",
@@ -289,6 +313,10 @@
 +            content = msg.get("content") or ""
 +            role = msg.get("role", "user")  # 'user' | 'expert'
 +            user_label = "小白" if role == "user" else "大咖"
++            # 双钩 pass 系统 marker:替换为人话 prompt,让 AI 自然推进下一题
++            # (DB trigger 写的 marker,前端隐藏不渲染;bridge 这边收到会触发 AI 响应)
++            if content.strip() == "__SYS_ADVANCE_QUIZ__":
++                content = "[系统通知] 大咖和小白都已 ✓ 双钩，刚刚那道题 pass。请按 quiz-state 进入下一题。"
 +            attachments = msg.get("attachments") or []
 +
 +            # 处理图片附件：下载到 hermes 本地 cache，让 vision 工具能读
@@ -382,6 +410,18 @@
 +                "content": content,
 +            }
 +
++            # ★ 2026-05-16 下午:大咖文字确认 → 把最近 AI 回复 + 问句存进 memories
++            # 触发关键词(精确匹配,避免误触):
++            #   "记一下" / "记下" / "记忆" / "记" (单字) / "记一下！" 等
++            #   以 "记:" "记忆:" 开头的(后面带补充说明)
++            # 跟 ratings/双钩 pass relay 路径完全解耦
++            if role == "expert" and self._is_memory_save_cmd(content):
++                t = asyncio.create_task(self._save_context_as_memory(room_id, msg))
++                if not hasattr(self, "_bg_tasks"):
++                    self._bg_tasks: set = set()
++                self._bg_tasks.add(t)
++                t.add_done_callback(self._bg_tasks.discard)
++
 +            # ★ 2026-05-16:prefetch memories,prepend 到消息内容,让 Hermes 看到大咖记忆
 +            try:
 +                mem_ctx = await self._prefetch_memory(
@@ -393,6 +433,15 @@
 +                    content = f"<memory-context>\n{mem_ctx}\n</memory-context>\n\n{content}"
 +            except Exception as me:
 +                logger.debug("Chat2GO prefetch_memory 跳过: %s", me)
++
++            # ★ 2026-05-16 晚:quiz-state 注入已禁用 — AI 拿到题库会赶着推进做题,体验不好。
++            # _build_quiz_state 函数定义保留(无副作用),要重新启用直接取消下面注释即可。
++            # try:
++            #     quiz_ctx = await self._build_quiz_state(room_id)
++            #     if quiz_ctx:
++            #         content = f"{quiz_ctx}\n\n{content}"
++            # except Exception as qe:
++            #     logger.debug("Chat2GO build_quiz_state 跳过: %s", qe)
 +
 +            event = MessageEvent(
 +                text=content,
@@ -522,6 +571,176 @@
 +        return {"name": chat_id, "type": "group", "chat_id": chat_id}
 +
 +    # ── 5. Memory 学习闭环 ──(★ 2026-05-16 加,port 自 chat2go-agent/memory.py)
++
++    # 大咖文字确认 → 写 memory(2026-05-16 约定:大咖发 "ok" = 写记忆)
++    # 触发规则:
++    #   - 整条消息(忽略大小写 + 尾部标点)等于 "ok" / "okay" → 触发,无备注
++    #   - 以 "ok:" / "ok," / "ok " 开头 → 触发,冒号/逗号/空格后内容当作大咖备注
++    _MEM_SAVE_TRAILING_PUNCT = "!.?,;。!?,;:: "
++
++    def _is_memory_save_cmd(self, text: str) -> bool:
++        t = (text or "").strip()
++        if not t:
++            return False
++        # 整条消息 = ok/okay(去尾标点 + 小写)
++        bare = t.rstrip(self._MEM_SAVE_TRAILING_PUNCT).lower()
++        if bare in ("ok", "okay"):
++            return True
++        # 以 ok / okay + 分隔符开头(后面可带备注)
++        low = t.lower()
++        for p in ("ok:", "ok:", "ok,", "ok,", "ok ", "okay:", "okay:", "okay,", "okay,", "okay "):
++            if low.startswith(p):
++                return True
++        return False
++
++    async def _save_context_as_memory(self, room_id: str, trigger_msg: dict):
++        """大咖发文字确认时,把最近的 AI 回复 + 触发它的问句存进 memories。"""
++        try:
++            trigger_ts = trigger_msg.get("created_at") or datetime.now(timezone.utc).isoformat()
++            # 1. 找触发命令之前最近一条 AI 消息(role='ai', channel='main')
++            r = await (
++                self._sb.table("messages")
++                .select("id,content,created_at")
++                .eq("room_id", room_id).eq("role", "ai").eq("channel", "main")
++                .lt("created_at", trigger_ts)
++                .order("created_at", desc=True).limit(1).execute()
++            )
++            if not r.data:
++                logger.info("Chat2GO 记忆命令:找不到 AI 消息,跳过")
++                return
++            ai_msg = r.data[0]
++            # 2. 找那条 AI 之前最近的 user/expert 消息(就是触发那条 AI 的"问")
++            r2 = await (
++                self._sb.table("messages")
++                .select("content,role")
++                .eq("room_id", room_id).in_("role", ["user", "expert"]).eq("channel", "main")
++                .lt("created_at", ai_msg["created_at"])
++                .order("created_at", desc=True).limit(1).execute()
++            )
++            q = (r2.data[0]["content"] if r2.data else "").strip() or "(无)"
++            content = f"问:{q}\n答:{ai_msg['content']}"
++            # 3. 防重:同一条 AI msg 只存一次
++            ex = await (
++                self._sb.table("memories").select("id")
++                .eq("source_message_id", ai_msg["id"]).limit(1).execute()
++            )
++            if ex.data:
++                logger.info("Chat2GO 记忆命令:source_message_id=%s 已存过,跳过", ai_msg["id"][:8])
++                return
++            # 4. 提取大咖触发命令里的补充说明(如 "ok: 这条特别好" / "ok 注意 X")
++            extra = (trigger_msg.get("content") or "").strip()
++            low = extra.lower()
++            for p in ("ok:", "ok:", "ok,", "ok,", "ok ", "okay:", "okay:", "okay,", "okay,", "okay "):
++                if low.startswith(p):
++                    extra = extra[len(p):].strip()
++                    break
++            else:
++                # 不带前缀(整条消息就是 ok / okay 之类)→ 没有备注
++                if low.rstrip(self._MEM_SAVE_TRAILING_PUNCT) in ("ok", "okay"):
++                    extra = ""
++            if extra:
++                content = content + f"\n大咖备注:{extra}"
++            # 5. 写入
++            await self._sb.table("memories").insert({
++                "scope": "expert",
++                "scope_id": self._expert_id,
++                "content": content,
++                "tags": ["大咖记一下", "问答对"],
++                "source_message_id": ai_msg["id"],
++            }).execute()
++            logger.info("Chat2GO 大咖文字确认 → 记下 AI msg %s", ai_msg["id"][:8])
++        except Exception as e:
++            logger.warning("Chat2GO _save_context_as_memory 失败(忽略): %s", e)
++
++    async def _build_quiz_state(self, room_id: str) -> Optional[str]:
++        """拼 <quiz-state> 块:让 AI 知道当前 active 题库 + pass 进度 + 开场仪式。
++
++        两种 mode:
++          - opening (本房 main 频道还没 AI 消息): 让 AI 先复述全部题目 + 求大咖说 go
++          - in-progress: 标 done/current/pending + 行为指引围绕当前题
++        """
++        try:
++            rr = await self._sb.table("rooms") \
++                .select("active_todo_template_id, focal_user_id") \
++                .eq("id", room_id).maybe_single().execute()
++            rdata = (rr.data or {}) if rr else {}
++            template_id = rdata.get("active_todo_template_id")
++            focal_user_id = rdata.get("focal_user_id")
++            if not template_id:
++                return None
++            tr = await self._sb.table("expert_todo_templates") \
++                .select("name, payload").eq("id", template_id).maybe_single().execute()
++            tdata = (tr.data or {}) if tr else {}
++            name = (tdata.get("name") or "todo 方案").strip()
++            payload = tdata.get("payload") or []
++            flat: list = []  # [(group_label, item_label), ...]
++            for g in payload:
++                for it in (g.get("items") or []):
++                    flat.append(((g.get("label") or "").strip(), (it.get("label") or "").strip()))
++            if not flat:
++                return None
++            mr = await self._sb.table("messages") \
++                .select("ratings") \
++                .eq("room_id", room_id).eq("role", "ai").eq("channel", "main") \
++                .order("created_at").execute()
++            ai_msgs = mr.data or []
++            has_ai = len(ai_msgs) > 0
++            passed = 0
++            for m in ai_msgs:
++                r = m.get("ratings") or {}
++                ups = sum(1 for v in r.values() if v == "up")
++                if ups >= 2:
++                    passed += 1
++            passed = min(passed, len(flat))
++
++            total = len(flat)
++            # 开场仪式只在小白已进房(focal_user_id 锁定)且还没 AI 消息时触发,
++            # 大咖一人在房不读题
++            if not has_ai and not focal_user_id:
++                return None
++            if not has_ai:
++                lines = [f'<quiz-state mode="opening">',
++                         f'方案:「{name}」全部 {total} 题:']
++                for idx, (gl, il) in enumerate(flat, 1):
++                    lines.append(f'  {idx}. {gl}/{il}')
++                lines += [
++                    '',
++                    '【开场仪式 - 你必须做】',
++                    '本次会话还没开始。请先:',
++                    f'1. 用一段话复述以上 {total} 道题(让大咖和小白都看一遍)',
++                    '2. 简要说明每道题的目标(≤1 句话/题)',
++                    '3. 末尾问:「大咖和小白确认题库 OK 吗?大咖说 go 就开始第一题。」',
++                    '4. **等待大咖明确说「go」/「开始」/「OK」** 才进入第一题',
++                    '5. 在大咖确认前,不要主动开始第一题',
++                    '</quiz-state>',
++                ]
++                return '\n'.join(lines)
++            lines = [
++                f'<quiz-state mode="in-progress">',
++                f'方案:「{name}」(共 {total} 题,已 pass {passed} 题)',
++                '',
++                'pass 规则:每道题 AI 回复后,大咖和小白都点 ✓(双钩 up≥2)才算 pass,自动进入下一题。',
++                '',
++                '进度:',
++            ]
++            for idx, (gl, il) in enumerate(flat):
++                if idx < passed:
++                    mark = '✓ done'
++                elif idx == passed:
++                    mark = '← 当前'
++                else:
++                    mark = 'pending'
++                lines.append(f'  [{idx+1}] {gl}/{il}   {mark}')
++            lines += [
++                '',
++                '行为指引:围绕当前题展开内容;不要主动跳到后面没开始的题;如果当前题讨论充分,提示大咖「这道题可以打 ✓ pass 进入下一题」。',
++                '</quiz-state>',
++            ]
++            return '\n'.join(lines)
++        except Exception as e:
++            logger.debug("Chat2GO _build_quiz_state 失败(忽略): %s", e)
++            return None
++
 +    async def _prefetch_memory(self, room_id: str, expert_id: str, user_id: Optional[str]) -> str:
 +        """拉 room/expert/user 三 scope 的 memory 拼成 markdown,空串则无 memory。"""
 +        try:

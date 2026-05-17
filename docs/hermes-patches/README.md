@@ -9,7 +9,7 @@
 | 文件 | 改的位置 | 干啥 |
 |---|---|---|
 | `01-skip-busy-ack-chat2go.patch` | `gateway/run.py` | chat2go 平台不发「⚡ Interrupting current task」占位消息 |
-| `02-chat2go-platform-adapter.patch` | `gateway/platforms/chat2go.py`(整个新文件) | chat2go 平台适配器实现,含 _prefetch_memory / _sync_memory / bridge_pong 心跳 / model_usage token 写入 |
+| `02-chat2go-platform-adapter.patch` | `gateway/platforms/chat2go.py`(整个新文件) | chat2go 平台适配器实现,含 _prefetch_memory / _sync_memory / bridge_pong 心跳 / model_usage token 写入 / `_read_hermes_default_model()` 让 stub_model 自动跟随 `~/.hermes/config.yaml`(切模型不用动 env) |
 
 ## 应用方式
 
