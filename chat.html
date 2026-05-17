@@ -3045,7 +3045,7 @@
         .eq('room_id', roomId)
         .maybeSingle(),
       sb.from('model_usage')
-        .select('input_tokens,cache_creation_input_tokens,cache_read_input_tokens,model')
+        .select('input_tokens,cache_creation_input_tokens,cache_read_input_tokens,output_tokens,model')
         .eq('room_id', roomId)
         .order('created_at', { ascending: false })
         .limit(1)
