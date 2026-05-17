@@ -58,7 +58,7 @@
       -webkit-font-smoothing: antialiased;
       display: flex;
       flex-direction: column;
-      max-width: 800px;
+      max-width: 880px;   /* 原 800px,+10% 给 typing 行单行显示用 */
       margin: 0 auto;
       border-left: 0.5px solid var(--border);
       border-right: 0.5px solid var(--border);
@@ -1039,8 +1039,6 @@
       color: var(--text3);
       white-space: nowrap;
       line-height: 1.5;
-      flex-wrap: wrap;   /* 真极窄屏整 span 换行,但单 span 不断字 */
-      row-gap: 2px;
     }
     .typing-indicator.show { display: flex; }
     .typing-indicator > * { flex-shrink: 0; }
