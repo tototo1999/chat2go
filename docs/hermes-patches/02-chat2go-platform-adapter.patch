@@ -1,6 +1,6 @@
---- /dev/null	2026-05-16 21:51:40
-+++ gateway/platforms/chat2go.py	2026-05-16 20:26:41
-@@ -0,0 +1,926 @@
+--- /dev/null	2026-05-17 13:35:34
++++ gateway/platforms/chat2go.py	2026-05-17 13:35:02
+@@ -0,0 +1,963 @@
 +"""
 +Chat2GO platform adapter for Hermes.
 +
@@ -28,6 +28,7 @@
 +import logging
 +import os
 +import re
++import time
 +from datetime import datetime, timezone
 +from typing import Any, Dict, Optional
 +
@@ -107,6 +108,9 @@
 +        self._rooms: Dict[str, Dict[str, Any]] = {}  # room_id → row
 +        self._channel = None
 +        self._poll_task: Optional[asyncio.Task] = None
++        self._watchdog_task: Optional[asyncio.Task] = None
++        # _poll_loop 每次循环更新这个时间戳;watchdog 监控,>60s 没更新认为卡死
++        self._last_poll_tick: float = 0.0
 +        self._processing: set[str] = set()
 +        # 防回环：记录我们刚发出去的 message_id，下次 Realtime 收到自己消息时跳过
 +        self._self_sent_ids: set[str] = set()
@@ -180,7 +184,9 @@
 +
 +            # 订阅 Realtime + 启动轮询兜底
 +            await self._subscribe_realtime()
++            self._last_poll_tick = time.time()   # 初始化 watchdog 心跳
 +            self._poll_task = asyncio.create_task(self._poll_loop())
++            self._watchdog_task = asyncio.create_task(self._watchdog_loop())
 +
 +            self._mark_connected()
 +            return True
@@ -189,6 +195,13 @@
 +            return False
 +
 +    async def disconnect(self) -> None:
++        if self._watchdog_task:
++            self._watchdog_task.cancel()
++            try:
++                await self._watchdog_task
++            except asyncio.CancelledError:
++                pass
++            self._watchdog_task = None
 +        if self._poll_task:
 +            self._poll_task.cancel()
 +            try:
@@ -253,6 +266,7 @@
 +        try:
 +            while True:
 +                await asyncio.sleep(5)
++                self._last_poll_tick = time.time()   # watchdog 心跳
 +                try:
 +                    await self._load_rooms()
 +                    # ★ Phase 3:调 bridge_pong() RPC 写心跳(SECURITY DEFINER 绕 RLS),
@@ -298,6 +312,29 @@
 +                            last_seen[rid] = ts
 +                except Exception as e:
 +                    logger.debug("Chat2GO poll error: %s", e)
++        except asyncio.CancelledError:
++            pass
++
++    async def _watchdog_loop(self):
++        """监控 _poll_loop 是否还活着。
++        正常情况 _last_poll_tick 每 5s 更新一次,>60s 没更新认为卡死,
++        os._exit(1) 让 launchd 拉起新进程(自救)。
++        触发场景:Supabase Realtime 反复 1006 掉线时整个 event loop 某个 await 卡死。"""
++        STALL_THRESHOLD = 60.0  # 秒
++        CHECK_INTERVAL = 30.0   # 秒
++        try:
++            while True:
++                await asyncio.sleep(CHECK_INTERVAL)
++                if self._last_poll_tick == 0.0:
++                    continue  # 还没启动过
++                lag = time.time() - self._last_poll_tick
++                if lag > STALL_THRESHOLD:
++                    logger.error(
++                        "Chat2GO watchdog: _poll_loop 心跳 %.1fs 没更新(>%ds),"
++                        "判定卡死,os._exit(1) 让 launchd 重启",
++                        lag, int(STALL_THRESHOLD),
++                    )
++                    os._exit(1)
 +        except asyncio.CancelledError:
 +            pass
 +
