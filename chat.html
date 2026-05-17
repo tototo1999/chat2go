@@ -3950,6 +3950,23 @@
   let _typingVerbTimer = null
   let _typingElapsedTimer = null
   let _typingStartAt = 0
+  // 估算 token:中文约 1.5 char/token,英文约 4 char/token(粗略,真值得等 Hermes brain 回传)
+  function estimateTokens(text) {
+    if (!text) return 0
+    let zh = 0, other = 0
+    for (const ch of text) {
+      if (/[一-鿿]/.test(ch)) zh++; else other++
+    }
+    return Math.round(zh / 1.5 + other / 4)
+  }
+  // 估算本房间当前送给 LLM 的 input context tokens
+  function estimateContextTokens() {
+    let total = 200  // system prompt 粗估
+    document.querySelectorAll('#messagesList .msg-bubble').forEach(el => {
+      total += estimateTokens(el.textContent || '')
+    })
+    return total
+  }
   function showTyping() {
     const el = document.getElementById('typingIndicator')
     if (!el) return
@@ -3969,9 +3986,14 @@
     clearInterval(_typingVerbTimer)
     _typingVerbTimer = setInterval(cycle, 2500)
     const elapsedEl = document.getElementById('typingElapsed')
+    const estTokens = estimateContextTokens()
     const tick = () => {
       const s = Math.floor((Date.now() - _typingStartAt) / 1000)
-      if (elapsedEl) elapsedEl.textContent = `(${s}s)`
+      if (elapsedEl) {
+        elapsedEl.textContent = estTokens > 0
+          ? `(${s}s · ↑ ~${formatTokens(estTokens)} tokens)`
+          : `(${s}s)`
+      }
     }
     tick()
     clearInterval(_typingElapsedTimer)
