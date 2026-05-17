@@ -2639,12 +2639,16 @@
     if (!token) { showToast('当前房间无邀请 token'); return }
     const url = `${location.origin}/tradego/chat.html?invite=${token}`
     const tag = currentRoomRole === 'expert' ? '小白邀请链接' : '路人邀请链接'
-    try {
-      await navigator.clipboard.writeText(url)
-      showToast(tag + '已复制（' + (currentRoomRole === 'expert' ? '仅限一位小白' : '可分享给多个路人') + '）')
-    } catch (e) {
-      window.prompt('复制下面的' + tag + '：', url)
+    let ok = false
+    try { await navigator.clipboard.writeText(url); ok = true } catch (_) {}
+    if (!ok) {
+      const ta = document.createElement('textarea')
+      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0'
+      document.body.appendChild(ta); ta.select()
+      try { document.execCommand('copy'); ok = true } catch (_) {}
+      document.body.removeChild(ta)
     }
+    showToast(ok ? tag + '已复制' : '复制失败，请手动复制：' + url)
   }
 
   function updateInputPlaceholder() {
