@@ -85,7 +85,7 @@ df46b30  docs: 新建 TODO.md
 8f5a9a9  docs(TODO): 加 GitHub PAT 轮换
 ```
 
-### tradego mini `tototo1999/tradego`(10 commits,跟主站同步)
+### tradego mini `tototo1999/tradego`(11 commits,跟主站同步)
 
 ```
 8e049a8  feat: TradeGO 独立站初始部署(chat2go.xyz)
@@ -98,7 +98,10 @@ f4e5789  debug: console.log + toast + 去 pointer-events
 c241108  ui: 胶囊容器 fit-content
 2f43da2  ui: :empty 兜底
 a24bc83  feat: 取消顶部胶囊,改 sidebar 题目胶囊半勾  ★最终
+419b2b7  fix: copyInviteLink fallback 改 textarea+execCommand(HTTP 环境也能直接复制)
 ```
+
+> ⚠️ chat2go.xyz **Enforce HTTPS 还没在 GH Settings 里勾**,用户从 http://访问时,navigator.clipboard 不可用 → fallback 路径触发。代码层已经做 textarea+execCommand fallback,但 GH Settings 勾上 Enforce HTTPS 一了百了。
 
 ## chat2go.py adapter 三项重大改造(同步两机)
 
