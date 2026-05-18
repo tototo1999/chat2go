@@ -1061,7 +1061,7 @@
       0%   { box-shadow: 0 0 0 3px rgba(217, 119, 6, .55), 0 0 16px rgba(217, 119, 6, .25); }
       100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
     }
-    /* 单钩待二钩:current 题目胶囊的 checkbox 框显示半勾,表示已有 1 方确认 */
+    /* 单钩待二钩:current 题目胶囊的 checkbox 框显示半勾 + 右侧闪烁 ❓ */
     .todo-sub.half-checked .check { position: relative; }
     .todo-sub.half-checked .check::after {
       content: "✓";
@@ -1073,6 +1073,22 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+    }
+    .todo-await {
+      display: none;
+      margin-left: auto;
+      margin-right: 4px;
+      font-size: 12px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .todo-sub.half-checked .todo-await {
+      display: inline-block;
+      animation: await-blink 1.2s ease-in-out infinite;
+    }
+    @keyframes await-blink {
+      0%, 100% { opacity: .3; transform: scale(.92); }
+      50%      { opacity: 1;  transform: scale(1.12); }
     }
 
     .typing-indicator {
@@ -2770,6 +2786,7 @@
           <div class="todo-sub" data-quiz-idx="${cur}" onclick="scrollToAiMessage(this.dataset.aiMsgId)">
             <span class="check">&#10003;</span>
             <span class="todo-text" data-text="sub" data-gi="${gi}" data-ii="${ii}">${escHtml(it.label || '')}</span>
+            <span class="todo-await" aria-hidden="true" title="等待另一方确认">❗</span>
             <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
           </div>`
       }).join('')
