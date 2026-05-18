@@ -1055,19 +1055,22 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 单行并列横排,容器和胶囊都透明 */
+    /* 单钩待二钩胶囊:sticky 浮在 messagesList 顶部居中,banner 宽度仅够胶囊本身 */
+    /* 关键:width fit-content + margin auto → banner 不撑满父容器,父级白底不会从两侧露出 */
     .pinned-banner {
       position: sticky;
-      top: 0;
+      top: 8px;
       z-index: 5;
       display: flex;
-      justify-content: center;
       align-items: center;
-      flex-wrap: nowrap;          /* 强制单行,不换行 */
+      flex-wrap: nowrap;
       gap: 8px;
-      padding: 8px 1.5rem 4px;
+      padding: 0;
+      width: fit-content;
+      max-width: calc(100% - 32px);   /* 极多 pending 时不超出聊天区 */
+      margin: 8px auto 4px;            /* 顶部 8px gap 让胶囊跟消息有距离,自动水平居中 */
       background: transparent;
-      overflow-x: auto;            /* 极多 pending 时横向滚动 */
+      overflow-x: auto;
     }
     .pinned-banner::-webkit-scrollbar { display: none; }   /* 隐藏滚动条 */
     .pinned-pill {
