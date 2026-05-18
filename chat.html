@@ -3231,10 +3231,13 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
-        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度
+        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度 + 重排 sidebar 置顶
         if (payload.new?.role === 'ai') {
           applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
           refreshQuizState()
+          // 单钩待二钩 → 该房间置顶;双钩或任一打 ✗ → 解除置顶。
+          // loadRooms() 已存,内部会重新调 findPinnedRooms 排序。
+          loadRooms()
         }
       })
       .on('postgres_changes', {
