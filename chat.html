@@ -1055,7 +1055,7 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 横排 */
+    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 横排。容器透明,只显示胶囊本身 */
     .pinned-banner {
       position: sticky;
       top: 0;
@@ -1065,12 +1065,11 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 6px;
-      padding: 7px 1.5rem;
-      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.55));
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      border-bottom: 1px solid rgba(0, 0, 0, .05);
+      padding: 8px 1.5rem 4px;
+      background: transparent;
+      pointer-events: none;     /* 容器自身不挡聊天点击,只胶囊响应 */
     }
+    .pinned-banner > * { pointer-events: auto; }
     .pinned-pill {
       display: inline-flex;
       align-items: center;
