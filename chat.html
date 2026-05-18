@@ -1078,17 +1078,18 @@
       display: none;
       margin-left: auto;
       margin-right: 4px;
-      font-size: 12px;
+      font-size: 18px;
       line-height: 1;
       flex-shrink: 0;
+      filter: drop-shadow(0 0 4px rgba(217, 119, 6, .4));
     }
     .todo-sub.half-checked .todo-await {
       display: inline-block;
-      animation: await-blink 1.2s ease-in-out infinite;
+      animation: await-blink 1s ease-in-out infinite;
     }
     @keyframes await-blink {
-      0%, 100% { opacity: .3; transform: scale(.92); }
-      50%      { opacity: 1;  transform: scale(1.12); }
+      0%, 100% { opacity: .35; transform: scale(.85); }
+      50%      { opacity: 1;   transform: scale(1.25); }
     }
 
     .typing-indicator {
