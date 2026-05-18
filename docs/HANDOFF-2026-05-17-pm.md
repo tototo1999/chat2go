@@ -103,6 +103,30 @@ a24bc83  feat: 取消顶部胶囊,改 sidebar 题目胶囊半勾  ★最终
 
 > ⚠️ chat2go.xyz **Enforce HTTPS 还没在 GH Settings 里勾**,用户从 http://访问时,navigator.clipboard 不可用 → fallback 路径触发。代码层已经做 textarea+execCommand fallback,但 GH Settings 勾上 Enforce HTTPS 一了百了。
 
+### 收工前最后一批(主站 + mini 都同步)
+
+```
+407f644 / 0ea5e77    ui: typing AI 名字 14→12px(三段字号统一:名 12 / 动词 12 / 数字 11)
+878f1dc / 0359947    ui: half-checked 题目右侧加闪烁 ❗(催促另一方确认)
+df40001 / 83ebca4    ui: ❗ 字号 12→18px + drop-shadow 橙色发光 + 闪烁更明显
+a691147 / 49c6201    feat: 前端 messages 轮询兜底(10s)— Realtime 偶发漏 INSERT 也能 10s 内补上
+```
+
+**前端轮询架构**(明天接手 Claude 看清楚这个):
+
+```
+Hermes 服务端: _poll_loop(5s) + _watchdog_loop(60s 自救)
+                    ↕ 写 messages 表
+              ┌──── Supabase Realtime push(主路径)── 抖动时漏
+              │                                       ↓
+浏览器: Realtime INSERT 监听              pollMessagesBackfill(10s 兜底)
+              │                                       │
+              └────→ DOM appendMessage ←──────────────┘
+                                            (querySelector 防重复)
+```
+
+10s 内只要 Realtime 任一条路通,消息都会进 DOM。两条都断才会卡。
+
 ## chat2go.py adapter 三项重大改造(同步两机)
 
 - `_read_hermes_default_model()` — stub_model 自动跟随 `~/.hermes/config.yaml`
