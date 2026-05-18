@@ -1038,6 +1038,39 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
+    /* 单钩待二钩公告条:房间顶部 sticky,等对方确认 */
+    .pinned-banner {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 1.5rem;
+      background: linear-gradient(90deg, rgba(245,158,11,.18), rgba(245,158,11,.06));
+      border-bottom: 1px solid rgba(245,158,11,.35);
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .2s;
+      user-select: none;
+    }
+    .pinned-banner:hover { background: linear-gradient(90deg, rgba(245,158,11,.28), rgba(245,158,11,.10)); }
+    .pinned-icon { font-size: 14px; }
+    .pinned-label { color: #b45309; font-weight: 600; flex-shrink: 0; }
+    .pinned-preview {
+      flex: 1;
+      color: var(--text2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .flash-highlight { animation: pin-flash 1.4s ease-out; }
+    @keyframes pin-flash {
+      0%   { background: rgba(245,158,11,.35); }
+      100% { background: transparent; }
+    }
+
     .typing-indicator {
       display: none;
       padding: 4px 1.5rem 10px;
@@ -1783,6 +1816,12 @@
         </div>
       </div>
 
+      <!-- 单钩待二钩公告条:任一方 ✓ 一条 AI 消息后 sticky 在房间顶部,双钩 pass / ✗ 自动撤下 -->
+      <div class="pinned-banner" id="pinnedBanner" style="display:none;" onclick="scrollToPinnedMessage()">
+        <span class="pinned-icon">📌</span>
+        <span class="pinned-label">等待确认:</span>
+        <span class="pinned-preview" id="pinnedBannerPreview"></span>
+      </div>
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
@@ -2658,7 +2697,51 @@
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
+    updatePinnedBanner(room.id)  // 房顶单钩待二钩公告条
     document.getElementById('msgInput').focus()
+  }
+
+  // 单钩待二钩公告条:查当前 room 最近 50 条 AI 消息,找 up=1 && down=0 的最新一条 → sticky 顶部
+  let _pinnedMsgId = null
+  async function updatePinnedBanner(roomId) {
+    if (!roomId) return hidePinnedBanner()
+    const { data, error } = await sb
+      .from('messages')
+      .select('id, content, ratings')
+      .eq('room_id', roomId)
+      .eq('role', 'ai')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error || !data) return hidePinnedBanner()
+    let target = null
+    for (const m of data) {
+      const r = m.ratings || {}
+      const vals = Object.values(r)
+      const upCount = vals.filter(v => v === 'up').length
+      const downCount = vals.filter(v => v === 'down').length
+      if (upCount === 1 && downCount === 0) { target = m; break }
+    }
+    if (!target) return hidePinnedBanner()
+    const banner = document.getElementById('pinnedBanner')
+    const preview = document.getElementById('pinnedBannerPreview')
+    if (!banner || !preview) return
+    preview.textContent = (target.content || '').replace(/\n/g, ' ').slice(0, 120) || '(空消息)'
+    banner.style.display = 'flex'
+    _pinnedMsgId = target.id
+  }
+  function hidePinnedBanner() {
+    const banner = document.getElementById('pinnedBanner')
+    if (banner) banner.style.display = 'none'
+    _pinnedMsgId = null
+  }
+  function scrollToPinnedMessage() {
+    if (!_pinnedMsgId) return
+    const el = document.querySelector(`[data-msg-id="${_pinnedMsgId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('flash-highlight')
+      setTimeout(() => el.classList.remove('flash-highlight'), 1500)
+    }
   }
 
   async function resetRoom() {
@@ -3231,13 +3314,13 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
-        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度 + 重排 sidebar 置顶
+        // 评价 ratings 更新(双方共识用),同步 UI + 刷做题进度 + 重排 sidebar 置顶 + 刷新房顶公告
         if (payload.new?.role === 'ai') {
           applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
           refreshQuizState()
-          // 单钩待二钩 → 该房间置顶;双钩或任一打 ✗ → 解除置顶。
-          // loadRooms() 已存,内部会重新调 findPinnedRooms 排序。
+          // 单钩待二钩 → 该房间 sidebar 置顶 + 房顶公告;双钩或 ✗ → 全部解除。
           loadRooms()
+          updatePinnedBanner(roomId)
         }
       })
       .on('postgres_changes', {
