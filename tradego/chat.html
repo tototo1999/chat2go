@@ -376,9 +376,22 @@
     }
     .todo-pill .todo-toggle:hover { background: var(--teal-50); color: var(--teal-600); }
     .todo-group.expanded .todo-pill .todo-toggle { transform: rotate(45deg); color: var(--teal-600); }
-    .todo-lock-state { display: none !important; }
-    .todo-group.locked .todo-pill { cursor: default; opacity: 1; }
-    .todo-group.locked .todo-children { display: block !important; }
+    /* 大题锁状态:gi>0 的组渲染 .todo-lock-state(两个 SVG,CSS 切换);
+       锁态用红色挂锁醒目提示,解锁后切到绿色开锁图标 */
+    .todo-lock-state {
+      display: inline-flex;
+      width: 16px; height: 16px;
+      align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .todo-lock-state .lk-closed,
+    .todo-lock-state .lk-open { display: none; }
+    .todo-group.locked .todo-lock-state .lk-closed { display: inline-block; color: #d4380d; }
+    .todo-group:not(.locked) .todo-lock-state .lk-open { display: inline-block; color: var(--teal-600); }
+    .todo-group.locked .todo-toggle { display: none; }
+    .todo-group.locked .todo-pill { cursor: not-allowed; opacity: 0.6; }
+    .todo-group.locked .todo-pill:hover { background: var(--bg); }
+    .todo-group.locked .todo-children { display: none !important; }
     /* 子目录 */
     .todo-children {
       display: none;
@@ -2846,6 +2859,9 @@
     ;(payload || []).forEach((group, gi) => {
       const groupEl = document.createElement('div')
       groupEl.className = 'todo-group'
+      // 首次渲染默认锁住 gi>0 的组,避免 refreshQuizState 跑完前的解锁闪烁;
+      // 编辑态不锁;refreshQuizState 之后会按真实 passed 重算
+      if (!sectionEditing && gi > 0) groupEl.classList.add('locked')
       groupEl.dataset.group = `g${gi}`
       groupEl.dataset.groupStart = String(idx)
       const subsHtml = (group.items || []).map((it, ii) => {
@@ -2857,7 +2873,12 @@
             <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
           </div>`
       }).join('')
-      const lockHtml = ''
+      // gi=0 永远不锁,不渲染锁图标;gi>0 渲染左侧 lock-state(红挂锁/绿开锁,CSS 按 .locked 切换)
+      const lockHtml = gi > 0 ? `
+          <span class="todo-lock-state" aria-hidden="true">
+            <svg class="lk-closed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <svg class="lk-open" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+          </span>` : ''
       groupEl.innerHTML = `
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
           ${lockHtml}
@@ -3134,6 +3155,7 @@
   function toggleTodoGroup(elOrBtn) {
     const group = elOrBtn.closest('.todo-group')
     if (!group) return
+    if (group.classList.contains('locked')) return
     group.classList.toggle('expanded')
   }
   async function refreshQuizState() {
@@ -3161,10 +3183,19 @@
       sub.classList.toggle('done', idx < passed)
       sub.classList.toggle('current', idx === passed)
     })
+    // 大题解锁：当前组的「起始题号」<= passed 才解锁，编辑态强制全解锁
+    const editing = document.getElementById('todoSection')?.classList.contains('editing')
+    document.querySelectorAll('.todo-group').forEach(g => {
+      const start = Number(g.dataset.groupStart || 0)
+      const locked = !editing && passed < start
+      g.classList.toggle('locked', locked)
+      if (locked) g.classList.remove('expanded')
+    })
     // 自动展开包含 current 的 group + 自动折叠已完成的 group
     const currentSub = document.querySelector('.todo-sub.current')
     const currentGroup = currentSub?.closest('.todo-group') || null
     document.querySelectorAll('.todo-group').forEach(g => {
+      if (g.classList.contains('locked')) return  // 锁定的上面已折叠,不动
       if (g === currentGroup) {
         g.classList.add('expanded')
         return
