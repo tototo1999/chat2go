@@ -1068,9 +1068,7 @@
       padding: 8px 1.5rem 4px;
       background: transparent;
       overflow-x: auto;            /* 极多 pending 时横向滚动 */
-      pointer-events: none;
     }
-    .pinned-banner > * { pointer-events: auto; }
     .pinned-banner::-webkit-scrollbar { display: none; }   /* 隐藏滚动条 */
     .pinned-pill {
       display: inline-flex;
@@ -2745,13 +2743,18 @@
     if (banner) { banner.innerHTML = ''; banner.style.display = 'none' }
   }
   function scrollToPinnedMessage(msgId) {
-    if (!msgId) return
-    const el = document.querySelector(`[data-msg-id="${msgId}"]`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      el.classList.add('flash-highlight')
-      setTimeout(() => el.classList.remove('flash-highlight'), 1500)
+    console.log('[pin click]', msgId)
+    if (!msgId) { console.warn('[pin] no msgId'); return }
+    const el = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
+    console.log('[pin found?]', !!el, el)
+    if (!el) {
+      // 可能消息在别的 channel(大咖↔小白私聊)→ 用户看不到。提示一下。
+      showToast?.('该消息在另一个频道,切过去后再点 📌') || alert('该消息在另一个频道')
+      return
     }
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('flash-highlight')
+    setTimeout(() => el.classList.remove('flash-highlight'), 1500)
   }
 
   async function resetRoom() {
