@@ -1055,29 +1055,44 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩公告条:房间顶部 sticky,等对方确认。中性灰底,主题色无关。 */
+    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 横排 */
     .pinned-banner {
       position: sticky;
       top: 0;
       z-index: 5;
       display: flex;
+      justify-content: center;
       align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
       padding: 7px 1.5rem;
-      background: rgba(0, 0, 0, .035);
-      border-bottom: 1px solid rgba(0, 0, 0, .08);
-      font-size: 13px;
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.55));
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(0, 0, 0, .05);
+    }
+    .pinned-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 11px 3px 8px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, .045);
+      border: 1px solid rgba(0, 0, 0, .08);
+      font-size: 12px;
       color: var(--text);
       cursor: pointer;
-      transition: background .15s;
+      transition: all .15s;
+      max-width: 280px;
       user-select: none;
     }
-    .pinned-banner:hover { background: rgba(0, 0, 0, .06); }
-    .pinned-icon { font-size: 14px; }
-    .pinned-label { color: #d97706; font-weight: 600; flex-shrink: 0; }   /* 警示橙仅小面积出现 */
-    .pinned-preview {
-      flex: 1;
-      color: var(--text2);
+    .pinned-pill:hover {
+      background: rgba(217, 119, 6, .10);
+      border-color: rgba(217, 119, 6, .4);
+      transform: translateY(-1px);
+    }
+    .pinned-pill-icon { font-size: 12px; flex-shrink: 0; }
+    .pinned-pill-text {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -1833,12 +1848,8 @@
         </div>
       </div>
 
-      <!-- 单钩待二钩公告条:任一方 ✓ 一条 AI 消息后 sticky 在房间顶部,双钩 pass / ✗ 自动撤下 -->
-      <div class="pinned-banner" id="pinnedBanner" style="display:none;" onclick="scrollToPinnedMessage()">
-        <span class="pinned-icon">📌</span>
-        <span class="pinned-label">等待确认:</span>
-        <span class="pinned-preview" id="pinnedBannerPreview"></span>
-      </div>
+      <!-- 单钩待二钩胶囊:任一方 ✓ 后,sticky 顶部居中显示;多条 pending 横排;双钩 pass / ✗ 自动撤下 -->
+      <div class="pinned-banner" id="pinnedBanner" style="display:none;"></div>
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
@@ -2685,42 +2696,51 @@
     document.getElementById('msgInput').focus()
   }
 
-  // 单钩待二钩公告条:查当前 room 最近 50 条 AI 消息,找 up=1 && down=0 的最新一条 → sticky 顶部
-  let _pinnedMsgId = null
+  // 单钩待二钩胶囊:查当前 room 最近 50 条 AI 消息,所有 up=1 && down=0 的 → sticky 顶部居中,横排多胶囊
   async function updatePinnedBanner(roomId) {
     if (!roomId) return hidePinnedBanner()
     const { data, error } = await sb
       .from('messages')
-      .select('id, content, ratings')
+      .select('id, content, ratings, created_at')
       .eq('room_id', roomId)
       .eq('role', 'ai')
       .order('created_at', { ascending: false })
       .limit(50)
     if (error || !data) return hidePinnedBanner()
-    let target = null
+    const pending = []
     for (const m of data) {
       const r = m.ratings || {}
       const vals = Object.values(r)
       const upCount = vals.filter(v => v === 'up').length
       const downCount = vals.filter(v => v === 'down').length
-      if (upCount === 1 && downCount === 0) { target = m; break }
+      if (upCount === 1 && downCount === 0) pending.push(m)
     }
-    if (!target) return hidePinnedBanner()
+    if (!pending.length) return hidePinnedBanner()
+    // 老的左边,新的右边(发生顺序)
+    pending.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
     const banner = document.getElementById('pinnedBanner')
-    const preview = document.getElementById('pinnedBannerPreview')
-    if (!banner || !preview) return
-    preview.textContent = (target.content || '').replace(/\n/g, ' ').slice(0, 120) || '(空消息)'
+    if (!banner) return
+    banner.innerHTML = pending.map(m => {
+      // 清掉 markdown 标记 + 折叠多空白,只取前 24 字符
+      const text = (m.content || '')
+        .replace(/[`*#_~]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 24) || '(空消息)'
+      return `<span class="pinned-pill" data-msg-id="${m.id}" onclick="scrollToPinnedMessage(this.dataset.msgId)" title="点击跳转到这条消息">
+        <span class="pinned-pill-icon">📌</span>
+        <span class="pinned-pill-text">${escHtml(text)}</span>
+      </span>`
+    }).join('')
     banner.style.display = 'flex'
-    _pinnedMsgId = target.id
   }
   function hidePinnedBanner() {
     const banner = document.getElementById('pinnedBanner')
-    if (banner) banner.style.display = 'none'
-    _pinnedMsgId = null
+    if (banner) { banner.innerHTML = ''; banner.style.display = 'none' }
   }
-  function scrollToPinnedMessage() {
-    if (!_pinnedMsgId) return
-    const el = document.querySelector(`[data-msg-id="${_pinnedMsgId}"]`)
+  function scrollToPinnedMessage(msgId) {
+    if (!msgId) return
+    const el = document.querySelector(`[data-msg-id="${msgId}"]`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       el.classList.add('flash-highlight')
