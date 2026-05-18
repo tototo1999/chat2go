@@ -1,0 +1,8 @@
+--- a/agent/prompt_builder.py
++++ b/agent/prompt_builder.py
+@@ -EOF -EOF
++
++# stub: mini base run_agent.py / agent/system_prompt.py 引用了 HERMES_AGENT_HELP_GUIDANCE,
++# dev 老 commit (2026-04-23) 没定义。给个空字符串 stub 让 import 不挂,
++# system prompt 里 append 空字符串无副作用。
++HERMES_AGENT_HELP_GUIDANCE = ""

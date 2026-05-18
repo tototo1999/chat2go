@@ -1,6 +1,6 @@
---- /dev/null	2026-05-17 13:35:34
-+++ gateway/platforms/chat2go.py	2026-05-17 13:35:02
-@@ -0,0 +1,963 @@
+--- /dev/null	2026-05-17 21:06:55
++++ gateway/platforms/chat2go.py	2026-05-17 20:42:24
+@@ -0,0 +1,1107 @@
 +"""
 +Chat2GO platform adapter for Hermes.
 +
@@ -33,6 +33,13 @@
 +from typing import Any, Dict, Optional
 +
 +import httpx
++
++# tradego 合同生成: 把 ~/.hermes/libs 加入 sys.path,
++# 让 contract_lib / contract_generator / chat2go_upload 可被 import
++import sys as _sys
++_LIBS_PATH = os.path.expanduser("~/.hermes/libs")
++if _LIBS_PATH not in _sys.path:
++    _sys.path.insert(0, _LIBS_PATH)
 +
 +from gateway.config import Platform, PlatformConfig
 +from gateway.platforms.base import (
@@ -350,6 +357,14 @@
 +            content = msg.get("content") or ""
 +            role = msg.get("role", "user")  # 'user' | 'expert'
 +            user_label = "小白" if role == "user" else "大咖"
++            # ── tradego 合同生成拦截 ──
++            # room.product='tradego' + 合同关键词 → 绕开 brain,直接渲染 PDF 上传回 chat
++            # 返回 True 表示已处理,提前返回不再走 brain
++            try:
++                if await self._try_handle_tradego_contract(room, room_id, msg, content):
++                    return
++            except Exception as _tge:
++                logger.exception("Chat2GO tradego-contract 拦截器异常(fallback to brain): %s", _tge)
 +            # 双钩 pass 系统 marker:替换为人话 prompt,让 AI 自然推进下一题
 +            # (DB trigger 写的 marker,前端隐藏不渲染;bridge 这边收到会触发 AI 响应)
 +            if content.strip() == "__SYS_ADVANCE_QUIZ__":
@@ -399,6 +414,46 @@
 +                        )
 +                else:
 +                    non_image_attachments.append((name, url))
++
++            # 主模型可能不支持原生 vision(如 DeepSeek V3) → 先把每张图喂给
++            # auxiliary.vision(OpenRouter Gemini)转成详细描述,拼到 content 前面,
++            # 不再把 image path 传给 main。仿照 cli.py 的 _preprocess_images_with_vision。
++            # 关掉:设 CHAT2GO_SKIP_VISION_PREPROCESS=1(main 切回支持 vision 的模型时)
++            if media_urls and not os.getenv("CHAT2GO_SKIP_VISION_PREPROCESS"):
++                try:
++                    from tools.vision_tools import vision_analyze_tool
++                    import json as _json
++                    analysis_prompt = (
++                        "请极尽详细描述图片里能看到的所有内容:文字(原文+位置)、数字、"
++                        "表格结构、人物、物体、配色、布局。命理八字/盘面图要把每个柱、"
++                        "干支、神煞、十神字段都列清。"
++                    )
++                    descriptions = []
++                    for img_path in media_urls:
++                        try:
++                            result_json = await vision_analyze_tool(
++                                image_url=img_path, user_prompt=analysis_prompt
++                            )
++                            result = _json.loads(result_json)
++                            if result.get("success"):
++                                desc = result.get("analysis", "")
++                                descriptions.append(f"【图片识别】\n{desc}")
++                                logger.info("Chat2GO vision pre-process OK: %s (%d chars)", img_path, len(desc))
++                            else:
++                                err = result.get("error", "unknown")
++                                descriptions.append(f"【图片识别失败:{err}】")
++                                logger.warning("Chat2GO vision pre-process 失败 %s: %s", img_path, err)
++                        except Exception as ve:
++                            descriptions.append(f"【图片识别异常:{ve}】")
++                            logger.warning("Chat2GO vision pre-process 异常 %s: %s", img_path, ve)
++                    if descriptions:
++                        prefix = "\n\n".join(descriptions)
++                        content = f"{prefix}\n\n{content}" if content else prefix
++                    # 关键:清空 media_urls,不再把图传给 main(DeepSeek 等会拒绝)
++                    media_urls = []
++                    media_types = []
++                except Exception as e:
++                    logger.exception("Chat2GO vision pre-process 整体异常,降级直传图给 main: %s", e)
 +
 +            # 非图片附件：直接预提取文本（PDF/DOCX/TXT 等）追加到 content
 +            # 不让 AI 用 execute_code 解析，避免触发 hermes 的命令审批拦截
@@ -905,6 +960,95 @@
 +                    logger.info("Chat2GO sync_memory 单条失败(跳过):%s; item=%r", ie, item)
 +        except Exception as e:
 +            logger.warning("Chat2GO sync_memory 失败(忽略):%s", e)
++
++    # ────────────────────────────────────────────────────────────
++    # tradego 合同生成 (绕开 brain 的关键词拦截路径)
++    # 触发: room.product=='tradego' AND content 含合同/PI 关键词
++    # 流程: DS V3 抽 JSON → contract_lib 渲染 PDF → chat2go_upload 上传 → markdown 回复
++    # ────────────────────────────────────────────────────────────
++    _CONTRACT_KEYWORDS = (
++        "出合同", "做合同", "出张合同", "做张合同", "生成合同", "做个合同", "帮我出合同",
++        "出 pi", "做 pi", "出个 pi", "做张 pi", "发个 pi", "出 invoice", "做 invoice",
++        "render contract", "make contract", "generate contract",
++        "generate pi", "proforma invoice", "commercial invoice",
++        "tradego-contract",  # skill 名直接触发
++    )
++
++    def _matches_contract_intent(self, content: str) -> bool:
++        if not content:
++            return False
++        c = content.lower()
++        return any(kw.lower() in c for kw in self._CONTRACT_KEYWORDS)
++
++    async def _try_handle_tradego_contract(
++        self, room: dict, room_id: str, msg: dict, content: str
++    ) -> bool:
++        if (room or {}).get("product") != "tradego":
++            return False
++        if not self._matches_contract_intent(content):
++            return False
++        logger.info("Chat2GO tradego-contract: 拦截 room=%s msg=%s", room_id, msg.get("id"))
++        try:
++            loop = asyncio.get_running_loop()
++            contract_data = await loop.run_in_executor(None, self._extract_contract_json, content)
++            if not contract_data:
++                await self.send(room_id, "我没能从消息里抽出完整的合同字段(卖方/买方/产品/单价等),请补全后重试。")
++                return True
++            pdf_path = await loop.run_in_executor(None, self._render_contract_pdf, contract_data)
++            public_url = await loop.run_in_executor(None, self._upload_contract_pdf, pdf_path, room_id)
++            reply = self._format_contract_reply(contract_data, contract_data.get("_stats") or {}, public_url)
++            await self.send(room_id, reply)
++            return True
++        except Exception as e:
++            logger.exception("Chat2GO tradego-contract 失败: %s", e)
++            try:
++                await self.send(room_id, f"合同生成失败: `{type(e).__name__}: {e}`")
++            except Exception:
++                pass
++            return True
++
++    def _extract_contract_json(self, text: str):
++        from contract_generator import extract_contract_data
++        return extract_contract_data(text)
++
++    def _render_contract_pdf(self, contract_data):
++        import time, uuid
++        from contract_lib import PDFContractGenerator
++        ctype_raw = (contract_data.get("customer_type") or "").lower()
++        if "inus" in ctype_raw:
++            contract_type = "inus"
++        elif "jincheng" in ctype_raw or "金城" in ctype_raw:
++            contract_type = "jincheng"
++        elif "neutral" in ctype_raw or "中性" in ctype_raw:
++            contract_type = "neutral"
++        elif "daelim" in ctype_raw:
++            contract_type = "daelim"
++        else:
++            contract_type = "standard"
++        out_path = f"/tmp/tradego_contract_{int(time.time())}_{uuid.uuid4().hex[:6]}.pdf"
++        gen = PDFContractGenerator()
++        stats = gen.generate(contract_data, out_path, contract_type=contract_type)
++        contract_data["_stats"] = stats
++        return out_path
++
++    def _upload_contract_pdf(self, pdf_path, room_id):
++        from chat2go_upload import upload_pdf_to_chat
++        return upload_pdf_to_chat(pdf_path, room_id=room_id, name_hint="contract")
++
++    def _format_contract_reply(self, data, stats, url):
++        return (
++            "✅ **合同已生成**\n\n"
++            "| 字段 | 值 |\n|---|---|\n"
++            f"| 合同号 | {data.get('contract_number', '')} |\n"
++            f"| 卖方 | {data.get('seller', '')} |\n"
++            f"| 买方 | {data.get('buyer', '')} |\n"
++            f"| 客户类型 | {data.get('customer_type', '')} |\n"
++            f"| 总金额 | ¥{stats.get('total_amount', 0):.2f} |\n"
++            f"| 总箱数 | {stats.get('total_boxes', 0)} 箱 |\n"
++            f"| 总柜数 | {stats.get('total_containers', 0):.1f} 柜 |\n"
++            f"| 总平方 | {stats.get('total_sqm', 0):.2f} ㎡ |\n\n"
++            f"📄 [下载合同 PDF]({url})"
++        )
 +
 +
 +async def _extract_attachment_text(name: str, url: str, max_chars: int = 30000) -> str:

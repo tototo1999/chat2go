@@ -1,0 +1,9 @@
+--- a/gateway/config.py
++++ b/gateway/config.py
+@@ -70,6 +70,7 @@ class Platform(Enum):
+     QQBOT = "qqbot"
+     CHAT2GO = "chat2go"          # ★ 增加 chat2go 大咖营业窗口
++    YUANBAO = "yuanbao"          # ★ stub: 仅供 session.py 第 368 行 Platform.YUANBAO == 比较使用,无 adapter
+
+
+ @dataclass

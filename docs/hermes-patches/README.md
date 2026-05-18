@@ -10,6 +10,8 @@
 |---|---|---|
 | `01-skip-busy-ack-chat2go.patch` | `gateway/run.py` | chat2go 平台不发「⚡ Interrupting current task」占位消息 |
 | `02-chat2go-platform-adapter.patch` | `gateway/platforms/chat2go.py`(整个新文件) | chat2go 平台适配器实现,含 _prefetch_memory / _sync_memory / bridge_pong 心跳 / model_usage token 写入 / `_read_hermes_default_model()` 让 stub_model 自动跟随 `~/.hermes/config.yaml`(切模型不用动 env) / `_watchdog_loop()` 监控 _poll_loop 卡死(>60s 没心跳就 os._exit(1) 让 launchd 拉起,防 Realtime 1006 反复掉线引发的 event loop 卡死) |
+| `03-yuanbao-enum-stub.patch` | `gateway/config.py` | 仅 mini 部署需要:dev 机的 `gateway/config.py` 是 2026-04-23 老 commit,缺 `Platform.YUANBAO`,但 mini base 的 `session.py` 第 368 行引用了它,跑消息会 AttributeError。加一行 stub enum 让 == 比较不挂 |
+| `04-help-guidance-stub.patch` | `agent/prompt_builder.py` | 仅 mini 部署需要:dev 老 commit 没定义 `HERMES_AGENT_HELP_GUIDANCE`,mini base 的 `run_agent.py` / `agent/system_prompt.py` import 时挂。末尾追加空字符串 stub |
 
 ## 应用方式
 
