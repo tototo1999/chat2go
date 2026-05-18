@@ -2679,7 +2679,57 @@
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
+    startMessagePolling()    // ★ 双保险:Realtime 漏 push 时由轮询兜底拉新消息
     document.getElementById('msgInput').focus()
+  }
+
+  // 前端 messages 轮询兜底(每 10s):Realtime WebSocket 偶发漏 INSERT 时,
+  // 拉本房最近 20 条消息跟 DOM 比对,缺的补 appendMessage,缺的非当前 channel 累计未读
+  let _msgPollTimer = null
+  async function pollMessagesBackfill() {
+    if (!currentRoom || !currentUser) return
+    try {
+      const { data, error } = await sb
+        .from('messages')
+        .select('*')
+        .eq('room_id', currentRoom.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+      if (error || !data) return
+      const ordered = data.slice().reverse()   // 老的先 append
+      let sawAi = false
+      for (const msg of ordered) {
+        if (msg.content === '__SYS_ADVANCE_QUIZ__') continue
+        if (document.querySelector(`[data-msg-id="${msg.id}"]`)) continue   // 已在 DOM
+        const msgChannel = msg.channel || 'main'
+        const isSelf = msg.user_id === currentUser?.id
+        if (msgChannel === currentChannel) {
+          appendMessage(msg)
+          if (msg.role === 'ai') {
+            sawAi = true
+            clearTimeout(typingTimer)
+            hideTyping()
+            setBridgeStatus(true)
+            lastAiMessageAt = Date.now()
+          }
+        } else if (!isSelf) {
+          unreadCounts[msgChannel] = (unreadCounts[msgChannel] || 0) + 1
+          updateUnreadBadge(msgChannel)
+        }
+      }
+      if (sawAi) {
+        scrollToBottom()
+        refreshQuizState()
+        setTimeout(() => loadRoomCost(currentRoom.id), 500)
+      }
+    } catch (e) { console.warn('[msg poll]', e) }
+  }
+  function startMessagePolling() {
+    stopMessagePolling()
+    _msgPollTimer = setInterval(pollMessagesBackfill, 10000)
+  }
+  function stopMessagePolling() {
+    if (_msgPollTimer) { clearInterval(_msgPollTimer); _msgPollTimer = null }
   }
 
   // 点击 todo 题目胶囊 → 跳到对应 AI 消息 + flash 高亮
