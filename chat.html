@@ -1101,8 +1101,8 @@
     }
     .flash-highlight { animation: pin-flash 1.4s ease-out; }
     @keyframes pin-flash {
-      0%   { background: rgba(217, 119, 6, .22); }
-      100% { background: transparent; }
+      0%   { box-shadow: 0 0 0 3px rgba(217, 119, 6, .55), 0 0 16px rgba(217, 119, 6, .25); }
+      100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
     }
 
     .typing-indicator {
@@ -2729,11 +2729,15 @@
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 24) || '(空消息)'
-      return `<span class="pinned-pill" data-msg-id="${m.id}" onclick="scrollToPinnedMessage(this.dataset.msgId)" title="点击跳转到这条消息">
+      return `<span class="pinned-pill" data-msg-id="${m.id}" title="点击跳转到这条消息">
         <span class="pinned-pill-icon">📌</span>
         <span class="pinned-pill-text">${escHtml(text)}</span>
       </span>`
     }).join('')
+    // JS 绑定事件比 inline onclick 更稳(避免 pointer-events / scope 坑)
+    banner.querySelectorAll('.pinned-pill').forEach(el => {
+      el.addEventListener('click', () => scrollToPinnedMessage(el.dataset.msgId))
+    })
     banner.style.display = 'flex'
   }
   function hidePinnedBanner() {
