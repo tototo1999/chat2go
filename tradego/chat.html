@@ -469,6 +469,17 @@
       text-overflow: ellipsis;
     }
     .room-item.active .room-name { color: var(--teal-800); }
+    /* 置顶:房间内任一 AI 消息处于单钩待二钩状态(一方 ✓ 等另一方确认) */
+    /* 中性灰底 + 小面积警示橙,适配任何主题色(绿/蓝/紫) */
+    .room-item.pinned {
+      background: rgba(0, 0, 0, .04);
+      border-left: 2px solid rgba(217, 119, 6, .55);
+    }
+    .room-item.pinned .room-name::before {
+      content: "📌 ";
+      font-size: 11px;
+      opacity: .9;
+    }
     /* 大咖 hover 删除按钮 */
     .room-del {
       flex-shrink: 0;
@@ -1030,6 +1041,39 @@
     .msg-bubble.user   { background: #FFF8E7;       border-left-color: #E5B85A; color: var(--text); }
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
+
+    /* 单钩待二钩公告条:房间顶部 sticky,等对方确认。中性灰底,主题色无关。 */
+    .pinned-banner {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 1.5rem;
+      background: rgba(0, 0, 0, .035);
+      border-bottom: 1px solid rgba(0, 0, 0, .08);
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s;
+      user-select: none;
+    }
+    .pinned-banner:hover { background: rgba(0, 0, 0, .06); }
+    .pinned-icon { font-size: 14px; }
+    .pinned-label { color: #d97706; font-weight: 600; flex-shrink: 0; }
+    .pinned-preview {
+      flex: 1;
+      color: var(--text2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .flash-highlight { animation: pin-flash 1.4s ease-out; }
+    @keyframes pin-flash {
+      0%   { background: rgba(217, 119, 6, .22); }
+      100% { background: transparent; }
+    }
 
     .typing-indicator {
       display: none;
@@ -1776,6 +1820,12 @@
         </div>
       </div>
 
+      <!-- 单钩待二钩公告条:任一方 ✓ 一条 AI 消息后 sticky 在房间顶部,双钩 pass / ✗ 自动撤下 -->
+      <div class="pinned-banner" id="pinnedBanner" style="display:none;" onclick="scrollToPinnedMessage()">
+        <span class="pinned-icon">📌</span>
+        <span class="pinned-label">等待确认:</span>
+        <span class="pinned-preview" id="pinnedBannerPreview"></span>
+      </div>
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
@@ -2219,6 +2269,30 @@
   // admin 邮箱白名单（与 admin.html / is_admin() RPC 保持一致）
   const ADMIN_EMAILS = ['lirui88888862@gmail.com']
 
+  // 找出"置顶"房间:房间内任一 AI 消息处于单钩等二钩状态(1 个 up + 0 个 down)。
+  // 任一方打 ✗(down) → 那条 msg 不再 pending → 整房 unpin;双钩(2 up)同样 unpin。
+  async function findPinnedRooms(rooms) {
+    if (!rooms.length) return new Set()
+    const roomIds = rooms.map(r => r.id)
+    const { data, error } = await sb
+      .from('messages')
+      .select('room_id, ratings')
+      .in('room_id', roomIds)
+      .eq('role', 'ai')
+      .order('created_at', { ascending: false })
+      .limit(300)
+    if (error || !data) return new Set()
+    const pinned = new Set()
+    for (const m of data) {
+      const r = m.ratings || {}
+      const vals = Object.values(r)
+      const upCount = vals.filter(v => v === 'up').length
+      const downCount = vals.filter(v => v === 'down').length
+      if (upCount === 1 && downCount === 0) pinned.add(m.room_id)
+    }
+    return pinned
+  }
+
   async function loadRooms() {
     const list = document.getElementById('roomsList')
     list.innerHTML = ''
@@ -2253,7 +2327,16 @@
       return
     }
 
-    rooms.forEach(room => renderRoomItem(room))
+    // 置顶排序:pinned 房间永远在最前面,内部仍按 created_at desc
+    const pinnedSet = await findPinnedRooms(rooms)
+    rooms.sort((a, b) => {
+      const ap = pinnedSet.has(a.id) ? 1 : 0
+      const bp = pinnedSet.has(b.id) ? 1 : 0
+      if (ap !== bp) return bp - ap
+      return (b.created_at || '').localeCompare(a.created_at || '')
+    })
+
+    rooms.forEach(room => renderRoomItem(room, pinnedSet.has(room.id)))
 
     // 自动打开第一个房间（小白和大咖都一样），但已经有打开的就不动
     if (!currentRoom && rooms.length > 0) {
@@ -2496,7 +2579,7 @@
     await openRoomById(room.id)
   }
 
-  function renderRoomItem(room) {
+  function renderRoomItem(room, isPinned = false) {
     // 大咖只看自己 owned 的房：拒绝渲染外来房（兜底 openRoomById 等旁路）
     if (currentRole === 'expert' && room.expert_id !== currentUser?.id) return
     const list = document.getElementById('roomsList')
@@ -2504,7 +2587,7 @@
     if (empty) empty.remove()
 
     const el = document.createElement('div')
-    el.className = 'room-item'
+    el.className = 'room-item' + (isPinned ? ' pinned' : '')
     el.dataset.id = room.id
     const isOwner = isExpert(room)
     el.innerHTML = `
@@ -2628,7 +2711,51 @@
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
+    updatePinnedBanner(room.id)  // 房顶单钩待二钩公告条
     document.getElementById('msgInput').focus()
+  }
+
+  // 单钩待二钩公告条:查当前 room 最近 50 条 AI 消息,找 up=1 && down=0 的最新一条 → sticky 顶部
+  let _pinnedMsgId = null
+  async function updatePinnedBanner(roomId) {
+    if (!roomId) return hidePinnedBanner()
+    const { data, error } = await sb
+      .from('messages')
+      .select('id, content, ratings')
+      .eq('room_id', roomId)
+      .eq('role', 'ai')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error || !data) return hidePinnedBanner()
+    let target = null
+    for (const m of data) {
+      const r = m.ratings || {}
+      const vals = Object.values(r)
+      const upCount = vals.filter(v => v === 'up').length
+      const downCount = vals.filter(v => v === 'down').length
+      if (upCount === 1 && downCount === 0) { target = m; break }
+    }
+    if (!target) return hidePinnedBanner()
+    const banner = document.getElementById('pinnedBanner')
+    const preview = document.getElementById('pinnedBannerPreview')
+    if (!banner || !preview) return
+    preview.textContent = (target.content || '').replace(/\n/g, ' ').slice(0, 120) || '(空消息)'
+    banner.style.display = 'flex'
+    _pinnedMsgId = target.id
+  }
+  function hidePinnedBanner() {
+    const banner = document.getElementById('pinnedBanner')
+    if (banner) banner.style.display = 'none'
+    _pinnedMsgId = null
+  }
+  function scrollToPinnedMessage() {
+    if (!_pinnedMsgId) return
+    const el = document.querySelector(`[data-msg-id="${_pinnedMsgId}"]`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('flash-highlight')
+      setTimeout(() => el.classList.remove('flash-highlight'), 1500)
+    }
   }
 
   async function resetRoom() {
@@ -3211,10 +3338,13 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
-        // 评价 ratings 更新（双方共识用），同步 UI + 刷做题进度
+        // 评价 ratings 更新(双方共识用),同步 UI + 刷做题进度 + 重排 sidebar 置顶 + 刷新房顶公告
         if (payload.new?.role === 'ai') {
           applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
           refreshQuizState()
+          // 单钩待二钩 → 该房间 sidebar 置顶 + 房顶公告;双钩或 ✗ → 全部解除。
+          loadRooms()
+          updatePinnedBanner(roomId)
         }
       })
       .on('postgres_changes', {

@@ -482,6 +482,17 @@
       text-overflow: ellipsis;
     }
     .room-item.active .room-name { color: var(--teal-800); }
+    /* 置顶:房间内任一 AI 消息处于单钩待二钩状态(一方 ✓ 等另一方确认) */
+    /* 中性灰底 + 小面积警示橙,适配任何主题色(绿/蓝/紫) */
+    .room-item.pinned {
+      background: rgba(0, 0, 0, .04);
+      border-left: 2px solid rgba(217, 119, 6, .55);
+    }
+    .room-item.pinned .room-name::before {
+      content: "📌 ";
+      font-size: 11px;
+      opacity: .9;
+    }
     /* 大咖 hover 删除按钮 */
     .room-del {
       flex-shrink: 0;
@@ -1044,7 +1055,7 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩公告条:房间顶部 sticky,等对方确认 */
+    /* 单钩待二钩公告条:房间顶部 sticky,等对方确认。中性灰底,主题色无关。 */
     .pinned-banner {
       position: sticky;
       top: 0;
@@ -1052,18 +1063,18 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 1.5rem;
-      background: linear-gradient(90deg, rgba(245,158,11,.18), rgba(245,158,11,.06));
-      border-bottom: 1px solid rgba(245,158,11,.35);
+      padding: 7px 1.5rem;
+      background: rgba(0, 0, 0, .035);
+      border-bottom: 1px solid rgba(0, 0, 0, .08);
       font-size: 13px;
       color: var(--text);
       cursor: pointer;
-      transition: background .2s;
+      transition: background .15s;
       user-select: none;
     }
-    .pinned-banner:hover { background: linear-gradient(90deg, rgba(245,158,11,.28), rgba(245,158,11,.10)); }
+    .pinned-banner:hover { background: rgba(0, 0, 0, .06); }
     .pinned-icon { font-size: 14px; }
-    .pinned-label { color: #b45309; font-weight: 600; flex-shrink: 0; }
+    .pinned-label { color: #d97706; font-weight: 600; flex-shrink: 0; }   /* 警示橙仅小面积出现 */
     .pinned-preview {
       flex: 1;
       color: var(--text2);
@@ -1073,7 +1084,7 @@
     }
     .flash-highlight { animation: pin-flash 1.4s ease-out; }
     @keyframes pin-flash {
-      0%   { background: rgba(245,158,11,.35); }
+      0%   { background: rgba(217, 119, 6, .22); }
       100% { background: transparent; }
     }
 
