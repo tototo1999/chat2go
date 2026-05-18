@@ -2412,6 +2412,18 @@
           err.style.display = 'block'
           return
         }
+        // 等 session 稳定，最多等 3 秒
+        let session = null
+        for (let i = 0; i < 10; i++) {
+          const { data } = await sb.auth.getSession()
+          if (data?.session) { session = data.session; break }
+          await new Promise(r => setTimeout(r, 300))
+        }
+        if (!session) {
+          err.textContent = '登录超时，请重试'
+          err.style.display = 'block'
+          return
+        }
       }
       // 写 profiles.display_name
       const { data: { user } } = await sb.auth.getUser()
