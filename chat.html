@@ -1055,7 +1055,7 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 横排。容器透明,只显示胶囊本身 */
+    /* 单钩待二钩胶囊:sticky 顶部居中,多条 pending 单行并列横排,容器和胶囊都透明 */
     .pinned-banner {
       position: sticky;
       top: 0;
@@ -1063,26 +1063,29 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 6px;
+      flex-wrap: nowrap;          /* 强制单行,不换行 */
+      gap: 8px;
       padding: 8px 1.5rem 4px;
       background: transparent;
-      pointer-events: none;     /* 容器自身不挡聊天点击,只胶囊响应 */
+      overflow-x: auto;            /* 极多 pending 时横向滚动 */
+      pointer-events: none;
     }
     .pinned-banner > * { pointer-events: auto; }
+    .pinned-banner::-webkit-scrollbar { display: none; }   /* 隐藏滚动条 */
     .pinned-pill {
       display: inline-flex;
       align-items: center;
       gap: 5px;
       padding: 3px 11px 3px 8px;
       border-radius: 999px;
-      background: rgba(0, 0, 0, .045);
-      border: 1px solid rgba(0, 0, 0, .08);
+      background: transparent;     /* 去掉白底 */
+      border: 1px solid rgba(0, 0, 0, .12);
       font-size: 12px;
       color: var(--text);
       cursor: pointer;
       transition: all .15s;
-      max-width: 280px;
+      max-width: 220px;            /* 3 颗加 gap 能进 800px 容器 */
+      flex-shrink: 1;
       user-select: none;
     }
     .pinned-pill:hover {
