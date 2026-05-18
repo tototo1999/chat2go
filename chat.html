@@ -1067,11 +1067,13 @@
       gap: 8px;
       padding: 0;
       width: fit-content;
-      max-width: calc(100% - 32px);   /* 极多 pending 时不超出聊天区 */
-      margin: 8px auto 4px;            /* 顶部 8px gap 让胶囊跟消息有距离,自动水平居中 */
+      max-width: calc(100% - 32px);
+      margin: 8px auto 4px;
       background: transparent;
       overflow-x: auto;
     }
+    /* 兜底:innerHTML 为空时强制不占空间(防止 JS hide 漏调) */
+    .pinned-banner:empty { display: none !important; }
     .pinned-banner::-webkit-scrollbar { display: none; }   /* 隐藏滚动条 */
     .pinned-pill {
       display: inline-flex;
