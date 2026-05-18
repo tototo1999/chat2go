@@ -376,9 +376,6 @@
     }
     .todo-pill .todo-toggle:hover { background: var(--teal-50); color: var(--teal-600); }
     .todo-group.expanded .todo-pill .todo-toggle { transform: rotate(45deg); color: var(--teal-600); }
-    .todo-lock-state { display: none !important; }
-    .todo-group.locked .todo-pill { cursor: default; opacity: 1; }
-    .todo-group.locked .todo-children { display: block !important; }
     /* 子目录 */
     .todo-children {
       display: none;
@@ -2715,12 +2712,10 @@
     body.querySelectorAll('.todo-group.expanded').forEach(g => prevExpanded.add(g.dataset.group))
     body.innerHTML = ''
     let idx = 0
-    const sectionEditing = document.getElementById('todoSection')?.classList.contains('editing')
     ;(payload || []).forEach((group, gi) => {
       const groupEl = document.createElement('div')
       groupEl.className = 'todo-group'
       groupEl.dataset.group = `g${gi}`
-      groupEl.dataset.groupStart = String(idx)
       const subsHtml = (group.items || []).map((it, ii) => {
         const cur = idx++
         return `
@@ -2730,10 +2725,8 @@
             <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
           </div>`
       }).join('')
-      const lockHtml = ''
       groupEl.innerHTML = `
         <div class="todo-pill" onclick="toggleTodoGroup(this)">
-          ${lockHtml}
           <button type="button" class="todo-toggle" onclick="event.stopPropagation();toggleTodoGroup(this)">+</button>
           <span class="todo-text" data-text="group" data-gi="${gi}">${escHtml(group.label || '')}</span>
           <button type="button" class="todo-row-del" title="删除分组" onclick="event.stopPropagation();deleteTodoGroup(${gi})">×</button>
@@ -2758,8 +2751,6 @@
     const sec = document.getElementById('todoSection')
     if (!sec) return
     const editing = sec.classList.contains('editing')
-    // 编辑态:大咖要能改任何大题,先把所有 .locked 清掉(退出编辑时 saveCurrentTemplate → refreshQuizState 会重算)
-    if (editing) sec.querySelectorAll('.todo-group.locked').forEach(g => g.classList.remove('locked'))
     sec.querySelectorAll('.todo-text[data-text]').forEach(el => {
       if (editing) el.setAttribute('contenteditable', 'true')
       else el.removeAttribute('contenteditable')
