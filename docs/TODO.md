@@ -25,6 +25,7 @@
 
 - [ ] **轮换 OPENROUTER_API_KEY**(昨晚明文贴过 `sk-or-v1-e472...`,已泄露在会话历史)
 - [ ] **轮换 DEEPSEEK_API_KEY**(今天明文贴过 `sk-7f711eca...`,已泄露)
+- [ ] **轮换 GitHub PAT `ghp_ynsm9dfh...`**(2026-05-17 晚 ssh mini 看 ~/tradego-site/.git/config 时明文显示在 dev session,要去 https://github.com/settings/tokens 撤销 + 换新)
 
 ### 文档
 
