@@ -1055,57 +1055,24 @@
     .msg-bubble.expert { background: var(--purple-50); border-left-color: var(--purple); color: var(--text); }
     .msg-bubble.ai     { background: var(--teal-50);   border-left-color: var(--teal);   color: var(--text); }
 
-    /* 单钩待二钩胶囊:sticky 浮在 messagesList 顶部居中,banner 宽度仅够胶囊本身 */
-    /* 关键:width fit-content + margin auto → banner 不撑满父容器,父级白底不会从两侧露出 */
-    .pinned-banner {
-      position: sticky;
-      top: 8px;
-      z-index: 5;
-      display: flex;
-      align-items: center;
-      flex-wrap: nowrap;
-      gap: 8px;
-      padding: 0;
-      width: fit-content;
-      max-width: calc(100% - 32px);
-      margin: 8px auto 4px;
-      background: transparent;
-      overflow-x: auto;
-    }
-    /* 兜底:innerHTML 为空时强制不占空间(防止 JS hide 漏调) */
-    .pinned-banner:empty { display: none !important; }
-    .pinned-banner::-webkit-scrollbar { display: none; }   /* 隐藏滚动条 */
-    .pinned-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 11px 3px 8px;
-      border-radius: 999px;
-      background: transparent;     /* 去掉白底 */
-      border: 1px solid rgba(0, 0, 0, .12);
-      font-size: 12px;
-      color: var(--text);
-      cursor: pointer;
-      transition: all .15s;
-      max-width: 220px;            /* 3 颗加 gap 能进 800px 容器 */
-      flex-shrink: 1;
-      user-select: none;
-    }
-    .pinned-pill:hover {
-      background: rgba(217, 119, 6, .10);
-      border-color: rgba(217, 119, 6, .4);
-      transform: translateY(-1px);
-    }
-    .pinned-pill-icon { font-size: 12px; flex-shrink: 0; }
-    .pinned-pill-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    /* 跳到 AI 消息时的闪烁高亮(用 box-shadow,跨任何主题背景都可见) */
     .flash-highlight { animation: pin-flash 1.4s ease-out; }
     @keyframes pin-flash {
       0%   { box-shadow: 0 0 0 3px rgba(217, 119, 6, .55), 0 0 16px rgba(217, 119, 6, .25); }
       100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
+    }
+    /* 单钩待二钩:current 题目胶囊的 checkbox 框显示半勾,表示已有 1 方确认 */
+    .todo-sub.half-checked .check { position: relative; }
+    .todo-sub.half-checked .check::after {
+      content: "✓";
+      color: rgba(217, 119, 6, .85);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .typing-indicator {
@@ -1853,8 +1820,6 @@
         </div>
       </div>
 
-      <!-- 单钩待二钩胶囊:任一方 ✓ 后,sticky 顶部居中显示;多条 pending 横排;双钩 pass / ✗ 自动撤下 -->
-      <div class="pinned-banner" id="pinnedBanner" style="display:none;"></div>
       <div class="messages" id="messagesList"></div>
 
       <div class="typing-indicator" id="typingIndicator">
@@ -2697,66 +2662,14 @@
     await loadMessages(room.id)
     await loadRoomCost(room.id)
     subscribeRoom(room.id)
-    updatePinnedBanner(room.id)  // 房顶单钩待二钩公告条
     document.getElementById('msgInput').focus()
   }
 
-  // 单钩待二钩胶囊:查当前 room 最近 50 条 AI 消息,所有 up=1 && down=0 的 → sticky 顶部居中,横排多胶囊
-  async function updatePinnedBanner(roomId) {
-    if (!roomId) return hidePinnedBanner()
-    const { data, error } = await sb
-      .from('messages')
-      .select('id, content, ratings, created_at')
-      .eq('room_id', roomId)
-      .eq('role', 'ai')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    if (error || !data) return hidePinnedBanner()
-    const pending = []
-    for (const m of data) {
-      const r = m.ratings || {}
-      const vals = Object.values(r)
-      const upCount = vals.filter(v => v === 'up').length
-      const downCount = vals.filter(v => v === 'down').length
-      if (upCount === 1 && downCount === 0) pending.push(m)
-    }
-    if (!pending.length) return hidePinnedBanner()
-    // 老的左边,新的右边(发生顺序)
-    pending.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
-    const banner = document.getElementById('pinnedBanner')
-    if (!banner) return
-    banner.innerHTML = pending.map(m => {
-      // 清掉 markdown 标记 + 折叠多空白,只取前 24 字符
-      const text = (m.content || '')
-        .replace(/[`*#_~]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .slice(0, 24) || '(空消息)'
-      return `<span class="pinned-pill" data-msg-id="${m.id}" title="点击跳转到这条消息">
-        <span class="pinned-pill-icon">📌</span>
-        <span class="pinned-pill-text">${escHtml(text)}</span>
-      </span>`
-    }).join('')
-    // JS 绑定事件比 inline onclick 更稳(避免 pointer-events / scope 坑)
-    banner.querySelectorAll('.pinned-pill').forEach(el => {
-      el.addEventListener('click', () => scrollToPinnedMessage(el.dataset.msgId))
-    })
-    banner.style.display = 'flex'
-  }
-  function hidePinnedBanner() {
-    const banner = document.getElementById('pinnedBanner')
-    if (banner) { banner.innerHTML = ''; banner.style.display = 'none' }
-  }
-  function scrollToPinnedMessage(msgId) {
-    console.log('[pin click]', msgId)
-    if (!msgId) { console.warn('[pin] no msgId'); return }
+  // 点击 todo 题目胶囊 → 跳到对应 AI 消息 + flash 高亮
+  function scrollToAiMessage(msgId) {
+    if (!msgId) return
     const el = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
-    console.log('[pin found?]', !!el, el)
-    if (!el) {
-      // 可能消息在别的 channel(大咖↔小白私聊)→ 用户看不到。提示一下。
-      showToast?.('该消息在另一个频道,切过去后再点 📌') || alert('该消息在另一个频道')
-      return
-    }
+    if (!el) { showToast?.('该消息可能在另一个频道,切过去再试') || alert('该消息在另一个频道'); return }
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('flash-highlight')
     setTimeout(() => el.classList.remove('flash-highlight'), 1500)
@@ -2854,7 +2767,7 @@
       const subsHtml = (group.items || []).map((it, ii) => {
         const cur = idx++
         return `
-          <div class="todo-sub" data-quiz-idx="${cur}">
+          <div class="todo-sub" data-quiz-idx="${cur}" onclick="scrollToAiMessage(this.dataset.aiMsgId)">
             <span class="check">&#10003;</span>
             <span class="todo-text" data-text="sub" data-gi="${gi}" data-ii="${ii}">${escHtml(it.label || '')}</span>
             <button type="button" class="todo-row-del" title="删除" onclick="event.stopPropagation();deleteTodoItem(${gi},${ii})">×</button>
@@ -3151,24 +3064,43 @@
     if (!currentRoom) return
     const { data, error } = await sb
       .from('messages')
-      .select('ratings')
+      .select('id, ratings')
       .eq('room_id', currentRoom.id)
       .eq('role', 'ai')
       .eq('channel', 'main')
       .order('created_at', { ascending: true })
     if (error || !data) return
     let passed = 0
-    data.forEach(m => {
+    // 找 current 题目对应的 AI 消息(即第一条 up<2 的)+ 是否单钩
+    let currentAiMsgId = null
+    let currentHalfChecked = false
+    for (const m of (data || [])) {
       const r = m.ratings || {}
-      const upCount = Object.values(r).filter(v => v === 'up').length
-      if (upCount >= 2) passed++
-    })
+      const vals = Object.values(r)
+      const upCount = vals.filter(v => v === 'up').length
+      const downCount = vals.filter(v => v === 'down').length
+      if (upCount >= 2) {
+        passed++
+      } else {
+        // 第一条还没 pass 的 AI 消息 = current 题目对应的
+        if (currentAiMsgId === null) {
+          currentAiMsgId = m.id
+          currentHalfChecked = (upCount === 1 && downCount === 0)
+        }
+      }
+    }
     const total = document.querySelectorAll('.todo-sub[data-quiz-idx]').length
     passed = Math.min(passed, total)
     document.querySelectorAll('.todo-sub[data-quiz-idx]').forEach(sub => {
       const idx = Number(sub.dataset.quizIdx)
-      sub.classList.toggle('done', idx < passed)
-      sub.classList.toggle('current', idx === passed)
+      const isDone = idx < passed
+      const isCurrent = idx === passed
+      sub.classList.toggle('done', isDone)
+      sub.classList.toggle('current', isCurrent)
+      // half-checked 只给 current 题目;同时挂上 AI 消息 ID 用于点击跳转
+      sub.classList.toggle('half-checked', isCurrent && currentHalfChecked)
+      if (isCurrent && currentAiMsgId) sub.dataset.aiMsgId = currentAiMsgId
+      else delete sub.dataset.aiMsgId
     })
     // 大题解锁：当前组的「起始题号」<= passed 才解锁，编辑态强制全解锁
     const editing = document.getElementById('todoSection')?.classList.contains('editing')
@@ -3359,10 +3291,9 @@
         // 评价 ratings 更新(双方共识用),同步 UI + 刷做题进度 + 重排 sidebar 置顶 + 刷新房顶公告
         if (payload.new?.role === 'ai') {
           applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
-          refreshQuizState()
-          // 单钩待二钩 → 该房间 sidebar 置顶 + 房顶公告;双钩或 ✗ → 全部解除。
+          refreshQuizState()   // 内部会更新 current todo-sub 的 half-checked + 挂 aiMsgId
+          // 单钩待二钩 → 该房间 sidebar 置顶;双钩或 ✗ → 解除。
           loadRooms()
-          updatePinnedBanner(roomId)
         }
       })
       .on('postgres_changes', {
