@@ -3,6 +3,20 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-19
+
+### chat2go.cn / xyz 接录音转写(让 AI 能"听"语音消息)
+
+- [ ] **adapter 加音频支持** `chat2go.py` 的 `_extract_attachment_text` 扩展:
+  - 检测 `.qta` / `.m4a` / `.mp3` / `.wav` / `.aac` 后缀(QuickTime / Apple Voice Memo 系列)
+  - ffmpeg 先把容器抽成纯 wav/mp3(`.qta` 是 QT 装 AAC,需要先解一层)
+  - 调 DashScope(Qwen-Audio) 或 OpenRouter Gemini 转写,中文优先 Qwen
+  - 转写文本以 `【录音转写 (XX 秒)】\n<text>` 前缀塞进 content,brain 看到的就是文字
+- [ ] **依赖**:mini 上装 ffmpeg(本机已 ffmpeg 8.1) + DashScope SDK 或 google-genai
+- [ ] **验证**:用样本录音(20 秒中文) → 看转写质量 → 再决定走 Qwen 还是 Gemini
+- [ ] **adapter 改动同步**:回写 `docs/hermes-patches/02-chat2go-platform-adapter.patch` (跟今晚 dispatcher 那波一起整理)
+- [ ] **样本录音保留**:`~/Library/Containers/com.apple.VoiceMemos/Data/tmp/.com.apple.uikit.itemprovider.temporary.ekw9C3/新录音 10.qta` 可作为 1 号测试用例(0:20, 94kbps AAC LC, 48kHz mono)
+
 ## 2026-05-18
 
 ### tradego 拦截器扩展(让大咖出 Excel 报表不打开 terminal)
