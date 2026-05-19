@@ -5,6 +5,17 @@
 
 ## 2026-05-19
 
+### ✅ 今天已做(无需再操作)
+
+- ✅ **Well2GO.ai 康复师版完整上线** — 独立 repo `tototo1999/well2go` + GoDaddy DNS + GH Pages HTTPS + Enforce HTTPS + mini 新 Hermes 实例 `ai.hermes.gateway.well2go` 跑起来(`iamaog@well2go.ai`, expert=29b53260)。SOP 已落 memory `project_well2go_deployment_inflight.md`
+- ✅ **所有平台关闭注册 tab** — chat2go.cn 早已关,tradego + well2go 今天关掉(commit `c19a90c` + tradego/well2go login.html)
+- ✅ **邀请码多 token 模型** — Supabase 新表 `room_invites` + RPC `create_invite_token` / `consume_invite_token`,前端 chat2go.cn 已 push `48e7c11`;tradego + well2go 用户 ToDesk 同步中
+
+### 🔥 未完成(继续)
+
+- [ ] **邀请码多 token 同步 tradego/well2go** — ToDesk mini 跑 patch.py 命令(已发,等用户操作)
+- [ ] **patch 02 重生成** — chat2go.py 今天没动,但近期 `_CONTRACT_KEYWORDS` 扩展未回写(同 2026-05-18 段的 TODO)
+
 ### chat2go.cn / xyz 接录音转写(让 AI 能"听"语音消息)
 
 - [ ] **adapter 加音频支持** `chat2go.py` 的 `_extract_attachment_text` 扩展:
@@ -40,6 +51,7 @@
 - [ ] **轮换 OPENROUTER_API_KEY**(昨晚明文贴过 `sk-or-v1-e472...`,已泄露在会话历史)
 - [ ] **轮换 DEEPSEEK_API_KEY**(今天明文贴过 `sk-7f711eca...`,已泄露)
 - [ ] **轮换 GitHub PAT `ghp_ynsm9dfh...`**(2026-05-17 晚 ssh mini 看 ~/tradego-site/.git/config 时明文显示在 dev session,要去 https://github.com/settings/tokens 撤销 + 换新)
+- [ ] **轮换 well2go agent_key `c2g-key_c9de2791...`**(2026-05-19 中午明文贴过 — well2go 注册后初次部署用)
 
 ### 文档
 
