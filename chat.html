@@ -493,7 +493,7 @@
       font-size: 11px;
       opacity: .9;
     }
-    /* 大咖 hover 删除按钮 */
+    /* OG hover 删除按钮 */
     .room-del {
       flex-shrink: 0;
       width: 22px;
@@ -533,8 +533,8 @@
       justify-content: center;
     }
     .room-edit:hover { background: var(--teal-50); color: var(--teal-600); }
-    /* 大咖 待审 follow 已挪到 role-badge 弹层（见 .role-popup） */
-    /* 小白：没有房间时显示「选大咖 follow」面板 */
+    /* OG 待审 follow 已挪到 role-badge 弹层（见 .role-popup） */
+    /* 小白：没有房间时显示「选OG follow」面板 */
     .follow-experts {
       padding: 1.5rem 1.25rem;
       text-align: center;
@@ -1191,7 +1191,7 @@
     }
 
     /* ── 附件 ── */
-    /* 用户身份徽章：白(小白) / 咖(大咖)，teal 圆底白字，点击进入资料设置 */
+    /* 用户身份徽章：白(小白) / 咖(OG)，teal 圆底白字，点击进入资料设置 */
     .role-badge-wrap { position: relative; flex-shrink: 0; }
     .role-badge {
       width: 30px;
@@ -1693,7 +1693,7 @@
   </div>
 </nav>
 
-<!-- Settings Modal（仅大咖可见，含 Agent Keys 管理）-->
+<!-- Settings Modal（仅OG可见，含 Agent Keys 管理）-->
 <div class="modal-overlay" id="settingsModal" onclick="closeSettings(event)">
   <div class="modal" style="max-width:640px;" onclick="event.stopPropagation()">
     <h3 id="settingsTitle">设置</h3>
@@ -1721,14 +1721,14 @@
       <label style="font-size:12px;color:var(--text2);margin-top:.3rem;">邮箱</label>
       <input type="text" id="profileEmail" disabled style="padding:.5rem;font-size:13px;background:var(--bg);color:var(--text3);">
 
-      <!-- 当前房间标题 inline；仅大咖在自己房间内时显示 -->
+      <!-- 当前房间标题 inline；仅OG在自己房间内时显示 -->
       <div id="roomTitleSection" style="display:none;flex-direction:column;gap:.3rem;margin-top:.3rem;">
         <label style="font-size:12px;color:var(--text2);">当前房间标题（最多 13 字，留空用昵称兜底）</label>
         <input type="text" id="roomSidebarTitle" maxlength="13" placeholder="留空则用昵称" style="padding:.5rem;font-size:13px;">
       </div>
     </div>
 
-    <!-- Agent Keys（仅大咖可见） -->
+    <!-- Agent Keys（仅OG可见） -->
     <div id="agentKeysSection" style="display:none;">
       <h4 style="margin:0 0 .5rem;font-size:14px;font-weight:600;">Agent 连接密钥</h4>
       <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);">
@@ -1927,7 +1927,7 @@
   <div class="modal" style="max-width:380px;" onclick="event.stopPropagation()">
     <h3 style="margin:0 0 1rem;">欢迎进入聊天室</h3>
     <p style="margin:0 0 1rem;font-size:13px;color:var(--text2);line-height:1.6;">
-      给自己起个昵称，进入大咖的房间。
+      给自己起个昵称，进入OG的房间。
     </p>
     <input type="text" id="inviteNickname" placeholder="昵称（如：小明）" maxlength="20"
            onkeydown="if(event.key==='Enter'){event.preventDefault();submitInvite()}"
@@ -1970,14 +1970,14 @@
     }
     // 已登录 + URL 带 invite token：邀请进入 = 加入新房的主动动作，
     // 不论是否已有 display_name 都弹昵称 modal 让确认（input 预填现有名，可改可直进）
-    // 注意大咖自己点自己的邀请链接也会被弹，少见但无害（点取消会跳 login.html，刷新走老逻辑）
+    // 注意OG自己点自己的邀请链接也会被弹，少见但无害（点取消会跳 login.html，刷新走老逻辑）
     if (inviteToken) {
       try {
         const { data: profile } = await sb.from('profiles')
           .select('role,display_name').eq('user_id', session.user.id).maybeSingle()
         const dn = (profile?.display_name || '').trim()
-        // 大咖账号点邀请链接：不弹昵称 modal，避免误改大咖 display_name 污染数据
-        // （比如大咖在浏览器复制了自己房间的邀请链接给小白测试，结果自己先点了）
+        // OG账号点邀请链接：不弹昵称 modal，避免误改OG display_name 污染数据
+        // （比如OG在浏览器复制了自己房间的邀请链接给小白测试，结果自己先点了）
         if (profile?.role === 'expert') {
           const { data: roomId } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
           if (roomId) history.replaceState({}, '', `/chat.html?room=${roomId}`)
@@ -1999,7 +1999,7 @@
 
     const email = currentUser.email
 
-    // 检查角色：大咖才显示设置按钮
+    // 检查角色：OG才显示设置按钮
     try {
       const { data: profile } = await sb
         .from('profiles')
@@ -2008,19 +2008,19 @@
         .maybeSingle()
       currentRole = profile?.role || 'user'
       currentDisplayName = profile?.display_name || ''
-      // 输入区身份徽章: 大咖 → 咖, 小白 → 白
+      // 输入区身份徽章: OG → 咖, 小白 → 白
       const badge = document.getElementById('roleBadge')
       if (badge) {
         badge.textContent = currentRole === 'expert' ? 'OG' : '白'
-        badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
+        badge.title = currentRole === 'expert' ? 'OG · 点击查看待审 follow' : '小白 · 点击修改资料'
       }
-      // 大咖 或 admin 都看得到设置入口
+      // OG 或 admin 都看得到设置入口
       if (currentRole === 'expert' || ADMIN_EMAILS.includes(currentUser?.email)) {
         document.getElementById('settingsBtn').style.display = ''
       }
     } catch (e) { console.warn('[role] failed:', e) }
 
-    // 大咖：没有房就自动建一个（每个大咖固定 1 个房）
+    // OG：没有房就自动建一个（每个OG固定 1 个房）
     if (currentRole === 'expert') {
       await ensureExpertRoom()
     }
@@ -2057,7 +2057,7 @@
         console.warn('[openRoomById] not found:', roomId, error)
         return
       }
-      // 大咖只能打开自己的房；外来 ?room= 链接忽略
+      // OG只能打开自己的房；外来 ?room= 链接忽略
       if (currentRole === 'expert' && room.expert_id !== currentUser?.id) {
         console.warn('[openRoomById] expert blocked from foreign room:', roomId)
         return
@@ -2073,12 +2073,12 @@
     }
   }
 
-  // ── Settings 模态框（大咖独享）──
+  // ── Settings 模态框（OG独享）──
   async function openSettings() {
     document.getElementById('settingsModal').classList.add('show')
     // 标题随角色变化
     document.getElementById('settingsTitle').textContent =
-      currentRole === 'expert' ? '大咖设置' : '小白设置'
+      currentRole === 'expert' ? 'OG设置' : '小白设置'
     // 邮箱（只读）
     document.getElementById('profileEmail').value = currentUser?.email || ''
     // 拉当前 display_name（并同步到全局 currentDisplayName，修复 init 时 fetch 失败的情况）
@@ -2096,11 +2096,11 @@
         })
       }
     } catch (e) { console.warn('[profile load]', e) }
-    // Agent Keys 仅大咖
+    // Agent Keys 仅OG
     document.getElementById('agentKeysSection').style.display =
       currentRole === 'expert' ? '' : 'none'
     if (currentRole === 'expert') loadAgentKeys()
-    // 当前房间标题：仅当处在自己作为大咖的房间内时显示
+    // 当前房间标题：仅当处在自己作为OG的房间内时显示
     const showRoomTitle = !!currentRoom && isExpert(currentRoom)
     const roomTitleSection = document.getElementById('roomTitleSection')
     if (roomTitleSection) roomTitleSection.style.display = showRoomTitle ? 'flex' : 'none'
@@ -2289,7 +2289,7 @@
 
     let rooms = []
     if (currentRole === 'expert') {
-      // 大咖：自己 owned 的房（理论上只有 1 个）
+      // OG：自己 owned 的房（理论上只有 1 个）
       const { data, error } = await sb
         .from('rooms').select('*')
         .eq('expert_id', currentUser.id)
@@ -2311,7 +2311,7 @@
       if (currentRole === 'expert') {
         list.innerHTML = `<div class="rooms-empty">还没有 Chat（自动创建中…）</div>`
       } else {
-        // 小白：没房 → 显示「选大咖 follow」面板
+        // 小白：没房 → 显示「选OG follow」面板
         await renderFollowExpertsPanel()
       }
       return
@@ -2319,13 +2319,13 @@
 
     rooms.forEach(room => renderRoomItem(room))
 
-    // 自动打开第一个房间（小白和大咖都一样），但已经有打开的就不动
+    // 自动打开第一个房间（小白和OG都一样），但已经有打开的就不动
     if (!currentRoom && rooms.length > 0) {
       openRoom(rooms[0])
     }
   }
 
-  // ── 大咖：首次登录自动建一个房（每个大咖固定 1 个）──
+  // ── OG：首次登录自动建一个房（每个OG固定 1 个）──
   async function ensureExpertRoom() {
     const { data: existing, error } = await sb
       .from('rooms').select('id').eq('expert_id', currentUser.id).eq('product', DEMO_PRODUCT).limit(1)
@@ -2362,7 +2362,7 @@
       .subscribe()
   }
 
-  // ── 小白：没有房 → 列出可 follow 的大咖 ──
+  // ── 小白：没有房 → 列出可 follow 的OG ──
   async function renderFollowExpertsPanel() {
     const list = document.getElementById('roomsList')
     const [expertsResp, requestsResp] = await Promise.all([
@@ -2375,7 +2375,7 @@
     requests.forEach(r => { pendingMap[r.expert_id] = r.status })
 
     if (experts.length === 0) {
-      list.innerHTML = `<div class="follow-experts"><div class="follow-experts-title">暂无大咖</div></div>`
+      list.innerHTML = `<div class="follow-experts"><div class="follow-experts-title">暂无OG</div></div>`
       return
     }
     const rows = experts.map(e => {
@@ -2389,7 +2389,7 @@
              <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
            </div>`
         : `<div class="follow-pill" data-expert="${e.user_id}">
-             <button class="pf-heart" title="关注大咖" onclick="requestFollow('${e.user_id}', this)">&#9829;</button>
+             <button class="pf-heart" title="关注OG" onclick="requestFollow('${e.user_id}', this)">&#9829;</button>
              <span class="pf-divider"></span>
              <button class="pf-count" title="查看 followers" onclick="openFollowersListChat('${e.user_id}', this)">·</button>
            </div>`
@@ -2401,11 +2401,11 @@
     }).join('')
     list.innerHTML = `
       <div class="follow-experts">
-        <div class="follow-experts-title">选位大咖</div>
-        <div class="follow-experts-sub">选一位大咖，进入对话</div>
+        <div class="follow-experts-title">选位OG</div>
+        <div class="follow-experts-sub">选一位OG，进入对话</div>
         ${rows}
       </div>`
-    // 异步填充每个大咖的 follower 数
+    // 异步填充每个OG的 follower 数
     experts.forEach(async e => {
       const { data } = await sb.rpc('get_expert_follower_count', { p_expert_id: e.user_id })
       const el = list.querySelector(`.follow-pill[data-expert="${e.user_id}"] .pf-count`)
@@ -2490,7 +2490,7 @@
             return
           }
         } else {
-          // existing：profile 必有行，只 update display_name 不动 role（避免覆盖大咖角色）
+          // existing：profile 必有行，只 update display_name 不动 role（避免覆盖OG角色）
           const { error: pErr } = await sb.from('profiles')
             .update({ display_name: nickname })
             .eq('user_id', user.id)
@@ -2531,7 +2531,7 @@
     const { data: room, error: e1 } = await sb
       .from('rooms').select('id').eq('expert_id', expertId).eq('product', DEMO_PRODUCT).limit(1).maybeSingle()
     if (e1 || !room) {
-      showToast('找不到大咖的 Chat')
+      showToast('找不到OG的 Chat')
       btnEl.disabled = false
       return
     }
@@ -2543,13 +2543,13 @@
       btnEl.disabled = false
       return
     }
-    showToast('已加入大咖的 Chat')
+    showToast('已加入OG的 Chat')
     await loadRooms()
     await openRoomById(room.id)
   }
 
   function renderRoomItem(room) {
-    // 大咖只看自己 owned 的房：拒绝渲染外来房（兜底 openRoomById 等旁路）
+    // OG只看自己 owned 的房：拒绝渲染外来房（兜底 openRoomById 等旁路）
     if (currentRole === 'expert' && room.expert_id !== currentUser?.id) return
     const list = document.getElementById('roomsList')
     const empty = list.querySelector('.rooms-empty')
@@ -2596,7 +2596,7 @@
   }
 
   async function saveRoomSidebarTitle(fallbackName) {
-    if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的大咖能改'); return }
+    if (!currentRoom || !isExpert(currentRoom)) { showToast('只有当前房间的OG能改'); return }
     const inputEl = document.getElementById('roomSidebarTitle')
     const newTitle = (inputEl?.value || '').trim().slice(0, 13)  // 兜底再截 13 字，防绕过 maxlength
     const { error } = await sb.from('rooms')
@@ -2632,7 +2632,7 @@
     })
 
     // sidebar 顶部房间标题：rooms.sidebar_title 优先，否则 fallback 到 expert.display_name
-    // 编辑入口在「设置 → 当前房间标题」（仅大咖在房间内可见）
+    // 编辑入口在「设置 → 当前房间标题」（仅OG在房间内可见）
     const titleTextEl = document.getElementById('sidebarRoomTitleText')
     if (titleTextEl) {
       let title = (room.sidebar_title || '').trim()
@@ -2652,13 +2652,13 @@
     const ac = document.getElementById('activeChat')
     ac.style.display = 'flex'
 
-    // 大咖 / 小白 显示邀请按钮；路人隐藏
+    // OG / 小白 显示邀请按钮；路人隐藏
     const inviteBtn = document.getElementById('inviteBtn')
     if (inviteBtn) {
       inviteBtn.style.display = (currentRoomRole === 'expert' || currentRoomRole === 'focal') ? '' : 'none'
       inviteBtn.title = currentRoomRole === 'expert' ? '复制邀请链接（发给小白）' : '复制邀请链接（发给路人）'
     }
-    // 重置按钮仅大咖看到
+    // 重置按钮仅OG看到
     const resetBtn = document.getElementById('resetRoomBtn')
     if (resetBtn) resetBtn.style.display = currentRoomRole === 'expert' ? '' : 'none'
     // 输入栏身份徽章按房内角色(expert/focal/audience)显示，跟消息头像保持一致
@@ -2667,7 +2667,7 @@
       const map = { expert: 'OG', focal: '白', audience: '路' }
       badge.textContent = map[currentRoomRole] || '白'
       const titleMap = {
-        expert: '大咖 · 点击修改资料',
+        expert: 'OG · 点击修改资料',
         focal:  '小白 · 点击修改资料',
         audience: '路人 · 点击修改资料',
       }
@@ -2745,7 +2745,7 @@
 
   async function resetRoom() {
     if (!currentRoom) return
-    if (currentRoomRole !== 'expert') { showToast('只有大咖能重置房间'); return }
+    if (currentRoomRole !== 'expert') { showToast('只有OG能重置房间'); return }
     const ok = confirm('重置这个房间？\n\n会做：\n• 踢掉所有小白和路人\n• 清空全部消息\n• 重新生成邀请链接（旧链接失效）\n\n不可恢复。')
     if (!ok) return
     const { error } = await sb.rpc('reset_room', { p_room_id: currentRoom.id })
@@ -2756,7 +2756,7 @@
 
   async function copyInviteLink() {
     if (!currentRoom) return
-    // 大咖 → 小白邀请（单次，invite_token）；小白 → 路人邀请（多次，audience_invite_token）
+    // OG → 小白邀请（单次，invite_token）；小白 → 路人邀请（多次，audience_invite_token）
     const token = currentRoomRole === 'expert'
       ? currentRoom.invite_token
       : currentRoom.audience_invite_token
@@ -2810,7 +2810,7 @@
     { label: '格局', items: [{ label: '格局' }, { label: '喜' }, { label: '忌' }] },
     { label: 'check', items: [{ label: '1' }, { label: '2' }, { label: '3' }] },
   ]
-  let currentTemplate = null  // {id, name, payload} —— 当前房间挂的方案（小白也持有副本，仅大咖可改）
+  let currentTemplate = null  // {id, name, payload} —— 当前房间挂的方案（小白也持有副本，仅OG可改）
   let todoPopupOpen = false
   let _todoPopupTemplates = []  // showTodoPopup 缓存的方案列表，供 deleteTemplate 查名字用
 
@@ -2875,7 +2875,7 @@
     const sec = document.getElementById('todoSection')
     if (!sec) return
     const editing = sec.classList.contains('editing')
-    // 编辑态:大咖要能改任何大题,先把所有 .locked 清掉(退出编辑时 saveCurrentTemplate → refreshQuizState 会重算)
+    // 编辑态:OG要能改任何大题,先把所有 .locked 清掉(退出编辑时 saveCurrentTemplate → refreshQuizState 会重算)
     if (editing) sec.querySelectorAll('.todo-group.locked').forEach(g => g.classList.remove('locked'))
     sec.querySelectorAll('.todo-text[data-text]').forEach(el => {
       if (editing) el.setAttribute('contenteditable', 'true')
@@ -2920,7 +2920,7 @@
   async function loadActiveTodoTemplate(room) {
     let templateId = room.active_todo_template_id
 
-    // 大咖在自己房：没 active 就 seed 个人首个方案并设为 active
+    // OG在自己房：没 active 就 seed 个人首个方案并设为 active
     if (!templateId && isExpert(room)) {
       templateId = await ensureExpertHasDefaultTemplate(room.expert_id)
       if (templateId) {
@@ -3431,19 +3431,19 @@
     // 群聊：原 ti-users 风格 + 第三个人头 → 手写 SVG 3 头
     const groupIconSvg = `<svg class="tab-icon" width="20" height="16" viewBox="0 0 26 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="2.4"/><circle cx="13" cy="4" r="2.8"/><circle cx="21" cy="5" r="2.4"/><path d="M1 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 9 13.8V15"/><path d="M8.4 15v-1.4A3 3 0 0 1 11.4 10.6h3.2a3 3 0 0 1 3 3V15"/><path d="M17 15v-1.2a2.6 2.6 0 0 1 2.6-2.6h2.8A2.6 2.6 0 0 1 25 13.8V15"/></svg>`
     const groupCountHtml = `<span class="group-count" id="groupMemberCount">${roomMemberCount ?? ''}</span>`
-    // 私聊永远是大咖 + 小白 = 焦点锁了就 2，否则只有大咖 = 1
+    // 私聊永远是OG + 小白 = 焦点锁了就 2，否则只有OG = 1
     const peerCount = currentRoom?.focal_user_id ? 2 : 1
     const peerCountHtml = `<span class="group-count">${peerCount}</span>`
     const tabs = [
       { cls: 'main', ch: 'main', title: `主窗（三方共聊，${aiName} 参与）`, iconHtml: groupCountHtml + groupIconSvg },
     ]
-    // 私聊 tab 只对大咖和八字主（focal）开放；路人看不到
+    // 私聊 tab 只对OG和八字主（focal）开放；路人看不到
     if (currentRoomRole === 'expert' || currentRoomRole === 'focal') {
       // 私聊：图标在左，数字在右
       const peerInner = `<i class="ti ti-user"></i>` + peerCountHtml
       tabs.push(isExp
         ? { cls: 'peer-user',   ch: 'expert_user', title: '与小白私聊（AI 不参与）', iconHtml: peerInner }
-        : { cls: 'peer-expert', ch: 'expert_user', title: '与大咖私聊（AI 不参与）', iconHtml: peerInner })
+        : { cls: 'peer-expert', ch: 'expert_user', title: '与OG私聊（AI 不参与）', iconHtml: peerInner })
     }
     row.innerHTML = tabs.map(t => {
       const cls = `presence-tab ${t.cls}` + (t.ch === currentChannel ? ' active' : '')
@@ -3492,7 +3492,7 @@
       if (m.user_id === currentUser?.id) return
       const roleCls = m.role
       const initial = m.role === 'expert' ? 'OG' : (m.role === 'audience' ? '路' : '白')
-      const roleLabel = m.role === 'expert' ? '大咖' : (m.role === 'focal' ? '小白' : '路人')
+      const roleLabel = m.role === 'expert' ? 'OG' : (m.role === 'focal' ? '小白' : '路人')
       rows.push(`<div class="ml-row" data-mention="${escHtml(m.display_name)}"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
     })
     pop.innerHTML = rows.join('')
@@ -3537,10 +3537,10 @@
     const isFocal = msg.user_id && currentRoom?.focal_user_id && msg.user_id === currentRoom.focal_user_id
     const displayRole = (role === 'user' && currentRoom?.focal_user_id && !isFocal) ? 'audience' : role
     const aiName = currentRoom?.ai_name || 'AI 助手'
-    const roleLabels = { user: '小白', audience: '路人', expert: '大咖', ai: aiName }
+    const roleLabels = { user: '小白', audience: '路人', expert: 'OG', ai: aiName }
     const roleLabel = roleLabels[displayRole] || displayRole
     const avText = displayRole === 'ai' ? 'AI' : displayRole === 'expert' ? 'OG' : displayRole === 'audience' ? '路' : '白'
-    // 头像点击：AI 头像(仅大咖)→编辑 AI 名；自己头像(非 AI)→进设置；其它头像不可点
+    // 头像点击：AI 头像(仅OG)→编辑 AI 名；自己头像(非 AI)→进设置；其它头像不可点
     let avClick = ''
     if (role === 'ai' && isExpert(currentRoom)) {
       avClick = ' onclick="editAIName()" title="点击编辑 AI 名字" style="cursor:pointer;"'
@@ -3943,7 +3943,7 @@
       let senderName
       if (src.role === 'ai') senderName = currentRoom?.ai_name || 'AI 助手'
       else if (src.user_id === currentUser?.id) senderName = currentDisplayName || '我'
-      else senderName = profilesByUid[src.user_id] || (src.role === 'expert' ? '大咖' : '小白')
+      else senderName = profilesByUid[src.user_id] || (src.role === 'expert' ? 'OG' : '小白')
       const myRole = isExpert(currentRoom) ? 'expert' : 'user'
       const full = (src.content || '').trim()
       const newContent = `↪ 同步自 ${senderName}：${full || '[附件]'}`
@@ -4042,7 +4042,7 @@
     if (pendingQuote && bodyContent) {
       bodyContent = bodyContent + '\n\n' + buildQuoteBlock(pendingQuote.b64, pendingQuote.sender)
     }
-    // 大咖带引用 = 私下纠正语义，强制发到 expert_user 频道，AI 不公开回复
+    // OG带引用 = 私下纠正语义，强制发到 expert_user 频道，AI 不公开回复
     // （main 频道里 AI 错了不当众纠正，避免小白看到错误公开化）
     const hadQuote = !!pendingQuote
     const isExpertQuoteCorrection = hadQuote && role === 'expert'
@@ -4075,15 +4075,15 @@
     sendBtn.disabled = false
     input.focus()
 
-    // 大咖私聊纠正：toast 提示已发到私聊，避免在 main 找不到困惑
+    // OG私聊纠正：toast 提示已发到私聊，避免在 main 找不到困惑
     if (isExpertQuoteCorrection && targetChannel !== currentChannel) {
-      showToast('已发到「大咖↔小白」私聊纠正')
+      showToast('已发到「OG↔小白」私聊纠正')
     }
 
     appendMessage(msgData)
     scrollToBottom()
 
-    // AI 在 main / expert_ai 频道响应；expert_user 频道（大咖 ↔ 小白）AI 不参与
+    // AI 在 main / expert_ai 频道响应；expert_user 频道（OG ↔ 小白）AI 不参与
     if (currentChannel !== 'expert_user') {
       showTyping()
       clearTimeout(typingTimer)
@@ -4101,7 +4101,7 @@
     const canRestart = currentRoomRole === 'expert'
     el.title = canRestart
       ? (online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启')
-      : (online ? 'AI 已连接' : 'AI 未连接 · 仅大咖可重启')
+      : (online ? 'AI 已连接' : 'AI 未连接 · 仅OG可重启')
     el.style.cursor = canRestart ? 'pointer' : 'default'
   }
 
@@ -4132,7 +4132,7 @@
 
   // 点击图标 → 请求 bridge 重启（落入 bridge_state.restart_requested_at，bridge 下一轮自我退出，launchd 拉起）
   async function requestBridgeRestart() {
-    if (currentRoomRole !== 'expert') { showToast('只有大咖能重启 AI'); return }
+    if (currentRoomRole !== 'expert') { showToast('只有OG能重启 AI'); return }
     const ok = confirm('AI 桥接重启一次？（适用于 AI 不响应）')
     if (!ok) return
     const { error } = await sb.rpc('request_bridge_restart')

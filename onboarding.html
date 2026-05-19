@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>大咖入住 · Chat2GO.ai</title>
+  <title>OG入住 · Chat2GO.ai</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23DC2626'/%3E%3Ctext x='32' y='44' font-family='Helvetica,Arial,sans-serif' font-size='30' font-weight='800' text-anchor='middle' fill='%23fff'%3EGO%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
@@ -61,7 +61,7 @@
 <main class="main">
   <div class="container">
     <div class="hero">
-      <h1>欢迎成为<span>大咖</span></h1>
+      <h1>欢迎成为<span>OG</span></h1>
       <p>3 步把你的本地 AI agent 接入 Chat2GO.ai</p>
     </div>
 
@@ -115,7 +115,7 @@ chat2go-agent              # 启动 bridge</pre>
 </main>
 
 <footer>
-  &copy; 2026 Chat2GO.ai · 行业大咖 × AI × 小白用户
+  &copy; 2026 Chat2GO.ai · 行业OG × AI × 小白用户
 </footer>
 
 <script src="/vendor/supabase.js"
@@ -133,11 +133,11 @@ async function init() {
   if (!session) { window.location.href = '/login.html'; return }
   document.getElementById('userEmail').textContent = session.user.email
 
-  // 检查角色 / 升级为 expert（如 user_metadata 已表明是大咖但 profile 是 user）
+  // 检查角色 / 升级为 expert（如 user_metadata 已表明是OG但 profile 是 user）
   const { data: profile } = await sb
     .from('profiles').select('role').eq('user_id', session.user.id).maybeSingle()
   if (profile?.role !== 'expert') {
-    // 升级为 expert（前提：注册时已选大咖；安全起见这里也允许）
+    // 升级为 expert（前提：注册时已选OG；安全起见这里也允许）
     await sb.from('profiles').update({ role: 'expert' }).eq('user_id', session.user.id)
   }
 }

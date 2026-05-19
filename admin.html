@@ -256,14 +256,14 @@
         <h1 class="page-title">房间管理</h1>
         <p class="page-sub">查看所有调试室 · 删除（不可恢复）</p>
         <div class="toolbar">
-          <input type="search" id="roomSearch" placeholder="搜房间名 / 大咖…" oninput="debouncedLoadRooms()">
+          <input type="search" id="roomSearch" placeholder="搜房间名 / OG…" oninput="debouncedLoadRooms()">
           <div class="pager" id="roomPager"></div>
         </div>
         <div class="panel" style="padding:0;">
           <table class="tbl">
             <thead>
               <tr>
-                <th>房间名</th><th>大咖</th><th class="num">成员</th><th class="num">消息</th><th class="num">Cost USD</th><th class="num">收 ¥</th><th>建于</th><th>操作</th>
+                <th>房间名</th><th>OG</th><th class="num">成员</th><th class="num">消息</th><th class="num">Cost USD</th><th class="num">收 ¥</th><th>建于</th><th>操作</th>
               </tr>
             </thead>
             <tbody id="roomRows"><tr><td colspan="8" class="loader">加载中…</td></tr></tbody>
@@ -274,7 +274,7 @@
       <!-- Bridge -->
       <section id="tab-bridge" style="display:none;">
         <h1 class="page-title">Bridge 状态</h1>
-        <p class="page-sub">推断方式：每个大咖最近 5 分钟内有 model_usage 写入 = 在线</p>
+        <p class="page-sub">推断方式：每个OG最近 5 分钟内有 model_usage 写入 = 在线</p>
         <div class="panel" style="padding:0;">
           <table class="tbl">
             <thead>
@@ -385,7 +385,7 @@
     const s = data?.[0] || {}
     const cards = [
       { label: '总用户', value: fmtNum(s.total_users), delta: `今日 +${fmtNum(s.new_users_today)}` },
-      { label: '其中大咖', value: fmtNum(s.total_experts), delta: `封禁 ${fmtNum(s.banned_users)}` },
+      { label: '其中OG', value: fmtNum(s.total_experts), delta: `封禁 ${fmtNum(s.banned_users)}` },
       { label: '调试室', value: fmtNum(s.total_rooms), delta: '' },
       { label: '总消息', value: fmtNum(s.total_messages), delta: `今日 +${fmtNum(s.msgs_today)}` },
       { label: '今日 AI 调用', value: fmtNum(s.ai_calls_today), delta: '' },
@@ -423,10 +423,10 @@
     if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">没有数据</td></tr>'; return }
     tbody.innerHTML = data.map(u => {
       const banned = !!u.banned_at
-      const rolePill = banned ? '<span class="pill banned">封禁</span>' : `<span class="pill ${u.role}">${u.role === 'expert' ? '大咖' : '小白'}</span>`
+      const rolePill = banned ? '<span class="pill banned">封禁</span>' : `<span class="pill ${u.role}">${u.role === 'expert' ? 'OG' : '小白'}</span>`
       const roleBtn = u.role === 'expert'
         ? `<button class="btn btn-mini" onclick="setRole('${u.user_id}','user')">→小白</button>`
-        : `<button class="btn btn-mini" onclick="setRole('${u.user_id}','expert')">→大咖</button>`
+        : `<button class="btn btn-mini" onclick="setRole('${u.user_id}','expert')">→OG</button>`
       const banBtn = banned
         ? `<button class="btn btn-mini" onclick="setBan('${u.user_id}',false)">解封</button>`
         : `<button class="btn btn-mini btn-danger" onclick="setBan('${u.user_id}',true)">封禁</button>`
@@ -458,7 +458,7 @@
   async function setRole(uid, role) {
     const { error } = await sb.rpc('admin_update_user_role', { p_user_id: uid, p_role: role })
     if (error) { showToast('失败：' + error.message); return }
-    showToast(`角色已设为 ${role === 'expert' ? '大咖' : '小白'}`)
+    showToast(`角色已设为 ${role === 'expert' ? 'OG' : '小白'}`)
     loadUsers()
   }
   async function setBan(uid, banned) {
@@ -516,7 +516,7 @@
     showToast(`已清空 ${data} 条消息`)
     loadRooms()
   }
-  // 大咖名直接读 profiles.display_name（由 profilesMap 提供），不再走前端硬编码
+  // OG名直接读 profiles.display_name（由 profilesMap 提供），不再走前端硬编码
   function roomDisplayName(room, profilesMap) {
     const persona = profilesMap?.[room?.expert_id]
     return persona
@@ -535,7 +535,7 @@
     const privMsgs = allMsgs.filter(m => m.channel === 'expert_user')
 
     const profilesMap = data.profiles || {}
-    // 短文件名：大咖 display_name 优先，不然用房名去尾的 fallback
+    // 短文件名：OG display_name 优先，不然用房名去尾的 fallback
     const shortName = roomDisplayName(room, profilesMap).replace(/[\\/:*?"<>|]/g, '').slice(0, 20)
     let downloaded = []
     if (mainMsgs.length) {
@@ -568,13 +568,13 @@
 
   async function renderRoomPdf(room, msgs, exportAt, channelLabel, filename, profilesMap) {
     await refreshImageUrls(msgs)
-    const ROLE_LABEL = { user: '小白', expert: '大咖', ai: 'AI 助手' }
+    const ROLE_LABEL = { user: '小白', expert: 'OG', ai: 'AI 助手' }
     const ROLE_COLOR = { user: '#E5B85A', expert: '#7C3AED', ai: '#1D9E75' }
     const profiles = profilesMap || {}
     const aiName = (room && room.ai_name) || 'AI 助手'
     function senderLabel(m) {
       if (m.role === 'ai') return aiName
-      if (m.role === 'expert') return profiles[m.user_id] || '大咖'
+      if (m.role === 'expert') return profiles[m.user_id] || 'OG'
       return profiles[m.user_id] || '小白'
     }
     const msgsHtml = msgs.map(m => {
@@ -660,7 +660,7 @@
     tbody.innerHTML = '<tr><td colspan="6" class="loader">加载中…</td></tr>'
     const { data, error } = await sb.rpc('admin_bridge_status')
     if (error) { tbody.innerHTML = `<tr><td colspan="6" class="empty">加载失败：${escHtml(error.message)}</td></tr>`; return }
-    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">还没有大咖账户</td></tr>'; return }
+    if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">还没有OG账户</td></tr>'; return }
     tbody.innerHTML = data.map(b => {
       const pill = b.is_online
         ? '<span class="pill online">● 在线</span>'
