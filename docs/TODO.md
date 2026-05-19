@@ -30,24 +30,54 @@
 | **学生** | `user` | 学习者,问/答/练 | 主动,高频 |
 | **AI 助教** | `ai` | **后台助手**,不抢戏 | **按触发条件**,低频 |
 
-**AI 助教只做两件事**:
-1. **同步进度** — 监听对话识别 todo 推进信号 → 自动勾选完成项 / 提示老师当前进度
-2. **归纳知识点** — 提取课中出现的单词/句型/语法/文化点 → 结构化写进 memories 表(`tag='知识点'`,scope=student)
+**AI 助教的核心价值 — 评估者,不是教学者**
 
-**触发策略(待细化)**:
-- 老师 / 学生在群发**消息默认不召 AI**(跟现在 chat2go 每条都召不同)
-- AI 助教只在以下时机发声:
-  - 老师显式 `@助教 总结` / `@助教 进度`
-  - 完成一个 todo 单元后,自动出来归纳本单元知识点
-  - 课程结束触发 EOL 总结
-- 实现路径:chat2go.py 加 `_should_respond` 检查 — speak2go room 用关键词触发器 / 时机判断器,而不是默认全响应
+AI 助教做的事就一件:**确认知识点的学习完成度,不断更新进度条**。
 
-**TODO 影响**:
-- chat2go.py 的 `_dispatch_inbound` 要加判定:`if room.product == 'speak2go' and not triggered_for_speak2go(msg): return`
-- 新增触发器函数 `_speak2go_should_respond(msg, room_state)`
-- system_prompt 写成"助教"语气(不抢话,简短,助教式)
-- 知识点归纳要用结构化 memory(student 级 scope)
-- todo 模板的"进度推进"不再依赖双钩 pass,改成 AI 自动检测(更复杂)
+**两个数据源驱动进度条**:
+
+```
+                     ┌─→ ASR 转写 ─→ 分析"教了哪些知识点 + 学生回答情况"
+   上课录音 ────────┘                                              ↓
+                                                              更新 student_mastery
+   测试题 / quiz ──→ 学生答对答错 ─→ 直接判定知识点掌握度 ───────────↑
+```
+
+**两个输出**:
+1. **进度条**(UI 主呈现):每个学生 × 每个知识点 = 1 个 mastery%(0/初学/熟练/掌握)→ sidebar 用进度条可视化
+2. **知识点笔记**(memory 副产物):课中出现的词/句/语法 → 写 memories 表
+
+**新数据模型(待设计 schema)**:
+
+| 表 | 字段 | 作用 |
+|---|---|---|
+| `lesson_recordings` | id, room_id, audio_url, transcript, lesson_idx, created_at | 录音 + ASR 转写 |
+| `student_mastery` | student_id, topic_key, mastery_level, evidence_count, last_updated | 学生 × 知识点 掌握度 |
+| `quiz_results` | student_id, quiz_id, topic_key, correct, answered_at | 测试记录,直接喂 mastery |
+| `topic_dictionary` | topic_key, label, category | 知识点字典(教学大纲) |
+
+**AI 助教工作流(后台 job)**:
+
+1. 监听 room 新消息(含语音附件 → 触发 ASR 转写)
+2. 监听 quiz 答题事件
+3. 周期性 / 触发式 job:跑 mastery analyzer
+   - LLM 分析转写 + 答题数据 → 更新 `student_mastery`
+   - LLM 提取知识点 → 写 memories
+4. AI 助教**很少发言**,只在:
+   - 老师显式 `@助教 当前进度` / `@助教 学生 X 掌握情况`
+   - 单元结束触发 `本单元学完了,知识点 A/B 已掌握,C 待巩固`
+   - 阶段测试后总结
+
+**架构改造点**:
+
+- chat2go.py 加 `_should_respond` 钩子:speak2go room 默认**不**响应消息,只响应特定触发(@助教 / 单元完成 / quiz 提交)
+- 新增后台 job(可以 launchd 独立 task,也可以 Hermes 内 cron):`mastery_analyzer`,周期处理 unprocessed transcripts + quiz events
+- 前端 sidebar 改:speak2go 显示**学生进度条矩阵**(横轴知识点,纵轴学生),不再只是 todo checkbox
+- 录音转写依赖 2026-05-19 段已有的 ASR TODO(speak2go 强依赖,优先做)
+
+**风险**:
+- mastery analyzer 用什么模型? Gemini Flash 便宜但分析深度有限,Sonnet 准但贵 → MVP 用 Flash,正式上线评估
+- topic_dictionary 谁维护?老师上课前预设,还是 AI 从课程内容自动抽取?(选后者更省事,但首批知识点不可控)
 
 **Phase 0 — 准备**
 - [ ] 在 GoDaddy(或现有 DNS provider)买 / 确认 `speak2go.ai` 域名
