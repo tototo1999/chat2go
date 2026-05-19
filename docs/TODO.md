@@ -30,6 +30,12 @@
 ### 文档
 
 - [ ] **`TRADEGO-MINI-HANDOFF.md`** 加"如何只单文件同步 chat2go.py 到 mini"的安全 SOP(避免下次又触发 deploy.sh 全套覆盖风险)
+- [ ] **patch 02 关键词块过期**:2026-05-18 晚 dev 这条 terminal 在 mini #2 上原地扩展了 `_CONTRACT_KEYWORDS` 元组(从 7 行老版 → 14 行带"做pi/出ci/全套单证"等 30+ 变体),没回写到 `docs/hermes-patches/02-chat2go-platform-adapter.patch`。下次任何人跑 `deploy.sh lexi 192.168.1.111` 整文件覆盖会回滚这次扩展,小白发"做PI"又会进 brain 失败。
+  - 操作步骤:
+    1. `ssh lexi@192.168.1.111 'diff ~/.hermes/hermes-agent/gateway/platforms/chat2go.py.bak.20260518230048 ~/.hermes/hermes-agent/gateway/platforms/chat2go.py'` 看清楚扩展了什么
+    2. 把新的 30+ 关键词元组塞进 `02-chat2go-platform-adapter.patch` 同一行
+    3. commit + push 这份更新的 patch
+  - 关键词新版完整列表见 mini #2 上 `~/.hermes/hermes-agent/gateway/platforms/chat2go.py` 第 ~967 行的 `_CONTRACT_KEYWORDS = (...)` 段
 
 ### mini 多大咖部署模板
 
