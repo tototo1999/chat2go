@@ -20,6 +20,35 @@
 
 > 第 4 个垂直产品:语言老师 / 口语训练 / 课堂场景。沿用 mini 多实例架构。
 
+**★ 核心架构差异 — 三角色,AI 角色重新定位**
+
+跟 chat2go / tradego / well2go 不同:speak2go 不是"OG ↔ AI ↔ 小白"对话主体三方,而是 **3 个独立角色** + AI 是后台助手:
+
+| 角色 | DB role | 定位 | 发言频率 |
+|---|---|---|---|
+| **老师** | `expert` | 课堂主导,教内容 | 主动,高频 |
+| **学生** | `user` | 学习者,问/答/练 | 主动,高频 |
+| **AI 助教** | `ai` | **后台助手**,不抢戏 | **按触发条件**,低频 |
+
+**AI 助教只做两件事**:
+1. **同步进度** — 监听对话识别 todo 推进信号 → 自动勾选完成项 / 提示老师当前进度
+2. **归纳知识点** — 提取课中出现的单词/句型/语法/文化点 → 结构化写进 memories 表(`tag='知识点'`,scope=student)
+
+**触发策略(待细化)**:
+- 老师 / 学生在群发**消息默认不召 AI**(跟现在 chat2go 每条都召不同)
+- AI 助教只在以下时机发声:
+  - 老师显式 `@助教 总结` / `@助教 进度`
+  - 完成一个 todo 单元后,自动出来归纳本单元知识点
+  - 课程结束触发 EOL 总结
+- 实现路径:chat2go.py 加 `_should_respond` 检查 — speak2go room 用关键词触发器 / 时机判断器,而不是默认全响应
+
+**TODO 影响**:
+- chat2go.py 的 `_dispatch_inbound` 要加判定:`if room.product == 'speak2go' and not triggered_for_speak2go(msg): return`
+- 新增触发器函数 `_speak2go_should_respond(msg, room_state)`
+- system_prompt 写成"助教"语气(不抢话,简短,助教式)
+- 知识点归纳要用结构化 memory(student 级 scope)
+- todo 模板的"进度推进"不再依赖双钩 pass,改成 AI 自动检测(更复杂)
+
 **Phase 0 — 准备**
 - [ ] 在 GoDaddy(或现有 DNS provider)买 / 确认 `speak2go.ai` 域名
 - [ ] GitHub 建空 repo `tototo1999/speak2go`
