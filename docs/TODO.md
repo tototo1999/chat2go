@@ -16,6 +16,57 @@
 - [ ] **邀请码多 token 同步 tradego/well2go** — ToDesk mini 跑 patch.py 命令(已发,等用户操作)
 - [ ] **patch 02 重生成** — chat2go.py 今天没动,但近期 `_CONTRACT_KEYWORDS` 扩展未回写(同 2026-05-18 段的 TODO)
 
+### speak2go.ai 老师上课版部署(参照 well2go SOP)
+
+> 第 4 个垂直产品:语言老师 / 口语训练 / 课堂场景。沿用 mini 多实例架构。
+
+**Phase 0 — 准备**
+- [ ] 在 GoDaddy(或现有 DNS provider)买 / 确认 `speak2go.ai` 域名
+- [ ] GitHub 建空 repo `tototo1999/speak2go`
+- [ ] 主题色拍板:跟现有 3 个产品区分
+  - chat2go.cn = 深绿 #1D9E75 / tradego = 蓝 #2563eb / well2go = mint green #10b981
+  - speak2go 候选:**Indigo #6366f1**(语言学术感) / **Coral #f97316**(温暖课堂感) / **Violet #8b5cf6**
+
+**Phase 1 — 前端 fork(预估 1h)**
+- [ ] mini 上 `cp -r ~/well2go-site ~/speak2go-site`(基于最接近的 well2go 蓝本)
+- [ ] git remote 改 `tototo1999/speak2go.git`,rm -rf .git 重 init 干净历史
+- [ ] CNAME → `speak2go.ai`
+- [ ] CSS `--teal` 系列换主题色(参考 well2go init patch 的写法)
+- [ ] DEMO_INDUSTRY=`英语口语` / `语言培训` / `课堂教学`(待定具体细分),DEMO_PRODUCT=`speak2go`
+- [ ] title / brand:`Speak2GO.ai`,nav logo `Speak2<span>GO</span>.ai`
+- [ ] DEFAULT_TODO_PAYLOAD = 10 组口语教学工作流 × 3 项(草稿:**水平测评 → 学习目标 → 教材选定 → 课程节奏 → 单词积累 → 句型操练 → 口语对话 → 听力训练 → 阶段测验 → 进阶规划**)
+- [ ] TYPING_VERBS = 100 组语言老师 typing 用语(评测/造句/纠音/听写/翻译/批改/教练 等动作)
+- [ ] commit + push `tototo1999/speak2go`
+
+**Phase 2 — mini Hermes 新实例**
+- [ ] `cp -r ~/.hermes ~/.hermes-speak2go`(沿用 well2go 那次模式)
+- [ ] 清运行态(logs/state.db/sessions/gateway.lock)
+- [ ] `.env` `CHAT2GO_TOKEN` 占位,API keys 复用
+- [ ] launchd plist `ai.hermes.gateway.speak2go.plist`,`HERMES_HOME=/Users/lexi/.hermes-speak2go`
+- [ ] 一键脚本 `~/speak2go-launch.sh`(参照 `~/well2go-launch.sh`)
+
+**Phase 3 — 行业定制**
+- [ ] 拦截器(类比 tradego-contract):**口语作业批改 PDF 生成 / 词汇本导出 / 课堂记录**
+- [ ] system_prompt:语言老师专业风(双语提示 / 错误纠正 / 鼓励式反馈)
+- [ ] skill 包 `~/.hermes-speak2go/skills/productivity/speak-go/`
+
+**Phase 4 — DNS + HTTPS**
+- [ ] GoDaddy 加 4 条 A 记录指 GH Pages IP(同 well2go.ai 流程)
+- [ ] GH repo Settings → Pages 启用 + Custom domain
+- [ ] 等 DNS check successful + Let's Encrypt 自动签发 + 勾 Enforce HTTPS
+
+**Phase 5 — 注册账号 + 一键启动**
+- [ ] 在 https://speak2go.ai/login.html 注册老师 OG 账号
+- [ ] 拿 agent_key → 在 mini 跑 `bash ~/speak2go-launch.sh c2g-key_xxx`
+- [ ] 验证 chat2go connected + 房间内文字/语音/图片测试
+
+**风险点 / 决策点**
+- speak2go 主线场景是"老师 ↔ 学生"还是"老师 ↔ 助教(AI)备课"?决定 industry 细分 + todo 模板方向
+- 口语场景对**录音转写**强依赖(语音是主要输入),建议 speak2go 部署同时**优先实现录音转写**(2026-05-19 段已有该 TODO)
+- 容量评估:mini 现在跑 2 个 Hermes 实例(tradego + well2go),加 speak2go 是第 3 个,预计稳态 ~1.5GB RSS,16GB mini 完全 OK
+
+**预估总时长**:4-6h(同 well2go 那次),不包含 DNS / Let's Encrypt 等待时间
+
 ### chat2go.cn / xyz 接录音转写(让 AI 能"听"语音消息)
 
 - [ ] **adapter 加音频支持** `chat2go.py` 的 `_extract_attachment_text` 扩展:
