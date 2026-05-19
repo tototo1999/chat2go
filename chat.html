@@ -1979,7 +1979,7 @@
         // OG账号点邀请链接：不弹昵称 modal，避免误改OG display_name 污染数据
         // （比如OG在浏览器复制了自己房间的邀请链接给小白测试，结果自己先点了）
         if (profile?.role === 'expert') {
-          const { data: roomId } = await sb.rpc('join_room_by_token', { p_token: inviteToken })
+          const { roomId } = await tryJoinByInviteToken(inviteToken)
           if (roomId) history.replaceState({}, '', `/chat.html?room=${roomId}`)
           // 继续走老登录逻辑（不 return），让 init 后续渲染设置 currentUser/currentRole 等
         } else {
@@ -2501,16 +2501,16 @@
           }
         }
       }
-      // 进房
-      const { data: roomId, error: joinErr } = await sb.rpc('join_room_by_token', { p_token: _pendingInviteToken })
+      // 进房:优先 try 新 multi-token,失败 fallback 旧的
+      const { roomId, error: joinErr } = await tryJoinByInviteToken(_pendingInviteToken)
       if (joinErr || !roomId) {
         const msg = joinErr?.message || ''
-        if (msg.includes('invite_used') || msg.includes('focal already locked')) {
-          err.textContent = '这个邀请链接已被使用（小白名额已满）。请向小白索要新的「路人邀请链接」'
-        } else if (msg.includes('invalid invite token')) {
+        if (msg.includes('already consumed') || msg.includes('invite_used') || msg.includes('focal already locked')) {
+          err.textContent = '这个邀请链接已被使用,请向 OG 索要新的链接(每次点复制都是新链接)'
+        } else if (msg.includes('invalid') || msg.includes('not room owner')) {
           err.textContent = '邀请链接无效或已失效'
         } else {
-          err.textContent = '加入房间失败：' + (msg || '未知')
+          err.textContent = '加入房间失败:' + (msg || '未知')
         }
         err.style.display = 'block'
         return
@@ -2754,21 +2754,51 @@
     setTimeout(() => location.reload(), 800)
   }
 
+  // 优先 try 新 multi-token(room_invites);失败 fallback 旧的(rooms.invite_token / audience_invite_token)
+  async function tryJoinByInviteToken(token) {
+    const r1 = await sb.rpc('consume_invite_token', { p_token: token })
+    if (!r1.error && r1.data) return { roomId: r1.data, error: null }
+    const r2 = await sb.rpc('join_room_by_token', { p_token: token })
+    if (!r2.error && r2.data) return { roomId: r2.data, error: null }
+    return { roomId: null, error: r2.error || r1.error }
+  }
+
   async function copyInviteLink() {
     if (!currentRoom) return
-    // OG → 小白邀请（单次，invite_token）；小白 → 路人邀请（多次，audience_invite_token）
-    const token = currentRoomRole === 'expert'
-      ? currentRoom.invite_token
-      : currentRoom.audience_invite_token
-    if (!token) { showToast('当前房间无邀请 token'); return }
-    const url = `${location.origin}/chat.html?invite=${token}`
-    const tag = currentRoomRole === 'expert' ? '小白邀请链接' : '路人邀请链接'
-    try {
-      await navigator.clipboard.writeText(url)
-      showToast(tag + '已复制（' + (currentRoomRole === 'expert' ? '仅限一位小白' : '可分享给多个路人') + '）')
-    } catch (e) {
-      window.prompt('复制下面的' + tag + '：', url)
+    let token
+    let tag, hint
+    if (currentRoomRole === 'expert') {
+      // OG:每次点都通过 create_invite_token RPC 生成新 token,小白用完即废,多个小白可同时持各自 token 进
+      const { data: newToken, error } = await sb.rpc('create_invite_token', { p_room_id: currentRoom.id })
+      if (error || !newToken) {
+        showToast('生成邀请链接失败' + (error ? ': ' + error.message : ''))
+        return
+      }
+      token = newToken
+      tag = '小白邀请链接'
+      hint = '每个链接限一位小白,可多次点复制邀请多人'
+    } else {
+      // 小白 → 路人邀请(多次同 token)
+      token = currentRoom.audience_invite_token
+      if (!token) { showToast('当前房间无邀请 token'); return }
+      tag = '路人邀请链接'
+      hint = '可分享给多个路人'
     }
+    const url = `${location.origin}/chat.html?invite=${token}`
+    const msg = tag + '已复制(' + hint + ')'
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(url); showToast(msg); return } catch (e) {}
+    }
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = url
+      ta.style.position = 'fixed'; ta.style.left = '-9999px'
+      document.body.appendChild(ta); ta.focus(); ta.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      if (ok) { showToast(msg); return }
+    } catch (e) {}
+    window.prompt('复制下面的' + tag + ':', url)
   }
 
   function updateInputPlaceholder() {
