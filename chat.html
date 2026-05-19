@@ -2010,7 +2010,7 @@
       // 输入区身份徽章: 大咖 → 咖, 小白 → 白
       const badge = document.getElementById('roleBadge')
       if (badge) {
-        badge.textContent = currentRole === 'expert' ? '咖' : '白'
+        badge.textContent = currentRole === 'expert' ? 'OG' : '白'
         badge.title = currentRole === 'expert' ? '大咖 · 点击查看待审 follow' : '小白 · 点击修改资料'
       }
       // 大咖 或 admin 都看得到设置入口
@@ -2663,7 +2663,7 @@
     // 输入栏身份徽章按房内角色(expert/focal/audience)显示，跟消息头像保持一致
     const badge = document.getElementById('roleBadge')
     if (badge) {
-      const map = { expert: '咖', focal: '白', audience: '路' }
+      const map = { expert: 'OG', focal: '白', audience: '路' }
       badge.textContent = map[currentRoomRole] || '白'
       const titleMap = {
         expert: '大咖 · 点击修改资料',
@@ -3490,7 +3490,7 @@
       // 自己不出现在 @ 列表里（避免 @ 自己）
       if (m.user_id === currentUser?.id) return
       const roleCls = m.role
-      const initial = m.role === 'expert' ? '咖' : (m.role === 'audience' ? '路' : '白')
+      const initial = m.role === 'expert' ? 'OG' : (m.role === 'audience' ? '路' : '白')
       const roleLabel = m.role === 'expert' ? '大咖' : (m.role === 'focal' ? '小白' : '路人')
       rows.push(`<div class="ml-row" data-mention="${escHtml(m.display_name)}"><span class="ml-av ${roleCls}">${initial}</span><span class="ml-name">${escHtml(m.display_name)}</span><span class="ml-role">${roleLabel}</span></div>`)
     })
@@ -3538,7 +3538,7 @@
     const aiName = currentRoom?.ai_name || 'AI 助手'
     const roleLabels = { user: '小白', audience: '路人', expert: '大咖', ai: aiName }
     const roleLabel = roleLabels[displayRole] || displayRole
-    const avText = displayRole === 'ai' ? 'AI' : displayRole === 'expert' ? '咖' : displayRole === 'audience' ? '路' : '白'
+    const avText = displayRole === 'ai' ? 'AI' : displayRole === 'expert' ? 'OG' : displayRole === 'audience' ? '路' : '白'
     // 头像点击：AI 头像(仅大咖)→编辑 AI 名；自己头像(非 AI)→进设置；其它头像不可点
     let avClick = ''
     if (role === 'ai' && isExpert(currentRoom)) {
@@ -3858,7 +3858,7 @@
     Object.entries(profilesByUid).forEach(([uid, name]) => {
       if (uid === currentUser?.id || !name) return
       const isExp = uid === currentRoom?.expert_id
-      list.push({ name, kind: isExp ? 'expert' : 'user', initial: isExp ? '咖' : '白' })
+      list.push({ name, kind: isExp ? 'expert' : 'user', initial: isExp ? 'OG' : '白' })
     })
     return list
   }
