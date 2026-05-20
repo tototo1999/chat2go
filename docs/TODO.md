@@ -13,6 +13,10 @@
 
 ### 🔥 未完成(继续)
 
+- [ ] **reset_room 一键真清**(2026-05-19 发现) — 当前 `reset_room` RPC 只清 messages + room-scope memory,但 expert-scope memory(OG 跨房累积)+ Hermes 本地 `~/.hermes/sessions/` + `state.db` 会残留,导致 AI 还能"想起"旧个案。**真正清干净的 3 步**:① `reset_room` RPC ② `DELETE FROM memories WHERE scope='expert' AND scope_id IN (该 OG)` ③ ssh 跑 Hermes 机器 `rm -rf ~/.hermes/sessions/* ~/.hermes/state.db* && launchctl kickstart -k gui/$(id -u)/ai.hermes.gateway`。
+  - 工程化方案:加"深度重置"按钮 → RPC 同时清两 scope + 写一条 `bridge_state.reset_requested_at` → Hermes 端 _watchdog 检测到该字段更新就清自己 sessions/state.db 再重启
+  - 或者 RPC 同时发 SIGTERM 给 Hermes(需要 webhook / 进程 socket,工程更重)
+
 - [ ] **邀请码多 token 同步 tradego/well2go** — ToDesk mini 跑 patch.py 命令(已发,等用户操作)
 - [ ] **patch 02 重生成** — chat2go.py 今天没动,但近期 `_CONTRACT_KEYWORDS` 扩展未回写(同 2026-05-18 段的 TODO)
 
