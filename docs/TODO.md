@@ -3,6 +3,84 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-21
+
+### 🆕 速跑 — speak2go 教学材料文件库 v2 (新建表)
+
+4 条**单条**贴 Supabase SQL Editor 跑(按 [[feedback-supabase-sql-split]] 习惯):
+
+```sql
+-- ① 建表
+create table expert_material_folders (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id),
+  room_id uuid references rooms(id) on delete cascade,
+  name text not null default 'Materials',
+  payload jsonb not null default '[]',
+  product text default 'speak2go',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+```
+
+```sql
+-- ② 索引 + RLS 开
+create index idx_emf_owner on expert_material_folders(owner_id);
+create index idx_emf_room on expert_material_folders(room_id);
+alter table expert_material_folders enable row level security;
+```
+
+```sql
+-- ③ SELECT 任何人可读
+create policy "materials_select_all" on expert_material_folders
+  for select to authenticated using (true);
+```
+
+```sql
+-- ④ INSERT/UPDATE/DELETE: owner OR speak2go 单例房放行(老师+OG 都能编辑)
+create policy "materials_write_speak2go_singleton" on expert_material_folders
+  for all to authenticated
+  using (owner_id = auth.uid() OR room_id = '5b622bc4-88b4-47c1-9aa6-643c4b1e0f96')
+  with check (owner_id = auth.uid() OR room_id = '5b622bc4-88b4-47c1-9aa6-643c4b1e0f96');
+```
+
+跑完 ① 到 ④ 都 success → 前端材料库 v2 可用。表不存在前 panel 会回到旧的扁平列表(已写了 fallback)。
+
+### speak2go 声纹/lesson_sessions 残留 SQL drop(部分完成)
+
+- [x] **① profiles 删 3 列声纹字段**(2026-05-21 跑过 + Claude 验证 PostgREST 返回 column does not exist)
+
+```sql
+-- ① profiles 表删 voice_embedding 系列列(声纹模块已下线)— DONE
+alter table profiles
+  drop column if exists voice_embedding,
+  drop column if exists voice_registered_at,
+  drop column if exists voice_sample_url;
+```
+
+- [ ] **② + ③ 阻塞:有代码依赖 messages.lesson_session_id 列 + lesson_sessions 表**
+  - `asr_server.py:_insert_asr_message` 还在写 `lesson_session_id` row 字段(每段 ASR)
+  - `libs/speak2go.py` 的 `fetch_lesson_transcript` / `handle_knowledge_unit_end` / `handle_lesson_ended` 还在用列做查询/INSERT
+  - 直接 drop 会让实时 ASR 写入全挂
+  - **要做的清理顺序**:① 删 asr_server.py 那行 row 字段 ② 短路/删 libs/speak2go.py 三个 handler ③ 删 chat2go.py 对应 dispatch ④ 重启 asr_server + speak2go Hermes ⑤ 才能跑下面 ②③ SQL
+
+```sql
+-- ② messages.lesson_session_id FK 先解除依赖(避免 cascade 误删消息)
+alter table messages drop column if exists lesson_session_id;
+```
+
+```sql
+-- ③ lesson_sessions 表整张删(三角色架构纠偏:speak2go 不需要"1v1 课堂会话")
+drop table if exists lesson_sessions;
+```
+
+```sql
+-- ④ 验证清理完成(② ③ 跑完用):
+select to_regclass('public.lesson_sessions') is null as dropped;  -- 应 true
+```
+
+---
+
 ## 2026-05-19
 
 ### ✅ 今天已做(无需再操作)
