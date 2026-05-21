@@ -1301,6 +1301,150 @@
       50%      { box-shadow: 0 0 0 6px rgba(155, 28, 28, 0); }
     }
 
+    /* ── speak2go 课堂录音 ── */
+    .classroom-btn {
+      width: 27px; height: 30px; flex-shrink: 0;
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text2);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .classroom-btn:hover { background: var(--bg2); color: var(--teal); border-color: var(--teal-100); }
+    .classroom-btn i { font-size: 13px; }
+    .classroom-btn.active {
+      background: var(--teal);
+      color: #fff;
+      border-color: var(--teal);
+    }
+
+    .classroom-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      margin-bottom: 6px;
+      background: linear-gradient(to right, rgba(20, 184, 166, 0.06), rgba(20, 184, 166, 0.02));
+      border: 1px solid var(--teal-100);
+      border-radius: var(--radius);
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .classroom-bar.active { display: flex; }
+    .classroom-bar .cb-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #9ca3af;
+      transition: background .2s;
+    }
+    .classroom-bar .cb-dot.talking-expert { background: #10b981; animation: voicePulse 1s ease-in-out infinite; }
+    .classroom-bar .cb-dot.talking-student { background: #f59e0b; animation: voicePulse 1s ease-in-out infinite; }
+    .classroom-bar .cb-dot.offline { background: #ef4444; }
+    .classroom-bar .cb-timer { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 500; }
+    .classroom-bar .cb-status { flex: 1; }
+    .classroom-bar .cb-btn {
+      padding: 4px 10px;
+      font-size: 11px;
+      background: transparent;
+      border: 0.5px solid var(--border2);
+      border-radius: 12px;
+      color: var(--text2);
+      cursor: pointer;
+    }
+    .classroom-bar .cb-btn:hover { background: var(--bg2); border-color: var(--teal-100); color: var(--teal); }
+    .classroom-bar .cb-btn.warn { color: #b91c1c; border-color: #fca5a5; }
+    .classroom-bar .cb-btn.warn:hover { background: #fee2e2; }
+
+    /* ASR 来源消息加个小标 */
+    .asr-badge {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      margin-right: 4px;
+      background: rgba(20, 184, 166, 0.1);
+      color: var(--teal-600);
+      border-radius: 8px;
+      vertical-align: middle;
+    }
+    .asr-badge.unknown { background: rgba(156, 163, 175, 0.15); color: #6b7280; }
+
+    /* 声纹注册 modal */
+    .voice-reg-mask {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    .voice-reg-mask.active { display: flex; }
+    .voice-reg-modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      width: 480px; max-width: 92vw;
+      box-shadow: 0 12px 40px rgba(0,0,0,.2);
+    }
+    .voice-reg-modal h3 { margin: 0 0 8px; font-size: 16px; color: var(--text); }
+    .voice-reg-modal .vrm-sub { color: var(--text2); font-size: 13px; margin-bottom: 16px; line-height: 1.6; }
+    .voice-reg-modal .vrm-step {
+      padding: 12px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .voice-reg-modal .vrm-step.done { background: rgba(16,185,129,.08); border-color: #10b981; }
+    .voice-reg-modal .vrm-step .vrm-idx {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--bg2); color: var(--text2);
+      font-size: 12px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .voice-reg-modal .vrm-step.done .vrm-idx { background: #10b981; color: #fff; }
+    .voice-reg-modal .vrm-step .vrm-body { flex: 1; font-size: 13px; color: var(--text); }
+    .voice-reg-modal .vrm-step .vrm-action {
+      padding: 5px 12px;
+      font-size: 12px;
+      background: var(--teal);
+      color: #fff; border: 0; border-radius: 6px;
+      cursor: pointer;
+    }
+    .voice-reg-modal .vrm-step .vrm-action:hover { background: var(--teal-600); }
+    .voice-reg-modal .vrm-step .vrm-action:disabled { background: #d1d5db; cursor: not-allowed; }
+    .voice-reg-modal .vrm-step .vrm-action.recording { background: #ef4444; animation: voicePulse 1s ease-in-out infinite; }
+    .voice-reg-modal .vrm-text {
+      background: var(--bg2);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--text);
+      line-height: 1.6;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+    .voice-reg-modal .vrm-footer {
+      display: flex; justify-content: flex-end; gap: 8px;
+      margin-top: 16px;
+    }
+    .voice-reg-modal .vrm-cancel {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .voice-reg-modal .vrm-go {
+      padding: 8px 18px;
+      background: var(--teal);
+      color: #fff;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .voice-reg-modal .vrm-go:disabled { background: #d1d5db; cursor: not-allowed; }
+
     .attach-preview {
       display: flex;
       flex-wrap: wrap;
@@ -1886,9 +2030,21 @@
           <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="按住说话（中文识别）">
             <i class="ti ti-microphone"></i>
           </button>
+          <button class="classroom-btn" id="classroomBtn" onclick="Classroom.toggle()"
+                  title="开始课堂录音（1v1 实时转写 + AI 助教）" style="display:none">
+            <i class="ti ti-school"></i>
+          </button>
           <button class="send-btn" id="sendBtn" onclick="sendMessage()">
             GO
           </button>
+        </div>
+        <!-- 课堂录音状态条（开课后显示） -->
+        <div class="classroom-bar" id="classroomBar">
+          <span class="cb-dot" id="cbDot"></span>
+          <span class="cb-status" id="cbStatus">连接中…</span>
+          <span class="cb-timer" id="cbTimer">00:00</span>
+          <button class="cb-btn" id="cbKnowledgeBtn" onclick="Classroom.markKnowledgeEnd()" title="老师讲完一个知识点点这里，AI 助教会出三段 tips">📍 此节完结</button>
+          <button class="cb-btn warn" id="cbEndBtn" onclick="Classroom.endLesson()" title="结束课堂，生成课后作业和下节课规划">结束课堂</button>
         </div>
         <div class="input-hint" id="roleHint" style="display:none"></div>
       </div>
@@ -1951,6 +2107,7 @@
   let currentRoom = null
   let currentRoomRole = null  // 'expert' | 'focal' | 'audience' | 'none'，每次 openRoom 刷新
   let realtimeChannel = null
+  let todoTemplateChannel = null  // 订阅 expert_todo_templates UPDATE，AI 写 todo 后自动重渲 sidebar（不需 F5）
   let pendingAttachments = []  // 待发送的附件 [{name, url, size, mime_type, storage_path}]
   let currentDisplayName = '' // 自己的 display_name，用于消息头展示
   const profilesByUid = {}    // 房间内成员 display_name 缓存 {user_id: name}
@@ -2984,6 +3141,28 @@
     hideTodoPopup()
 
     renderTodos(currentTemplate ? currentTemplate.payload : DEFAULT_TODO_PAYLOAD)
+
+    // AI 写 todo (chat2go.py 调 ai_replace_room_todo RPC 直接改表) 绕过 messages 流，
+    // 单独订阅 expert_todo_templates UPDATE 触发 sidebar 重渲
+    if (todoTemplateChannel) { sb.removeChannel(todoTemplateChannel); todoTemplateChannel = null }
+    if (currentTemplate?.id) {
+      todoTemplateChannel = sb
+        .channel(`tpl-${currentTemplate.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expert_todo_templates',
+          filter: `id=eq.${currentTemplate.id}`,
+        }, payload => {
+          const row = payload.new
+          if (!row) return
+          currentTemplate.payload = row.payload || []
+          currentTemplate.name = row.name || currentTemplate.name
+          document.getElementById('todoHeadName').textContent = currentTemplate.name || 'Todo'
+          renderTodos(currentTemplate.payload)
+        })
+        .subscribe()
+    }
   }
 
   async function toggleTodoEditing() {
@@ -3589,6 +3768,10 @@
       // 没缓存就异步拉一下，回来再更新 DOM
       if (!profilesByUid[msg.user_id]) ensureProfileName(msg.user_id)
     }
+    // ASR 实时转写来源加小标
+    let asrBadge = ''
+    if (msg.source === 'asr') asrBadge = '<span class="asr-badge" title="实时转写">🎙</span>'
+    else if (msg.source === 'asr-unknown') asrBadge = '<span class="asr-badge unknown" title="说话人未识别">🎙?</span>'
     const ts = formatTime(msg.created_at)
 
     const el = document.createElement('div')
@@ -3668,7 +3851,7 @@
       <div class="msg-av ${displayRole}"${aiAvClick}>${avText}</div>
       <div class="msg-body">
         <div class="msg-meta">
-          <span class="msg-sender ${displayRole}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${senderName}</span>
+          <span class="msg-sender ${displayRole}"${isOwn && role !== 'ai' ? ' data-own="1"' : ''}>${asrBadge}${senderName}</span>
           <span class="msg-ts">${ts}</span>
           <div class="msg-actions">
             <button class="msg-action-btn" title="复制" onclick="copyMessage(this, '${rawB64}')">
@@ -4627,5 +4810,426 @@
   <button class="img-lightbox-close" onclick="closeImageLightbox()" title="关闭 (Esc)">×</button>
   <img alt="">
 </div>
+
+<!-- ── speak2go 声纹注册 modal ── -->
+<div class="voice-reg-mask" id="voiceRegMask">
+  <div class="voice-reg-modal">
+    <h3>开课前声纹注册（一次性）</h3>
+    <p class="vrm-sub">为了让 AI 实时区分老师 / 学生说话,开课前各录一段示范文本（约 10 秒）。<br>注册后绑定账号,下次开课自动复用。</p>
+    <div class="vrm-text" id="vrmText">"The quick brown fox jumps over the lazy dog. Today is a great day to learn English with a private tutor."</div>
+    <div class="vrm-step" id="vrmStepExpert" data-role="expert">
+      <div class="vrm-idx">T</div>
+      <div class="vrm-body">老师：<span id="vrmExpertName" style="color:var(--text2)">读上面这句</span></div>
+      <button class="vrm-action" id="vrmExpertBtn" onclick="Classroom.recordVoice('expert')">开始录音</button>
+    </div>
+    <div class="vrm-step" id="vrmStepStudent" data-role="student">
+      <div class="vrm-idx">S</div>
+      <div class="vrm-body">学生：<span id="vrmStudentName" style="color:var(--text2)">读上面这句</span></div>
+      <button class="vrm-action" id="vrmStudentBtn" onclick="Classroom.recordVoice('student')">开始录音</button>
+    </div>
+    <div class="vrm-footer">
+      <button class="vrm-cancel" onclick="Classroom.cancelRegistration()">取消</button>
+      <button class="vrm-go" id="vrmGoBtn" onclick="Classroom.startAfterRegistration()" disabled>开始课堂</button>
+    </div>
+  </div>
+</div>
+
+<!-- @ricky0123/vad-web 加载 Silero VAD（CDN） -->
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.14.0/dist/ort.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ricky0123/vad-web@0.0.24/dist/bundle.min.js"></script>
+
+<script>
+// ────────────────────────────────────────────────────────────────────────────
+// speak2go 1v1 课堂实时录音 + AI 助教模块
+// 依赖外部全局:sb (Supabase client)、currentRoom、currentUser、appendMessage、showToast
+// 后端:本机 sidecar ws://127.0.0.1:8765 + Supabase 表 lesson_sessions / messages
+// ────────────────────────────────────────────────────────────────────────────
+window.Classroom = (function() {
+  const WS_URL = 'ws://127.0.0.1:8765'
+  const REG_SAMPLE_MS = 10000          // 注册录音时长
+  const SAMPLE_RATE = 16000
+
+  let ws = null
+  let wsReady = false
+  let lesson = null              // { id, room_id, expert_id, focal_user_id }
+  let vadInstance = null
+  let segSeq = 0
+  let timerStart = 0
+  let timerHandle = null
+  let pendingReg = { expert: false, student: false }  // 哪些角色待注册
+
+  // ─── UI helpers ────────────────────────────────────────────────────────────
+  function setBar(active) {
+    const bar = document.getElementById('classroomBar')
+    if (!bar) return
+    if (active) bar.classList.add('active'); else bar.classList.remove('active')
+  }
+  function setStatus(text, dotClass) {
+    const s = document.getElementById('cbStatus')
+    const d = document.getElementById('cbDot')
+    if (s) s.textContent = text
+    if (d) {
+      d.classList.remove('talking-expert', 'talking-student', 'offline')
+      if (dotClass) d.classList.add(dotClass)
+    }
+  }
+  function startTimer() {
+    timerStart = Date.now()
+    const el = document.getElementById('cbTimer')
+    timerHandle = setInterval(() => {
+      const s = Math.floor((Date.now() - timerStart) / 1000)
+      const mm = String(Math.floor(s / 60)).padStart(2, '0')
+      const ss = String(s % 60).padStart(2, '0')
+      if (el) el.textContent = mm + ':' + ss
+    }, 500)
+  }
+  function stopTimer() {
+    if (timerHandle) clearInterval(timerHandle)
+    timerHandle = null
+  }
+  function showBtn(visible) {
+    const b = document.getElementById('classroomBtn')
+    if (b) b.style.display = visible ? '' : 'none'
+  }
+  function setBtnActive(active) {
+    const b = document.getElementById('classroomBtn')
+    if (!b) return
+    if (active) b.classList.add('active'); else b.classList.remove('active')
+  }
+
+  // ─── 显示/隐藏按钮（仅 1v1 + 老师视角才显示） ─────────────────────────────
+  function refreshButton() {
+    if (!currentRoom || !currentUser) { showBtn(false); return }
+    const isExpert = currentRoom.expert_id === currentUser.id
+    const has1v1 = !!currentRoom.focal_user_id
+    showBtn(isExpert && has1v1)
+  }
+
+  // ─── WebSocket ────────────────────────────────────────────────────────────
+  function wsConnect() {
+    return new Promise((resolve, reject) => {
+      if (ws && wsReady) return resolve(ws)
+      try {
+        ws = new WebSocket(WS_URL)
+      } catch (e) {
+        return reject(e)
+      }
+      ws.binaryType = 'arraybuffer'
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'hello' }))
+      }
+      ws.onmessage = (ev) => {
+        if (typeof ev.data !== 'string') return  // 后端不发 binary
+        let msg
+        try { msg = JSON.parse(ev.data) } catch { return }
+        if (msg.type === 'hello_ack') {
+          wsReady = true
+          resolve(ws)
+        } else {
+          handleWsMessage(msg)
+        }
+      }
+      ws.onclose = () => { wsReady = false; setStatus('转写离线（sidecar 未启动？）', 'offline') }
+      ws.onerror = (e) => { console.warn('[ws] error', e); reject(e) }
+      setTimeout(() => { if (!wsReady) reject(new Error('ws hello timeout')) }, 6000)
+    })
+  }
+  function handleWsMessage(msg) {
+    if (msg.type === 'lesson_ack') {
+      const missing = msg.missing_voices || []
+      if (missing.length === 0) {
+        startCapture()
+      } else {
+        pendingReg.expert = missing.includes('expert')
+        pendingReg.student = missing.includes('student')
+        openRegistrationModal()
+      }
+    } else if (msg.type === 'register_ack') {
+      const role = msg.role  // 'expert' or 'student'
+      const step = document.getElementById(role === 'expert' ? 'vrmStepExpert' : 'vrmStepStudent')
+      if (step) step.classList.add('done')
+      pendingReg[role] = false
+      const goBtn = document.getElementById('vrmGoBtn')
+      if (goBtn) goBtn.disabled = (pendingReg.expert || pendingReg.student)
+    } else if (msg.type === 'segment_ack') {
+      // 段处理完,消息已经写入 messages 表 → Supabase Realtime 会推回 appendMessage
+      // 这里仅更新状态点(谁说话)
+      if (msg.role === 'expert') setStatus(`老师 (${msg.latency_ms}ms)`, 'talking-expert')
+      else if (msg.role === 'user') setStatus(`学生 (${msg.latency_ms}ms)`, 'talking-student')
+      else setStatus(`未识别说话人 (${msg.latency_ms}ms)`, null)
+      setTimeout(() => setStatus('听课中…', null), 1500)
+    } else if (msg.type === 'error') {
+      console.error('[asr error]', msg)
+      showToast('转写错误:' + (msg.message || ''))
+    }
+  }
+
+  // ─── 录音注册 ──────────────────────────────────────────────────────────────
+  function openRegistrationModal() {
+    document.getElementById('voiceRegMask')?.classList.add('active')
+    document.getElementById('vrmExpertName').textContent = currentDisplayName || '老师'
+    // 学生名:从 profile 或 fallback
+    const sName = profilesByUid[currentRoom.focal_user_id] || '学生'
+    document.getElementById('vrmStudentName').textContent = sName
+    // 已注册的标 done
+    if (!pendingReg.expert) document.getElementById('vrmStepExpert')?.classList.add('done')
+    if (!pendingReg.student) document.getElementById('vrmStepStudent')?.classList.add('done')
+    const goBtn = document.getElementById('vrmGoBtn')
+    if (goBtn) goBtn.disabled = (pendingReg.expert || pendingReg.student)
+  }
+  function closeRegistrationModal() {
+    document.getElementById('voiceRegMask')?.classList.remove('active')
+  }
+
+  async function recordVoice(role) {
+    const btn = document.getElementById(role === 'expert' ? 'vrmExpertBtn' : 'vrmStudentBtn')
+    if (!btn) return
+    btn.disabled = true
+    btn.classList.add('recording')
+    btn.textContent = '录音中 10s…'
+
+    try {
+      // 用 AudioContext 直接抓 PCM(MediaRecorder 拿到的是 webm,需要 decode)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: SAMPLE_RATE, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      })
+      const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE })
+      const source = ctx.createMediaStreamSource(stream)
+      const chunks = []
+      const processor = ctx.createScriptProcessor(4096, 1, 1)
+      processor.onaudioprocess = (e) => {
+        const ch = e.inputBuffer.getChannelData(0)
+        chunks.push(new Float32Array(ch))
+      }
+      source.connect(processor)
+      processor.connect(ctx.destination)
+      await new Promise(r => setTimeout(r, REG_SAMPLE_MS))
+      processor.disconnect()
+      source.disconnect()
+      stream.getTracks().forEach(t => t.stop())
+      ctx.close()
+
+      const total = chunks.reduce((n, c) => n + c.length, 0)
+      const pcm = new Float32Array(total)
+      let off = 0
+      for (const c of chunks) { pcm.set(c, off); off += c.length }
+
+      const userId = role === 'expert' ? currentRoom.expert_id : currentRoom.focal_user_id
+      ws.send(JSON.stringify({
+        type: 'register_voice',
+        lesson_session_id: lesson.id,
+        role: role,
+        user_id: userId,
+        sample_rate: SAMPLE_RATE,
+      }))
+      ws.send(pcm.buffer)
+      btn.classList.remove('recording')
+      btn.textContent = '✓ 已注册'
+    } catch (e) {
+      console.error('[recordVoice] failed', e)
+      showToast('录音失败:' + e.message)
+      btn.disabled = false
+      btn.classList.remove('recording')
+      btn.textContent = '重试'
+    }
+  }
+
+  async function startAfterRegistration() {
+    closeRegistrationModal()
+    await startCapture()
+  }
+
+  function cancelRegistration() {
+    closeRegistrationModal()
+    cleanup()
+  }
+
+  // ─── 实录:Silero VAD + WS push ─────────────────────────────────────────────
+  async function startCapture() {
+    setBar(true)
+    setBtnActive(true)
+    setStatus('VAD 启动中…', null)
+    startTimer()
+
+    if (!window.vad) {
+      showToast('VAD 库未加载，刷新页面重试')
+      return
+    }
+    try {
+      vadInstance = await window.vad.MicVAD.new({
+        onSpeechStart: () => {
+          // 不立即更新 UI,等 segment_ack 回来再标说话人
+        },
+        onSpeechEnd: (audio) => {
+          // audio: Float32Array @ 16kHz mono
+          sendSegment(audio)
+        },
+        positiveSpeechThreshold: 0.7,
+        negativeSpeechThreshold: 0.5,
+        redemptionFrames: 18,        // ~570ms 静音视为段结束
+        minSpeechFrames: 8,
+      })
+      vadInstance.start()
+      setStatus('听课中…', null)
+    } catch (e) {
+      console.error('[vad] failed', e)
+      showToast('VAD 启动失败:' + e.message)
+    }
+  }
+
+  function sendSegment(audio) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return
+    segSeq += 1
+    ws.send(JSON.stringify({
+      type: 'segment',
+      lesson_session_id: lesson.id,
+      seq: segSeq,
+      sample_rate: SAMPLE_RATE,
+    }))
+    ws.send(audio.buffer)
+  }
+
+  // ─── 老师按钮:📍 此节完结 ─────────────────────────────────────────────────
+  async function markKnowledgeEnd() {
+    if (!lesson) return
+    try {
+      await sb.from('messages').insert({
+        room_id: lesson.room_id,
+        user_id: currentUser.id,
+        role: 'expert',
+        type: 'text',
+        content: '📍 此节完结',
+        source: 'system',
+        message_type: 'knowledge_unit_end',
+        lesson_session_id: lesson.id,
+      })
+      showToast('已标记知识点结束，助教 tips 生成中…')
+    } catch (e) {
+      console.error('[markKnowledgeEnd]', e)
+      showToast('标记失败:' + (e.message || e))
+    }
+  }
+
+  // ─── 结束课堂 ─────────────────────────────────────────────────────────────
+  async function endLesson() {
+    if (!lesson) return
+    if (!confirm('结束课堂？本节会生成课后作业 + 下节课规划。')) return
+    try {
+      await sb.from('messages').insert({
+        room_id: lesson.room_id,
+        user_id: currentUser.id,
+        role: 'expert',
+        type: 'text',
+        content: '🔔 课程结束',
+        source: 'system',
+        message_type: 'lesson_ended',
+        lesson_session_id: lesson.id,
+      })
+      showToast('课程结束，作业 + 下节课规划生成中…')
+    } catch (e) {
+      console.error('[endLesson]', e)
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'lesson_end', lesson_session_id: lesson.id }))
+    }
+    cleanup()
+  }
+
+  function cleanup() {
+    if (vadInstance) {
+      try { vadInstance.pause(); vadInstance.destroy && vadInstance.destroy() } catch {}
+      vadInstance = null
+    }
+    if (ws) {
+      try { ws.close() } catch {}
+      ws = null
+      wsReady = false
+    }
+    lesson = null
+    segSeq = 0
+    stopTimer()
+    setBar(false)
+    setBtnActive(false)
+  }
+
+  // ─── 入口:toggle (开课 / 结课) ────────────────────────────────────────────
+  async function toggle() {
+    if (lesson) {
+      // 已开课 → 结课
+      endLesson()
+      return
+    }
+    if (!currentRoom || !currentUser) { showToast('请先选择房间'); return }
+    if (currentRoom.expert_id !== currentUser.id) { showToast('只有老师可以开始课堂'); return }
+    if (!currentRoom.focal_user_id) { showToast('1v1 课需要小白先加入再开课'); return }
+
+    // 1) 创建 lesson_session 行
+    let row
+    try {
+      const { data, error } = await sb.from('lesson_sessions').insert({
+        room_id: currentRoom.id,
+        expert_id: currentRoom.expert_id,
+        focal_user_id: currentRoom.focal_user_id,
+        status: 'active',
+      }).select().single()
+      if (error) throw error
+      row = data
+    } catch (e) {
+      showToast('创建课堂失败:' + (e.message || e))
+      return
+    }
+    lesson = {
+      id: row.id,
+      room_id: row.room_id,
+      expert_id: row.expert_id,
+      focal_user_id: row.focal_user_id,
+    }
+    setBar(true)
+    setStatus('连接本机 sidecar…', null)
+
+    // 2) 连 WebSocket
+    try {
+      await wsConnect()
+    } catch (e) {
+      setStatus('转写离线（sidecar 未启动？）', 'offline')
+      showToast('连接本机转写服务失败,请确认 asr_server 已启动\n命令:python ~/.hermes/asr_server.py')
+      // session 仍然存在,关闭时清
+      return
+    }
+
+    // 3) 发 lesson_start
+    ws.send(JSON.stringify({
+      type: 'lesson_start',
+      lesson_session_id: lesson.id,
+      room_id: lesson.room_id,
+      expert_id: lesson.expert_id,
+      focal_user_id: lesson.focal_user_id,
+    }))
+    // 余下流程在 handleWsMessage(lesson_ack) 里
+  }
+
+  return {
+    toggle,
+    refreshButton,
+    recordVoice,
+    cancelRegistration,
+    startAfterRegistration,
+    markKnowledgeEnd,
+    endLesson,
+  }
+})()
+
+// 房间切换时刷新按钮可见性
+if (typeof window !== 'undefined') {
+  const origOpenRoom = window.openRoom
+  if (typeof origOpenRoom === 'function') {
+    window.openRoom = async function(room) {
+      const r = await origOpenRoom(room)
+      try { Classroom.refreshButton() } catch (e) { console.warn('Classroom.refreshButton', e) }
+      return r
+    }
+  }
+}
+</script>
 </body>
 </html>
