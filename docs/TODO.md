@@ -5,28 +5,36 @@
 
 ## 2026-05-22
 
-### 🔥 speak2go diarization 跑通后的 followup(2026-05-21 晚部署 pyannote 4.0.4 + MPS)
+### 🎯 范围调整 — 实时录音 AI 响应整条线已 ripped,聚焦上传录音转写
 
-- [ ] **真用户 UI 端到端测试** — 去 https://speak2go.ai/chat.html 上传一段真 1v1 录音(30s-5min),等 ~录音时长 + 30s,看私聊频道是否出现 speaker-labeled markdown(`**T:** ... **S:** ...`)。smoke 在历史 17min 录音上过了(diarize 86s/MPS,RTF=0.08),但**没真走过前端上传 → handle_audio_upload_lesson → 私聊** 这条完整链路。
-- [ ] **T/S 启发式翻车修** — smoke 暴露:总说话时长长 = T 的启发式,在"老师纠音学生跟读"场景会反(学生跟读次数多反而总时长长)。两条路:
-  - (a) 加 1-shot 确认 UI:私聊出 transcript 时附"哪个是老师?"切换按钮 → 写 `room_speaker_map` 持久化
-  - (b) 换启发式:`句均长度` / `提问句数` / `不同词数` → T 通常说更复杂的话
-  - 先观察 3-5 节课的真实数据,选哪条
-- [ ] **RSS 峰值监控** — mlx-whisper 1.5GB + pyannote 700MB + speak2go Hermes,跑长录音时实际 RSS 峰值?目标 < 3GB,超了考虑 MBP M5/16GB 容量
-- [ ] **HF token 轮换** — `hf_arPUq...` 明文出现在 5-21 session,撤销 + 新建 + 同步两个 .env(`~/.hermes/.env` + `~/.hermes-speak2go/.env`)
-- [ ] **opentelemetry 依赖冲突** — pip install pyannote 时把 `opentelemetry-semantic-conventions` 升到 0.63b1,但 mistralai 和 aiohttp-instrumentation 要 ==0.60b1。当前 hermes 没用 mistralai 当 provider,**短期不影响**,但留意
+**今天大切**:把"现场实时课堂录音 + AI 现场反馈"整条线**代码全删了**(不只是 hide),只走"老师上传 → 转写 → todo + 私聊 transcript"。
 
-### 🧱 lesson_session 代码清理 + ②③ SQL drop(从 2026-05-21 延期)
+#### ✅ 今天已完成
 
-参 2026-05-21 段「speak2go 声纹/lesson_sessions 残留 SQL drop」②③:
+- [x] 前端 chat.html 删 Classroom IIFE / mic 按钮 / classroom-bar / asr-badge / VAD CDN(-414 行)
+- [x] 后端 `libs/speak2go.py` 删 6 个 realtime handler(-380 行)
+- [x] `chat2go.py` adapter 删 3 个 realtime message_type dispatcher
+- [x] launchd `ai.hermes.asr_server` bootout + 删 plist + 删 `~/.hermes/asr_server.py`(备份在 `~/.hermes/_ripped-realtime-2026-05-22/`)
+- [x] m4a sample mismatch 修(ffmpeg 预转 16kHz mono wav)
+- [x] whisper 幻觉 loop 治(`condition_on_previous_text=False` + 正则后处理)
+- [x] T/S 启发式翻车修(换 `avg_chars × (0.5 + unique_word_ratio)` 替代总时长)
+- [x] `handle_extract_todos_from_recording` 数据源切到 `message_type='transcript_full'`
+- [x] libs 双路径同步 + Hermes 重启
 
-- [ ] 删 `~/.hermes/asr_server.py:_insert_asr_message` 的 `lesson_session_id` row 字段(每段 ASR 写入用)
-- [ ] 短路或删 `~/.hermes/libs/speak2go.py`:`fetch_lesson_transcript` / `handle_knowledge_unit_end` / `handle_lesson_ended`(三角色纠偏后这些 handler 概念性已废)
-- [ ] 删 `~/.hermes/hermes-agent/gateway/platforms/chat2go.py:374,380` 对应 `knowledge_unit_end` / `lesson_ended` message_type dispatch
-- [ ] 重启 asr_server + speak2go Hermes,verify chat2go connected + 真跑一段 ASR 不挂
-- [ ] Supabase 跑 `alter table messages drop column if exists lesson_session_id;`
-- [ ] Supabase 跑 `drop table if exists lesson_sessions;`
-- [ ] 验证 SQL:`select to_regclass('public.lesson_sessions') is null as dropped;`
+#### 🔥 接下来
+
+- [ ] **真用户重测一次 m4a 上传** — 验证新启发式(NYC 那段录音翻车场景)T/S 标对
+- [ ] **删 DB 残留对象**(Supabase MCP preview-then-go):`alter table messages drop column if exists lesson_session_id` + `drop table if exists lesson_sessions`
+- [ ] **52 个 room_members 用户清理**(5-20 backfill 把全部 52 用户加进单例房,纠偏后只该剩 OG)
+- [ ] **HF token 轮换** — `hf_arPUq...` 明文出现在 5-21 session,撤销 + 新建 + 同步两个 .env
+- [ ] **whisper 加 initial_prompt** — 英语教学场景词表(reading / pronunciation / vocabulary / past tense / short vowel...)提升英文专业词识别
+- [ ] **RSS 峰值监控** — 长录音(>15min)峰值 RSS < 3GB?
+
+#### 🟡 可考虑(基于上次讨论,看是否要做)
+
+- [ ] **timeline + 知识点树状 todo 输出** — 替换"老师课后 todo 提议",改成 group=时段+主题 / items=该时段知识点的 2 层树
+- [ ] **关掉上传时 brain 主聊回复** — 上传录音不再触发 brain LLM(省 token + 防 memory 污染);brain 仍响应其他文本/截图输入
+- [ ] **UI Swap T↔S 按钮** — 私聊 transcript_full 加按钮反转标签 → 写 room_speaker_map 持久化(corner case 兜底)
 
 ### 其它跨天延期(参 2026-05-21 段)
 
