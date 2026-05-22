@@ -3,6 +3,49 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-23
+
+### 🔥 转写进度条(上传录音 → transcript 全链路 9-10 min 体验补)
+
+**痛点**:今天测 1 小时录音,从上传到看到 `transcript_full` 总耗时 9 分 14 秒。期间老师只看到一句 `"🎙 正在转写《name》,长录音可能要几分钟,请稍候..."` 静态 placeholder,没有任何进度反馈 — 不知道卡住了还是在跑、还要等多久。
+
+**实现思路**:
+
+复用现有 placeholder message(`chat2go.py` adapter line ~549 INSERT 的那条),把 `_pl_id` 传给后台任务 `handle_audio_upload_lesson`,在每个 checkpoint UPDATE 该消息 content,前端 Realtime UPDATE 事件自动重渲。
+
+**Checkpoint 序列**(实测时长基于 1hr m4a):
+1. `🎙 已收到《name》(56 min, 8 MB)... 转写中`(立刻)
+2. `📝 转写完成(29292 字, 2:24)— 抽取知识点中...`(+2.4 min,whisper 完成)
+3. `🎯 知识点已抽出(6 项)— 识别说话人中...`(+2.4 min + Haiku ~5s,todo_proposal 同步出主聊)
+4. `🧠 说话人识别中(预计 ~7 min)...`(进 pyannote 阶段,可显倒计时)
+5. `✅ 完成 — 私聊频道查看完整 transcript`(+9 min,删除或淡化 placeholder)
+
+**实现细节**:
+
+- `chat2go.py:_dispatch_inbound` 把 `_pl_id` 通过参数传进 `handle_audio_upload_lesson(...)`
+- `libs/speak2go.py:handle_audio_upload_lesson` 在每步前后 await `_update_placeholder(sb, _pl_id, content)` 工具函数
+- 时间估算公式硬编码近似:`whisper ≈ dur × 0.05`,`pyannote ≈ dur × 0.12`,从 whisper 完成时刻减去开始时刻得出实际值再外推
+- 前端:placeholder 消息已经被 `appendMessage` 渲染,UPDATE 事件被 realtime 推送(检查 chat.html `UPDATE` 处理逻辑是否走 in-place 更新)
+- 短录音(<30s)跳 diarize 时,直接跳到 step 5 "完成 — 单人录音不需说话人识别"
+
+**风险点**:
+- Realtime UPDATE 事件前端可能不刷渲染(只刷新 INSERT/DELETE)→ 需要检查 / 加 UPDATE 处理
+- 老师在主聊点别的消息时 placeholder 是否还能找到 / 滚动到位置
+- 如果 pyannote / Haiku 失败,placeholder 要变成"⚠️ 部分失败 — 见私聊看 fallback"
+
+**预估工作量**:1-2h(后端 + 前端 + 端到端测一遍)
+
+### 其它 backlog(参 2026-05-22 段「接下来」)
+
+- [ ] **#5 whisper-pyannote 边界对齐** — 今天 1hr 测试暴露的"读书段被塞 T"问题
+- [ ] **撤掉 brain 主聊回复** — 上传录音不再触发 brain LLM(省 token + 防 memory 污染)
+- [ ] **DB 残留删** — `messages.lesson_session_id` 列 + `lesson_sessions` 表(Supabase MCP preview-then-go)
+- [ ] **Hermes 端 patch 存档** — 今天改的 `libs/asr/*` / `libs/speak2go.py` / `chat2go.py` adapter 都没回写到 `docs/hermes-patches/`,下次 `hermes update` 会冲掉
+- [ ] **52 个 room_members 用户清理**(从 5-21 延期)
+- [ ] **HF token 轮换** — `hf_arPUq...` 仍未撤
+
+---
+
 ## 2026-05-22
 
 ### 🎯 范围调整 — 实时录音 AI 响应整条线已 ripped,聚焦上传录音转写
