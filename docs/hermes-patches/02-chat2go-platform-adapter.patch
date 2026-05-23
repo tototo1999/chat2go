@@ -1,6 +1,6 @@
---- /dev/null	2026-05-17 21:06:55
-+++ gateway/platforms/chat2go.py	2026-05-17 20:42:24
-@@ -0,0 +1,1107 @@
+--- /dev/null	2026-05-23 08:18:26
++++ /Users/dami2026/.hermes/hermes-agent/gateway/platforms/chat2go.py	2026-05-22 18:16:43
+@@ -0,0 +1,1350 @@
 +"""
 +Chat2GO platform adapter for Hermes.
 +
@@ -26,6 +26,12 @@
 +import asyncio
 +import json
 +import logging
++import os as _os_for_path
++import sys as _sys_for_path
++# 让 `from libs import speak2go` 能 import — libs/ 在 HERMES_HOME 根目录
++_hh = _os_for_path.environ.get('HERMES_HOME') or _os_for_path.path.expanduser('~/.hermes')
++if _hh and _hh not in _sys_for_path.path:
++    _sys_for_path.path.insert(0, _hh)
 +import os
 +import re
 +import time
@@ -357,6 +363,47 @@
 +            content = msg.get("content") or ""
 +            role = msg.get("role", "user")  # 'user' | 'expert'
 +            user_label = "小白" if role == "user" else "大咖"
++
++            # ── speak2go message_type hooks(2026-05-22 起仅上传录音流相关)──
++            # 实时课堂(knowledge_unit_end / lesson_ended / timed_review)已 ripped
++            source = msg.get("source") or "typed"
++            message_type = msg.get("message_type")
++            # speak2go: 老师点 todo 面板「🎙 录音提 todo」按钮 → 拉最近 transcript_full → Haiku 抽 → append todo
++            if message_type == "extract_todos":
++                from libs import speak2go as _s2g
++                await _s2g.handle_extract_todos_from_recording(
++                    self._sb, self._expert_id, room_id,
++                )
++                return
++            # speak2go: 老师点 ✓ Apply 确认 todo proposal
++            if message_type == "confirm_todo_apply":
++                from libs import speak2go as _s2g
++                _items = []
++                for _a in (msg.get("attachments") or []):
++                    if isinstance(_a, dict) and isinstance(_a.get("items"), list):
++                        _items = _a["items"]; break
++                await _s2g.handle_confirm_todo_apply(self._sb, self._expert_id, room_id, _items)
++                return
++            # speak2go: 老师点 ✕ Discard
++            if message_type == "discard_todo_proposal":
++                from libs import speak2go as _s2g
++                await _s2g.handle_discard_todo_proposal(self._sb, self._expert_id, room_id)
++                return
++            # speak2go: 任何消息下方 🌐 按钮 → 双向中英翻译 → 写 AI 消息携带 translation_result
++            if message_type == "translate":
++                from libs import speak2go as _s2g
++                # source_message_id 在 attachments[0].source_message_id
++                _src_id = None
++                for _a in (msg.get("attachments") or []):
++                    if isinstance(_a, dict) and _a.get("source_message_id"):
++                        _src_id = _a["source_message_id"]
++                        break
++                if _src_id:
++                    await _s2g.handle_translate_message(
++                        self._sb, self._expert_id, room_id, _src_id,
++                    )
++                return
++
 +            # ── tradego 合同生成拦截 ──
 +            # room.product='tradego' + 合同关键词 → 绕开 brain,直接渲染 PDF 上传回 chat
 +            # 返回 True 表示已处理,提前返回不再走 brain
@@ -459,10 +506,47 @@
 +            # 不让 AI 用 execute_code 解析，避免触发 hermes 的命令审批拦截
 +            if non_image_attachments:
 +                lines = ["", "【附件内容】"]
++                _audio_uploads = []  # speak2go: 音频上传 → 后台 spawn handle_audio_upload_lesson
++                _AUDIO_EXTS = (".mp3", ".m4a", ".wav", ".aac", ".ogg", ".webm", ".flac", ".mp4")
 +                for name, url in non_image_attachments:
++                    # MVP 进度反馈:speak2go audio 文件转写前 INSERT 占位消息,让用户立刻看到"在转"
++                    # (转写完原流程会写 transcript/todo 消息,新消息自然覆盖占位的语义)
++                    if name.lower().endswith(_AUDIO_EXTS) and room.get("product") == "speak2go":
++                        try:
++                            # 不塞 attachments — 前端会把它渲染成附件卡片显示 "undefined 0B"
++                            _pl_r = await self._sb.table("messages").insert({
++                                "room_id": room_id,
++                                "user_id": self._expert_id,
++                                "role": "ai",
++                                "type": "text",
++                                "content": f"🎙 正在转写《{name}》,长录音可能要几分钟,请稍候...",
++                            }).execute()
++                            _pl_id = (_pl_r.data or [{}])[0].get("id")
++                            if _pl_id:
++                                self._self_sent_ids.add(_pl_id)
++                            logger.info("speak2go: transcribe placeholder INSERTed for '%s' (msg=%s)", name, _pl_id)
++                        except Exception as _pe:
++                            logger.warning("speak2go transcribe placeholder INSERT 失败: %s", _pe)
 +                    text = await _extract_attachment_text(name, url)
 +                    lines.append(f"\n--- 文件：{name} ---\n{text}\n--- 文件结束 ---")
++                    # 提取音频转写 (text 以 "【课堂录音转写...】\n<transcript>" 开头时)
++                    if text.startswith("【课堂录音转写"):
++                        _nl = text.find("\n")
++                        if _nl > 0:
++                            _audio_uploads.append((name, url, text[_nl + 1:].strip()))
 +                content = content + "\n".join(lines)
++                # speak2go: 上传音频 → todo 提议(主聊)+ transcript_full(私聊)
++                if _audio_uploads and room.get("product") == "speak2go":
++                    from libs import speak2go as _s2g
++                    for _aname, _aurl, _atext in _audio_uploads:
++                        if len(_atext) >= 80:
++                            asyncio.create_task(
++                                _s2g.handle_audio_upload_lesson(
++                                    self._sb, self._expert_id, room_id, _atext, _aname,
++                                    audio_url=_aurl,
++                                )
++                            )
++                            logger.info("speak2go: spawned audio_upload_lesson for '%s' (%d chars, url=%s)", _aname, len(_atext), _aurl[:60])
 +
 +            # 当前消息没新图，但本房间最近 1 小时有过图 → 附加 system 提示
 +            # 防止 AI 跨轮丢失上下文后说「我没收到截图」
@@ -535,6 +619,48 @@
 +            # except Exception as qe:
 +            #     logger.debug("Chat2GO build_quiz_state 跳过: %s", qe)
 +
++            # ★ 2026-05-21 AI 写 todo 提示注入:OG 含"todo/任务/写进/列出/更新左..."关键词时强势提醒 brain 用 marker
++            # 动作型短语:避免单字"todo / 待办"被信息查询(eg "今天 todo 有啥") 误触发新建 group
++            _todo_kw = ("加进左", "加到左", "写进左", "写到左", "列进左", "列出任务", "更新左", "更新todo", "记到todo", "写进todo", "加到todo", "左边的 todo", "左侧的 todo", "加进 todo", "更新一下todo", "加一条todo")
++            _matched_kw = next((kw for kw in _todo_kw if kw in content), None)
++            # AI 写 todo 仅 speak2go 启用 — 防其他 3 个 Hermes(tradego/well2go/命理) 重启后误触发
++            if _matched_kw and room.get("product") == "speak2go":
++                logger.info("Chat2GO TODO_APPEND hint injected (matched kw=%r)", _matched_kw)
++                _today = datetime.now().strftime("%m-%d %H:%M")
++                _todo_hint = (
++                    "⚠️ CRITICAL — USER ASKED YOU TO UPDATE THE LEFT SIDEBAR TODO. ⚠️\n"
++                    "You MUST output a [TODO_APPEND]...[/TODO_APPEND] block, OR NOTHING UPDATES.\n\n"
++                    "[TODO_APPEND] adds ONE new dated group. Format:\n"
++                    "[TODO_APPEND]\n"
++                    "- Task A\n"
++                    "- Task B\n"
++                    "- Task C\n"
++                    "[/TODO_APPEND]\n\n"
++                    f"The group header is auto-set to today's date+time: `📅 {_today}`. Items only, no `# header` needed.\n\n"
++                    "Concrete example — if user just said 'update todo':\n"
++                    "[TODO_APPEND]\n"
++                    "- Practice /θ/ and /v/ sounds\n"
++                    "- Review linking words\n"
++                    "- Vocab: pension, retire\n"
++                    "[/TODO_APPEND]\n"
++                    "Sure thing — added today's class items to the sidebar.\n\n"
++                    "Strict rules:\n"
++                    "1. ALWAYS use [TODO_APPEND] (default — appends a dated group). Only use [TODO_REPLACE] if user EXPLICITLY says 'rewrite' / 'replace all'.\n"
++                    "2. After the marker, write ONE short sentence (user sees only this; marker is stripped).\n"
++                    "3. NEVER skip the marker. NEVER pretend you updated without it. NEVER explain the marker.\n"
++                    "4. Items: extract from the class context — what was covered, what's next, what to review.\n"
++                )
++                content = f"{_todo_hint}\n\n{content}"
++
++            # speak2go: 英语老师场景 — 紧凑 directive (200 字内,省 token)
++            if room.get("product") == "speak2go":
++                _en_hint = (
++                    "[Speak2GO.ai · AI assistant for an American English teacher in NYC. "
++                    "Always reply in casual American English with NYC vibe, even when user writes Chinese. "
++                    "Never say \"Chat2Go\" — say \"our chat\" / \"this class\".]"
++                )
++                content = f"{_en_hint}\n\n{content}"
++
 +            event = MessageEvent(
 +                text=content,
 +                message_type=MessageType.PHOTO if media_urls else MessageType.TEXT,
@@ -565,16 +691,85 @@
 +        reply_to: Optional[str] = None,
 +        metadata: Optional[Dict[str, Any]] = None,
 +    ) -> SendResult:
++        # ★ AI 写 todo marker parse:
++        # [TODO_APPEND]\n- task\n[/TODO_APPEND] → 加一组带日期的新 group (默认,自然语言场景用)
++        # [TODO_REPLACE]\n# 组名\n- 任务\n[/TODO_REPLACE] → 整段替换 (仅当用户明确说 rewrite/replace 时)
++        # 仅 speak2go 启用 — 防其他 3 个 Hermes(tradego/well2go/命理) 重启后跑这段逻辑
++        _todo_updated = False
++        if (self._rooms.get(chat_id) or {}).get("product") == "speak2go":
++            try:
++                import re as _re
++                _ma = _re.search(r'\[TODO_APPEND\](.+?)\[/TODO_APPEND\]', content, _re.S)
++                if _ma:
++                    _items = []
++                    for _line in _ma.group(1).strip().splitlines():
++                        _line = _line.strip()
++                        if not _line:
++                            continue
++                        if _line[0:1] in '-•*':
++                            _items.append({'label': _line.lstrip('-•*').strip()[:80]})
++                    if _items:
++                        try:
++                            # 拉 active template 并 append 新 group(同 handle_extract_todos 模式)
++                            _room_r = await self._sb.table('rooms').select('active_todo_template_id').eq('id', chat_id).maybe_single().execute()
++                            _tmpl_id = (_room_r.data or {}).get('active_todo_template_id') if _room_r else None
++                            if _tmpl_id:
++                                _tmpl_r = await self._sb.table('expert_todo_templates').select('id,payload').eq('id', _tmpl_id).maybe_single().execute()
++                                if _tmpl_r and _tmpl_r.data:
++                                    _payload = list(_tmpl_r.data.get('payload') or [])
++                                    _payload.append({
++                                        'label': f"📅 {datetime.now().strftime('%m-%d %H:%M')}",
++                                        'items': _items,
++                                    })
++                                    await self._sb.table('expert_todo_templates').update({'payload': _payload}).eq('id', _tmpl_id).execute()
++                                    logger.info("Chat2GO AI 写 todo (APPEND): room=%s items=%d", chat_id, len(_items))
++                                    _todo_updated = True
++                        except Exception as _te:
++                            logger.warning("TODO_APPEND 写表失败: %s", _te)
++                    content = _re.sub(r'\[TODO_APPEND\].+?\[/TODO_APPEND\]\s*', '', content, flags=_re.S).strip() or '(已加进左侧 TODO)'
++                _m = _re.search(r'\[TODO_REPLACE\](.+?)\[/TODO_REPLACE\]', content, _re.S)
++                if _m:
++                    _payload = []
++                    _cur = None
++                    for _line in _m.group(1).strip().splitlines():
++                        _line = _line.strip()
++                        if not _line:
++                            continue
++                        if _line.startswith('#'):
++                            _cur = {'label': _line.lstrip('#').strip(), 'items': []}
++                            _payload.append(_cur)
++                        elif _line[0:1] in '-•*':
++                            _item = _line.lstrip('-•*').strip()
++                            if not _cur:
++                                _cur = {'label': 'AI 添加', 'items': []}
++                                _payload.append(_cur)
++                            _cur['items'].append({'label': _item})
++                    if _payload:
++                        try:
++                            await self._sb.rpc('ai_replace_room_todo', {
++                                'p_room_id': chat_id, 'p_payload': _payload
++                            }).execute()
++                            logger.info("Chat2GO AI 写 todo: room=%s groups=%d items=%d", chat_id, len(_payload), sum(len(g['items']) for g in _payload))
++                            _todo_updated = True
++                        except Exception as _te:
++                            logger.warning("ai_replace_room_todo RPC 调用失败: %s", _te)
++                    # strip marker(不管 RPC 成不成功,marker 都不发给用户)
++                    content = _re.sub(r'\[TODO_REPLACE\].+?\[/TODO_REPLACE\]\s*', '', content, flags=_re.S).strip() or '(已更新左侧 TODO)'
++            except Exception as _e:
++                logger.warning("Chat2GO TODO_REPLACE marker parse 异常: %s", _e)
++
 +        try:
-+            r = await self._sb.table("messages").insert(
-+                {
-+                    "room_id": chat_id,
-+                    "user_id": self._expert_id,
-+                    "role": "ai",
-+                    "type": "text",
-+                    "content": content,
-+                }
-+            ).execute()
++            _insert_row = {
++                "room_id": chat_id,
++                "user_id": self._expert_id,
++                "role": "ai",
++                "type": "text",
++                "content": content,
++            }
++            # 若 TODO_APPEND / TODO_REPLACE 写表成功 → attachments 加 _event 让前端自动 reload todo
++            if _todo_updated:
++                _insert_row["attachments"] = [{"_event": "todos_updated"}]
++            r = await self._sb.table("messages").insert(_insert_row).execute()
 +            new_id = (r.data or [{}])[0].get("id")
 +            if new_id:
 +                self._self_sent_ids.add(new_id)
@@ -732,15 +927,18 @@
 +                    extra = ""
 +            if extra:
 +                content = content + f"\n大咖备注:{extra}"
-+            # 5. 写入
++            # 5. 写入 — 默认 scope='room' 跟着房间走,reset_room 时会一起清掉。
++            # 旧实现写 scope='expert' 跨房间持久,导致 reset 后个案细节(八字/姓名等)
++                # 仍被 _prefetch_memory 拉回污染新对话。
++            # 若以后想沉淀跨房通用方法论,大咖可发"ok 通用:xxx"另开关键词路径处理。
 +            await self._sb.table("memories").insert({
-+                "scope": "expert",
-+                "scope_id": self._expert_id,
++                "scope": "room",
++                "scope_id": room_id,
 +                "content": content,
 +                "tags": ["大咖记一下", "问答对"],
 +                "source_message_id": ai_msg["id"],
 +            }).execute()
-+            logger.info("Chat2GO 大咖文字确认 → 记下 AI msg %s", ai_msg["id"][:8])
++            logger.info("Chat2GO 大咖文字确认 → 记下 AI msg %s (scope=room)", ai_msg["id"][:8])
 +        except Exception as e:
 +            logger.warning("Chat2GO _save_context_as_memory 失败(忽略): %s", e)
 +
@@ -968,9 +1166,14 @@
 +    # ────────────────────────────────────────────────────────────
 +    _CONTRACT_KEYWORDS = (
 +        "出合同", "做合同", "出张合同", "做张合同", "生成合同", "做个合同", "帮我出合同",
-+        "出 pi", "做 pi", "出个 pi", "做张 pi", "发个 pi", "出 invoice", "做 invoice",
++        # 单证关键词:无空格 + 带空格 + 大写,大小写不敏感(content 已 .lower())
++        "做pi", "出pi", "做ci", "出ci", "做pl", "出pl", "做ic", "出ic",
++        "做 pi", "出 pi", "做 ci", "出 ci", "做 pl", "出 pl",
++        "出个 pi", "做张 pi", "发个 pi", "做张 ci", "做张 pl",
++        "做 invoice", "出 invoice", "做invoice", "出invoice",
++        "全套单证", "全套单据", "出全套", "做全套",
 +        "render contract", "make contract", "generate contract",
-+        "generate pi", "proforma invoice", "commercial invoice",
++        "generate pi", "proforma invoice", "commercial invoice", "packing list",
 +        "tradego-contract",  # skill 名直接触发
 +    )
 +
@@ -1098,6 +1301,46 @@
 +            return "[DOCX 解析需要 python-docx]"
 +        except Exception as e:
 +            return f"[DOCX 解析失败: {e}]"
++
++    # 音频:课堂录音 → 本地 mlx-whisper large-v3-turbo (Apple Silicon Metal 加速)
++    elif name_lower.endswith((".mp3", ".m4a", ".wav", ".aac", ".ogg", ".webm", ".flac", ".mp4")):
++        try:
++            import tempfile as _tempfile
++            import os as _os
++            import time as _time
++            import mlx_whisper
++            ext = "." + name_lower.rsplit(".", 1)[-1]
++            with _tempfile.NamedTemporaryFile(suffix=ext, delete=False) as f:
++                f.write(data)
++                tmp_path = f.name
++            try:
++                t0 = _time.time()
++                # 用 to_thread 把 sync mlx-whisper 跑到后台线程,不阻塞 event loop
++                # (33MB 转写 5+ min 期间 Hermes 仍能 polling/心跳/接其他消息)
++                result = await asyncio.to_thread(
++                    mlx_whisper.transcribe,
++                    tmp_path,
++                    path_or_hf_repo="mlx-community/whisper-large-v3-turbo",
++                )
++                elapsed = _time.time() - t0
++                transcript = (result.get("text") or "").strip()
++                if not transcript:
++                    return "[音频转写为空,请确认录音清晰]"
++                # 真实时长来自 mlx-whisper (segments 最后一个的 end)
++                segments = result.get("segments") or []
++                duration = segments[-1].get("end", 0) if segments else 0
++                approx_sec = int(duration) if duration else max(1, int(len(data) / 16384))
++                return f"【课堂录音转写 (约 {approx_sec} 秒, 本地 {elapsed:.1f}s 完成)】\n{transcript}"
++            finally:
++                try: _os.unlink(tmp_path)
++                except: pass
++        except ImportError:
++            return "[音频转写需要 mlx-whisper 库]"
++        except Exception as e:
++            return f"[音频转写失败: {type(e).__name__}: {e}]"
++
++    elif name_lower.endswith(".qta"):
++        return "[Apple 语音备忘录 .qta 暂不支持,请用 QuickTime 导出为 .m4a 再上传]"
 +
 +    else:
 +        return f"[不支持的文件类型，可访问 URL: {url}]"
