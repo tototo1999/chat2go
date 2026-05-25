@@ -1190,6 +1190,72 @@
       color: var(--text3);
     }
 
+    /* 底部 100万 上下文豪华进度条 */
+    .ctx-progress-container {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text3);
+    }
+    .ctx-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .ctx-progress-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 500;
+    }
+    .ctx-progress-label .dot-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981; /* emerald */
+      box-shadow: 0 0 8px #10b981;
+      display: inline-block;
+      animation: ctx-pulse 2s infinite;
+    }
+    .ctx-progress-label.warn .dot-indicator {
+      background: #f59e0b; /* amber */
+      box-shadow: 0 0 8px #f59e0b;
+    }
+    .ctx-progress-label.danger .dot-indicator {
+      background: #ef4444; /* red */
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .ctx-progress-track {
+      height: 6px;
+      background: var(--bg2);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .ctx-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #34d399); /* emerald-teal */
+      border-radius: 999px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+    .ctx-progress-fill.warn {
+      background: linear-gradient(90deg, #f59e0b, #fbbf24); /* amber-yellow */
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+    }
+    .ctx-progress-fill.danger {
+      background: linear-gradient(90deg, #ef4444, #f87171); /* red-rose */
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    }
+    @keyframes ctx-pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.5; }
+    }
+
     /* ── 附件 ── */
     /* 用户身份徽章：白(小白) / 咖(OG)，teal 圆底白字，点击进入资料设置 */
     .role-badge-wrap { position: relative; flex-shrink: 0; }
@@ -1891,6 +1957,23 @@
           </button>
         </div>
         <div class="input-hint" id="roleHint" style="display:none"></div>
+
+        <!-- 底部 100万 上下文豪华进度条 -->
+        <div class="ctx-progress-container">
+          <div class="ctx-progress-header">
+            <div class="ctx-progress-label" id="ctxProgressLabel">
+              <span class="dot-indicator"></span>
+              <span>100万上下文已用限制</span>
+            </div>
+            <div class="ctx-progress-stats">
+              <span id="ctxProgressText">0K / 1.00M Token</span>
+              <span id="ctxProgressPercent" style="margin-left: 6px; font-weight: 600; color: var(--text2);">0.0%</span>
+            </div>
+          </div>
+          <div class="ctx-progress-track">
+            <div class="ctx-progress-fill" id="ctxProgressFill"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2829,7 +2912,7 @@
   }
 
   // 房间 token 预算（不再是物理 context window，而是产品维度的"一房一桌"用量上限）
-  const ROOM_TOKEN_BUDGET = 10_000_000  // 10M tokens per room
+  const ROOM_TOKEN_BUDGET = 1_000_000  // 1.00M tokens per room (100万上下文)
 
   // ── 做题模式 ──
   // 题序由 active todo 方案的 items.flat() 顺序决定（data-quiz-idx 在 renderTodos 里自动派生）。
@@ -3322,10 +3405,35 @@
       pctEl.textContent = `${remPct.toFixed(0)}%`
       pctEl.title = `context 剩余 ${remPct.toFixed(1)}% · 已用 ${pct.toFixed(1)}%`
       const wrap = document.getElementById('chatCtxWrap')
-      wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
-      wrap.classList.toggle('danger', pct >= 85)
+      if (wrap) {
+        wrap.style.display = 'inline-flex'
+        wrap.classList.toggle('warn',   pct >= 60 && pct < 85)
+        wrap.classList.toggle('danger', pct >= 85)
+      }
       const fill = document.getElementById('ctxBatteryFill')
       if (fill) fill.style.width = `${remPct}%`
+
+      // 更新底部 100万 上下文豪华进度条
+      const ctxTextEl = document.getElementById('ctxProgressText')
+      const ctxPercentEl = document.getElementById('ctxProgressPercent')
+      const ctxFillEl = document.getElementById('ctxProgressFill')
+      const ctxLabelEl = document.getElementById('ctxProgressLabel')
+
+      if (ctxTextEl) {
+        ctxTextEl.textContent = `${formatTokens(used)} / ${formatTokens(window)} Token`
+      }
+      if (ctxPercentEl) {
+        ctxPercentEl.textContent = `${pct.toFixed(1)}%`
+      }
+      if (ctxFillEl) {
+        ctxFillEl.style.width = `${Math.min(pct, 100)}%`
+        ctxFillEl.classList.toggle('warn', pct >= 60 && pct < 85)
+        ctxFillEl.classList.toggle('danger', pct >= 85)
+      }
+      if (ctxLabelEl) {
+        ctxLabelEl.classList.toggle('warn', pct >= 60 && pct < 85)
+        ctxLabelEl.classList.toggle('danger', pct >= 85)
+      }
     } catch (e) { console.warn('[metrics] failed:', e) }
   }
 
