@@ -343,6 +343,10 @@ footer a:hover { text-decoration: underline; }
       ⚡ TAP / SPACE ⚡
       <span class="hint">在音节高亮时点击 · 金色 = 重音暴击点</span>
     </div>
+    <div class="controls">
+      <button class="action dim" id="hintBtn">🔊 听一次读音 (扣分)</button>
+      <button class="action dim" id="quitBtn">× 放弃</button>
+    </div>
   </div>
 
   <!-- ============ RESULT ============ -->
@@ -631,14 +635,20 @@ async function startBattle(word) {
   $('judgeVal').className = 'val';
   $('progress').style.width = '0%';
 
-  // build syllable track
+  // build syllable track — target 3 min per word
   const track = $('track');
   track.innerHTML = '';
-  const BEAT_MS = 650;
-  let t = 800; // initial lead-in
+  const TARGET_TOTAL_MS = 180000; // 3 minutes
+  const LEAD_IN = 2000;
+  const TAIL = 1500;
+  const stressMul = 1.4;
+  const numSyl = state.syllables.length;
+  const beatUnits = (numSyl - 1) + stressMul; // 1 stress slot scaled
+  const BEAT_MS = Math.max(2000, (TARGET_TOTAL_MS - LEAD_IN - TAIL) / beatUnits);
+  let t = LEAD_IN;
   state.schedule = state.syllables.map((s, i) => {
     const isStress = i === state.stressIdx;
-    const dur = isStress ? BEAT_MS * 1.4 : BEAT_MS;
+    const dur = isStress ? BEAT_MS * stressMul : BEAT_MS;
     const entry = { start: t, end: t + dur, dur, stressed: isStress, hit: null };
     t += dur;
     const el = document.createElement('div');
@@ -649,19 +659,16 @@ async function startBattle(word) {
     track.appendChild(el);
     return entry;
   });
-  state.totalDuration = t + 400;
+  state.totalDuration = t + TAIL;
+  state.hintUsed = 0;
 
   showScreen('battle');
 
-  // intro TTS at slower speed (reference)
-  await speak(word.en, 0.7);
-  if (state.ended) return;
-
-  // 3-2-1 countdown
+  // short countdown — no auto TTS, player triggers it manually
   const cd = $('countdown');
   for (const n of ['3', '2', '1', 'GO!']) {
     cd.textContent = n;
-    await wait(450);
+    await wait(500);
     if (state.ended) return;
   }
   cd.textContent = '';
@@ -705,27 +712,24 @@ function tick() {
 function onTap() {
   if (!state.started || state.ended) return;
   const now = performance.now() - state.startTime;
-  // find best unhit syllable within window
-  let bestI = -1, bestDelta = Infinity;
+  // only score the CURRENTLY-active syllable (slow pace — no early scoring)
+  let activeI = -1;
   for (let i = 0; i < state.schedule.length; i++) {
     const s = state.schedule[i];
     if (s.hit !== null) continue;
-    if (now < s.start - 250 || now > s.end + 120) continue;
-    const center = (s.start + s.end) / 2;
-    const delta = Math.abs(now - center);
-    if (delta < bestDelta) { bestI = i; bestDelta = delta; }
+    if (now >= s.start && now < s.end + 200) { activeI = i; break; }
   }
-  if (bestI < 0) return; // early tap, nothing to score
-  const s = state.schedule[bestI];
-  const center = (s.start + s.end) / 2;
-  const delta = Math.abs(now - center);
-  const half = s.dur / 2;
+  if (activeI < 0) return; // tapped during silence — no penalty, no score
+  const s = state.schedule[activeI];
+  // narrow Perfect zone (1.2s) within long window
+  const elapsed = now - s.start;
+  const tolerance = Math.min(1200, s.dur * 0.3);
   let judge, base;
-  if (delta < half * 0.4) { judge = 'perfect'; base = 100; }
-  else if (delta < half * 0.85) { judge = 'good'; base = 50; }
+  if (elapsed < tolerance) { judge = 'perfect'; base = 100; }
+  else if (elapsed < s.dur * 0.7) { judge = 'good'; base = 50; }
   else { judge = 'good'; base = 30; }
   const points = s.stressed ? base * 3 : base;
-  registerHit(bestI, judge, points);
+  registerHit(activeI, judge, points);
 }
 
 function registerHit(i, judge, points) {
@@ -790,6 +794,18 @@ $('manualBtn').addEventListener('click', manualBattle);
 $('manualInput').addEventListener('keydown', e => { if (e.key === 'Enter') manualBattle(); });
 $('tapZone').addEventListener('click', onTap);
 $('replayBtn').addEventListener('click', () => speak(state.current.en, 0.7));
+$('hintBtn').addEventListener('click', () => {
+  if (!state.current) return;
+  state.hintUsed = (state.hintUsed || 0) + 1;
+  state.score = Math.max(0, state.score - 50);
+  $('scoreVal').textContent = state.score;
+  $('hintBtn').textContent = '🔊 听一次读音 (扣分 ×' + state.hintUsed + ')';
+  speak(state.current.en, 0.75);
+});
+$('quitBtn').addEventListener('click', () => {
+  if (!confirm('放弃这一词?')) return;
+  endBattle();
+});
 $('nextBtn').addEventListener('click', randomBattle);
 $('backBtn').addEventListener('click', () => {
   state.ended = true;
