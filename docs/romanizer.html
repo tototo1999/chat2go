@@ -119,6 +119,128 @@ body {
 }
 .countdown:empty { display: none; }
 
+.step-label {
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: -10px;
+}
+.letter-row {
+  display: flex; flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0; padding: 8px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 10px;
+  user-select: none;
+}
+.letter-row .letter {
+  font-family: 'SF Mono', monospace;
+  font-size: 26px; font-weight: 700;
+  color: var(--text);
+  padding: 6px 8px;
+  min-width: 28px; text-align: center;
+}
+.letter-row .gap {
+  background: transparent; border: none;
+  color: var(--dim);
+  font-size: 18px;
+  padding: 8px 4px;
+  cursor: pointer;
+  font-family: inherit;
+  min-width: 14px;
+  transition: color 0.1s;
+}
+.letter-row .gap:hover { color: var(--neon); }
+.letter-row .gap.active {
+  color: var(--neon);
+  text-shadow: 0 0 12px var(--neon);
+  font-weight: 900;
+}
+.preview-row {
+  display: flex; flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 80px;
+  padding: 14px;
+  background: rgba(0,255,229,0.03);
+  border: 1px dashed rgba(0,255,229,0.2);
+  border-radius: 10px;
+}
+.preview-row .hint-empty {
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 2px;
+  display: flex; align-items: center;
+}
+.preview-row .syl-card {
+  position: relative;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-family: 'SF Mono', monospace;
+  font-size: 22px; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.preview-row .syl-card:hover { border-color: var(--neon); }
+.preview-row .syl-card.stress {
+  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,107,0,0.12));
+  border-color: var(--gold);
+  color: var(--gold);
+  text-transform: uppercase;
+  font-size: 24px;
+  font-weight: 800;
+  box-shadow: 0 0 18px rgba(255,215,0,0.4);
+}
+
+/* result comparison */
+.compare-block {
+  display: flex; flex-direction: column;
+  gap: 12px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 12px;
+  padding: 14px;
+}
+.compare-row {
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.compare-label {
+  font-size: 10px; color: var(--dim); letter-spacing: 2px;
+}
+.compare-cards {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.compare-cards .c-syl {
+  font-family: 'SF Mono', monospace;
+  font-size: 16px; font-weight: 600;
+  padding: 8px 14px; border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+}
+.compare-cards .c-syl.match { border-color: var(--good); color: var(--good); background: rgba(92,255,170,0.08); }
+.compare-cards .c-syl.miss { border-color: var(--red); color: var(--red); background: rgba(255,59,107,0.08); opacity: 0.7; }
+.compare-cards .c-syl.stress {
+  background: linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,107,0,0.15));
+  border-color: var(--gold); color: var(--gold);
+  font-weight: 800; text-transform: uppercase;
+}
+.compare-cards .c-syl.stress.miss { background: rgba(255,59,107,0.1); border-color: var(--red); color: var(--red); }
+.score-breakdown {
+  font-size: 11px; color: var(--dim);
+  letter-spacing: 1px; line-height: 1.7;
+  padding-top: 6px; border-top: 1px dashed var(--border);
+}
+.score-breakdown .row { display: flex; justify-content: space-between; }
+.score-breakdown .row .val { font-family: -apple-system, sans-serif; font-weight: 600; }
+.score-breakdown .row .val.pos { color: var(--good); }
+.score-breakdown .row .val.neg { color: var(--red); }
+.score-breakdown .row.total { color: var(--text); font-size: 13px; padding-top: 6px; border-top: 1px solid var(--border); margin-top: 6px; }
+
 .syllable-track {
   display: flex;
   justify-content: center;
@@ -331,20 +453,21 @@ footer a:hover { text-decoration: underline; }
       <div class="word" id="battleWord">—</div>
       <div class="zh" id="battleZh"></div>
     </div>
-    <div class="countdown" id="countdown"></div>
-    <div class="syllable-track" id="track"></div>
-    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
-    <div class="scoreboard">
-      <div class="col">SCORE<span class="val neon" id="scoreVal">0</span></div>
-      <div class="col">COMBO<span class="val gold" id="comboVal">0</span></div>
-      <div class="col">JUDGE<span class="val" id="judgeVal">—</span></div>
+
+    <div class="step-label">① 点字母之间的 · 切分音节</div>
+    <div class="letter-row" id="letterRow"></div>
+
+    <div class="step-label">② 点音节卡标记重音(金色)</div>
+    <div class="preview-row" id="previewRow">
+      <div class="hint-empty">先切分上面的字母,这里会自动显示音节</div>
     </div>
-    <div class="tap-zone" id="tapZone">
-      ⚡ TAP / SPACE ⚡
-      <span class="hint">在音节高亮时点击 · 金色 = 重音暴击点</span>
+
+    <div class="controls">
+      <button class="action dim" id="hintBtn">🔊 听一次 -30</button>
+      <button class="action dim" id="resetBtn">↺ 重切</button>
+      <button class="action primary" id="submitBtn">▶ 提交答案</button>
     </div>
     <div class="controls">
-      <button class="action dim" id="hintBtn">🔊 听一次读音 (扣分)</button>
       <button class="action dim" id="quitBtn">× 放弃</button>
     </div>
   </div>
@@ -358,7 +481,18 @@ footer a:hover { text-decoration: underline; }
     </div>
     <div class="rank-display">
       <div class="rank" id="resultRank">—</div>
-      <div class="summary" id="resultSummary">— / — / —</div>
+      <div class="summary" id="resultSummary"></div>
+    </div>
+    <div class="compare-block">
+      <div class="compare-row">
+        <div class="compare-label">你的拆分</div>
+        <div class="compare-cards" id="yourCards"></div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">参考答案</div>
+        <div class="compare-cards" id="answerCards"></div>
+      </div>
+      <div class="score-breakdown" id="scoreBreakdown"></div>
     </div>
     <div class="controls">
       <button class="action" id="replayBtn">🔊 听标准读音</button>
@@ -543,18 +677,14 @@ function getFavoritePool() {
    ============================================================ */
 const state = {
   current: null,
-  syllables: [],
-  stressIdx: 0,
-  schedule: [],
-  startTime: 0,
-  totalDuration: 0,
-  score: 0,
-  combo: 0,
-  maxCombo: 0,
-  judges: [],
-  rafId: null,
-  ended: false,
-  started: false
+  letters: [],
+  answerSyls: [],
+  answerStressIdx: 0,
+  answerBounds: [],     // boundary positions in answer (after letter index)
+  playerBounds: new Set(), // boundary positions player has clicked
+  playerStressIdx: -1,  // -1 = not set
+  hintsUsed: 0,
+  submitted: false
 };
 
 /* ============================================================
@@ -613,176 +743,211 @@ function manualBattle() {
 }
 
 /* ============================================================
-   BATTLE
+   BATTLE — player splits + marks stress, then compares
    ============================================================ */
-async function startBattle(word) {
+function syllablesToBounds(syls) {
+  // boundary position k = split after letter index k (0-indexed)
+  const bounds = [];
+  let acc = 0;
+  for (let i = 0; i < syls.length - 1; i++) {
+    acc += syls[i].length;
+    bounds.push(acc - 1);
+  }
+  return bounds;
+}
+
+function getPlayerSyllables() {
+  const word = state.current.en;
+  const letters = word.split('');
+  const sorted = [...state.playerBounds].sort((a, b) => a - b);
+  const syls = [];
+  let cur = '';
+  for (let i = 0; i < letters.length; i++) {
+    cur += letters[i];
+    if (sorted.includes(i) && i < letters.length - 1) {
+      syls.push(cur);
+      cur = '';
+    }
+  }
+  if (cur) syls.push(cur);
+  return syls;
+}
+
+function startBattle(word) {
   state.current = word;
-  state.syllables = syllabify(word.en);
-  state.stressIdx = pickStress(state.syllables, word.en);
-  state.score = 0;
-  state.combo = 0;
-  state.maxCombo = 0;
-  state.judges = [];
-  state.ended = false;
-  state.started = false;
-  if (state.rafId) cancelAnimationFrame(state.rafId);
+  state.letters = word.en.split('');
+  state.answerSyls = syllabify(word.en);
+  state.answerStressIdx = pickStress(state.answerSyls, word.en);
+  state.answerBounds = syllablesToBounds(state.answerSyls);
+  state.playerBounds = new Set();
+  state.playerStressIdx = -1;
+  state.hintsUsed = 0;
+  state.submitted = false;
 
   $('battleWord').textContent = word.en;
   $('battleZh').textContent = word.zh || '';
-  $('scoreVal').textContent = '0';
-  $('comboVal').textContent = '0';
-  $('judgeVal').textContent = '—';
-  $('judgeVal').className = 'val';
-  $('progress').style.width = '0%';
+  $('hintBtn').textContent = '🔊 听一次 -30';
 
-  // build syllable track — target 3 min per word
-  const track = $('track');
-  track.innerHTML = '';
-  const TARGET_TOTAL_MS = 180000; // 3 minutes
-  const LEAD_IN = 2000;
-  const TAIL = 1500;
-  const stressMul = 1.4;
-  const numSyl = state.syllables.length;
-  const beatUnits = (numSyl - 1) + stressMul; // 1 stress slot scaled
-  const BEAT_MS = Math.max(2000, (TARGET_TOTAL_MS - LEAD_IN - TAIL) / beatUnits);
-  let t = LEAD_IN;
-  state.schedule = state.syllables.map((s, i) => {
-    const isStress = i === state.stressIdx;
-    const dur = isStress ? BEAT_MS * stressMul : BEAT_MS;
-    const entry = { start: t, end: t + dur, dur, stressed: isStress, hit: null };
-    t += dur;
-    const el = document.createElement('div');
-    el.className = 'syl' + (isStress ? ' stress' : '');
-    el.textContent = s;
-    el.dataset.i = i;
-    el.addEventListener('click', e => { e.stopPropagation(); onTap(); });
-    track.appendChild(el);
-    return entry;
-  });
-  state.totalDuration = t + TAIL;
-  state.hintUsed = 0;
-
+  renderLetterRow();
+  renderPreview();
   showScreen('battle');
-
-  // short countdown — no auto TTS, player triggers it manually
-  const cd = $('countdown');
-  for (const n of ['3', '2', '1', 'GO!']) {
-    cd.textContent = n;
-    await wait(500);
-    if (state.ended) return;
-  }
-  cd.textContent = '';
-
-  // start tick
-  state.startTime = performance.now();
-  state.started = true;
-  tick();
 }
 
-function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-function tick() {
-  if (state.ended) return;
-  const now = performance.now() - state.startTime;
-  $('progress').style.width = Math.min(100, (now / state.totalDuration) * 100) + '%';
-
-  const syls = $('track').querySelectorAll('.syl');
-  // mark current active
-  let activeI = -1;
-  for (let i = 0; i < state.schedule.length; i++) {
-    if (now >= state.schedule[i].start && now < state.schedule[i].end) { activeI = i; break; }
-  }
-  syls.forEach((el, i) => el.classList.toggle('active', i === activeI));
-
-  // miss any past-due unhit
-  for (let i = 0; i < state.schedule.length; i++) {
-    const s = state.schedule[i];
-    if (s.hit === null && now > s.end + 120) {
-      registerHit(i, 'miss', 0);
+function renderLetterRow() {
+  const row = $('letterRow');
+  row.innerHTML = '';
+  state.letters.forEach((ch, i) => {
+    const letterEl = document.createElement('span');
+    letterEl.className = 'letter';
+    letterEl.textContent = ch;
+    row.appendChild(letterEl);
+    if (i < state.letters.length - 1) {
+      const gap = document.createElement('button');
+      const isActive = state.playerBounds.has(i);
+      gap.className = 'gap' + (isActive ? ' active' : '');
+      gap.textContent = isActive ? '|' : '·';
+      gap.dataset.i = i;
+      gap.disabled = state.submitted;
+      gap.onclick = () => toggleSplit(i);
+      row.appendChild(gap);
     }
-  }
+  });
+}
 
-  if (now >= state.totalDuration) {
-    endBattle();
+function toggleSplit(i) {
+  if (state.submitted) return;
+  if (state.playerBounds.has(i)) state.playerBounds.delete(i);
+  else state.playerBounds.add(i);
+  // Reset stress (indices change when split changes)
+  state.playerStressIdx = -1;
+  renderLetterRow();
+  renderPreview();
+}
+
+function renderPreview() {
+  const preview = $('previewRow');
+  preview.innerHTML = '';
+  const syls = getPlayerSyllables();
+  if (syls.length === 1 && state.playerBounds.size === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'hint-empty';
+    hint.textContent = '先切分上面的字母 · ' + state.letters.length + ' 个字母,你猜几个音节?';
+    preview.appendChild(hint);
     return;
   }
-  state.rafId = requestAnimationFrame(tick);
+  syls.forEach((s, i) => {
+    const card = document.createElement('button');
+    card.className = 'syl-card' + (i === state.playerStressIdx ? ' stress' : '');
+    card.textContent = s;
+    card.dataset.i = i;
+    card.disabled = state.submitted;
+    card.onclick = () => toggleStress(i);
+    preview.appendChild(card);
+  });
 }
 
-function onTap() {
-  if (!state.started || state.ended) return;
-  const now = performance.now() - state.startTime;
-  // only score the CURRENTLY-active syllable (slow pace — no early scoring)
-  let activeI = -1;
-  for (let i = 0; i < state.schedule.length; i++) {
-    const s = state.schedule[i];
-    if (s.hit !== null) continue;
-    if (now >= s.start && now < s.end + 200) { activeI = i; break; }
-  }
-  if (activeI < 0) return; // tapped during silence — no penalty, no score
-  const s = state.schedule[activeI];
-  // narrow Perfect zone (1.2s) within long window
-  const elapsed = now - s.start;
-  const tolerance = Math.min(1200, s.dur * 0.3);
-  let judge, base;
-  if (elapsed < tolerance) { judge = 'perfect'; base = 100; }
-  else if (elapsed < s.dur * 0.7) { judge = 'good'; base = 50; }
-  else { judge = 'good'; base = 30; }
-  const points = s.stressed ? base * 3 : base;
-  registerHit(activeI, judge, points);
+function toggleStress(i) {
+  if (state.submitted) return;
+  state.playerStressIdx = (state.playerStressIdx === i) ? -1 : i;
+  renderPreview();
 }
 
-function registerHit(i, judge, points) {
-  const s = state.schedule[i];
-  if (s.hit !== null) return;
-  s.hit = judge;
-  state.judges.push(judge);
-  if (judge !== 'miss') {
-    state.score += points;
-    state.combo += 1;
-    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
-  } else {
-    state.combo = 0;
-  }
-  $('scoreVal').textContent = state.score;
-  $('comboVal').textContent = state.combo;
-  const jv = $('judgeVal');
-  jv.textContent = judge.toUpperCase();
-  jv.className = 'val ' + (judge === 'perfect' ? 'gold' : (judge === 'good' ? 'neon' : 'pink'));
-  const el = $('track').querySelectorAll('.syl')[i];
-  el.classList.add('hit-' + judge);
-  const j = document.createElement('div');
-  j.className = 'judge ' + judge;
-  j.textContent = judge === 'perfect' ? (s.stressed ? 'CRIT!' : 'PERFECT!') : (judge === 'good' ? 'GOOD' : 'MISS');
-  // remove any old judge first
-  const old = el.querySelector('.judge');
-  if (old) old.remove();
-  el.appendChild(j);
-}
+function submitAnswer() {
+  if (state.submitted) return;
+  state.submitted = true;
+  const playerSyls = getPlayerSyllables();
+  const playerBounds = syllablesToBounds(playerSyls);
+  const answerBoundsSet = new Set(state.answerBounds);
+  const playerBoundsSet = new Set(playerBounds);
 
-function endBattle() {
-  state.ended = true;
-  state.started = false;
-  if (state.rafId) cancelAnimationFrame(state.rafId);
-  // compute rank
-  const total = state.schedule.length;
-  const perfects = state.judges.filter(j => j === 'perfect').length;
-  const goods = state.judges.filter(j => j === 'good').length;
-  const misses = state.judges.filter(j => j === 'miss').length;
-  const ratio = total ? (perfects + goods * 0.5) / total : 0;
+  const correctBounds = [...playerBoundsSet].filter(b => answerBoundsSet.has(b));
+  const extraBounds = [...playerBoundsSet].filter(b => !answerBoundsSet.has(b));
+  const missedBounds = [...answerBoundsSet].filter(b => !playerBoundsSet.has(b));
+
+  // scoring
+  const boundPoints = correctBounds.length * 30;
+  const extraPenalty = extraBounds.length * 15;
+  const missedPenalty = missedBounds.length * 10;
+  const stressOK = (playerSyls.length === state.answerSyls.length) &&
+                   (state.playerStressIdx === state.answerStressIdx);
+  const stressPoints = stressOK ? 60 : 0;
+  const perfect = (correctBounds.length === state.answerBounds.length &&
+                   extraBounds.length === 0 && stressOK);
+  const perfectBonus = perfect ? 40 : 0;
+  const hintPenalty = state.hintsUsed * 30;
+  const total = Math.max(0, boundPoints - extraPenalty - missedPenalty + stressPoints + perfectBonus - hintPenalty);
+
+  // rank by ratio
+  const maxPossible = state.answerBounds.length * 30 + 60 + 40;
+  const ratio = maxPossible > 0 ? total / maxPossible : 0;
   let rank = 'D';
   if (ratio >= 0.95) rank = 'S';
-  else if (ratio >= 0.85) rank = 'A';
-  else if (ratio >= 0.7) rank = 'B';
-  else if (ratio >= 0.5) rank = 'C';
-  const rk = $('resultRank');
-  rk.textContent = rank;
-  rk.className = 'rank ' + rank.toLowerCase();
+  else if (ratio >= 0.80) rank = 'A';
+  else if (ratio >= 0.60) rank = 'B';
+  else if (ratio >= 0.40) rank = 'C';
+
+  renderResult({
+    rank, total, playerSyls, playerBounds, playerStress: state.playerStressIdx,
+    answerSyls: state.answerSyls, answerStress: state.answerStressIdx,
+    correctBounds, extraBounds, missedBounds, stressOK, perfect,
+    boundPoints, extraPenalty, missedPenalty, stressPoints, perfectBonus, hintPenalty
+  });
+}
+
+function renderResult(r) {
   $('resultWord').textContent = state.current.en;
   $('resultZh').textContent = state.current.zh || '';
-  $('resultSummary').textContent =
-    'SCORE ' + state.score + '  ·  P:' + perfects + '  G:' + goods + '  M:' + misses + '  ·  MAX COMBO ' + state.maxCombo;
-  setTimeout(() => showScreen('result'), 900);
+  const rk = $('resultRank');
+  rk.textContent = r.rank;
+  rk.className = 'rank ' + r.rank.toLowerCase();
+  $('resultSummary').textContent = 'SCORE ' + r.total;
+
+  // your cards (with match indication)
+  const yc = $('yourCards');
+  yc.innerHTML = '';
+  const playerBoundsSet = new Set(r.playerBounds);
+  const answerBoundsSet = new Set(state.answerBounds);
+  r.playerSyls.forEach((s, i) => {
+    const c = document.createElement('div');
+    c.className = 'c-syl';
+    // a syllable "matches" if its boundary positions (its end if any) are in answer
+    // approximation: card matches if its end-boundary is in answer OR it's a perfect-set syllable
+    const start = r.playerBounds.slice(0, i).reduce((a, b, idx) => idx === i-1 ? b+1 : a, 0);
+    const end = i < r.playerBounds.length ? r.playerBounds[i] : state.letters.length - 1;
+    const isExactMatch = state.answerSyls[i] && s.toLowerCase() === state.answerSyls[i].toLowerCase();
+    if (isExactMatch) c.classList.add('match');
+    if (i === r.playerStress) c.classList.add('stress');
+    if (i === r.playerStress && !r.stressOK) c.classList.add('miss');
+    c.textContent = s;
+    yc.appendChild(c);
+  });
+
+  // answer cards
+  const ac = $('answerCards');
+  ac.innerHTML = '';
+  state.answerSyls.forEach((s, i) => {
+    const c = document.createElement('div');
+    c.className = 'c-syl';
+    if (i === state.answerStressIdx) c.classList.add('stress');
+    c.textContent = s;
+    ac.appendChild(c);
+  });
+
+  // breakdown
+  const sb = $('scoreBreakdown');
+  const rows = [
+    ['切分正确 (' + r.correctBounds.length + '/' + state.answerBounds.length + ')', '+' + r.boundPoints, 'pos'],
+  ];
+  if (r.extraPenalty > 0) rows.push(['多余切分 ×' + r.extraBounds.length, '-' + r.extraPenalty, 'neg']);
+  if (r.missedPenalty > 0) rows.push(['漏切 ×' + r.missedBounds.length, '-' + r.missedPenalty, 'neg']);
+  rows.push(['重音 ' + (r.stressOK ? '✓' : '✗'), (r.stressOK ? '+' : '') + r.stressPoints, r.stressOK ? 'pos' : '']);
+  if (r.perfectBonus) rows.push(['完美 bonus', '+' + r.perfectBonus, 'pos']);
+  if (r.hintPenalty) rows.push(['听读音 ×' + state.hintsUsed, '-' + r.hintPenalty, 'neg']);
+  sb.innerHTML = rows.map(([k, v, cls]) =>
+    '<div class="row"><span>' + k + '</span><span class="val ' + cls + '">' + v + '</span></div>'
+  ).join('') + '<div class="row total"><span>TOTAL</span><span class="val">' + r.total + '</span></div>';
+
+  setTimeout(() => showScreen('result'), 350);
 }
 
 /* ============================================================
@@ -792,19 +957,26 @@ $('startBtn').addEventListener('click', randomBattle);
 $('pickBtn').addEventListener('click', buildPicker);
 $('manualBtn').addEventListener('click', manualBattle);
 $('manualInput').addEventListener('keydown', e => { if (e.key === 'Enter') manualBattle(); });
-$('tapZone').addEventListener('click', onTap);
 $('replayBtn').addEventListener('click', () => speak(state.current.en, 0.7));
 $('hintBtn').addEventListener('click', () => {
-  if (!state.current) return;
-  state.hintUsed = (state.hintUsed || 0) + 1;
-  state.score = Math.max(0, state.score - 50);
-  $('scoreVal').textContent = state.score;
-  $('hintBtn').textContent = '🔊 听一次读音 (扣分 ×' + state.hintUsed + ')';
+  if (!state.current || state.submitted) return;
+  state.hintsUsed = (state.hintsUsed || 0) + 1;
+  $('hintBtn').textContent = '🔊 听一次 -30 (×' + state.hintsUsed + ')';
   speak(state.current.en, 0.75);
 });
+$('resetBtn').addEventListener('click', () => {
+  if (state.submitted) return;
+  state.playerBounds = new Set();
+  state.playerStressIdx = -1;
+  renderLetterRow();
+  renderPreview();
+});
+$('submitBtn').addEventListener('click', submitAnswer);
 $('quitBtn').addEventListener('click', () => {
   if (!confirm('放弃这一词?')) return;
-  endBattle();
+  refreshIntro();
+  showScreen('intro');
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
 });
 $('nextBtn').addEventListener('click', randomBattle);
 $('backBtn').addEventListener('click', () => {
@@ -816,16 +988,13 @@ $('backBtn').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space') {
-    if (battleScreen.classList.contains('show')) { e.preventDefault(); onTap(); }
-  } else if (e.code === 'Escape') {
-    if (battleScreen.classList.contains('show')) {
-      state.ended = true;
-      if (state.rafId) cancelAnimationFrame(state.rafId);
-      if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
-      refreshIntro();
-      showScreen('intro');
-    }
+  if (e.code === 'Enter' && battleScreen.classList.contains('show') && !state.submitted) {
+    e.preventDefault();
+    submitAnswer();
+  } else if (e.code === 'Escape' && battleScreen.classList.contains('show')) {
+    if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+    refreshIntro();
+    showScreen('intro');
   }
 });
 
