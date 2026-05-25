@@ -544,6 +544,7 @@ footer a:hover { text-decoration: underline; }
   <a href="glossary-web-coding.html">← 回词表挑收藏</a>
 </footer>
 
+<script src="romanizer-dict.js"></script>
 <script>
 /* ============================================================
    HEURISTIC G2P — syllable split + stress
@@ -826,14 +827,33 @@ function getPlayerSyllables() {
   return syls;
 }
 
+function dictKey(en) {
+  return String(en).toLowerCase().replace(/[^a-z]/g, '');
+}
+
+function lookupDict(en) {
+  const dict = (typeof window !== 'undefined' && window.ROMAJI_DICT) || {};
+  return dict[dictKey(en)] || null;
+}
+
 function startBattle(word) {
   state.current = word;
   state.letters = word.en.split('');
-  state.answerSyls = syllabify(word.en);
-  // IPA-driven stress if user filled phonetic field; else heuristic
-  const ipaIdx = parseStressFromIPA(word.phonetic, state.answerSyls.length - 1);
-  state.answerStressIdx = (ipaIdx !== null) ? ipaIdx : pickStress(state.answerSyls, word.en);
-  state.answerSource = (ipaIdx !== null) ? 'ipa' : 'heuristic';
+  // Source priority: 字典 > IPA > 启发式
+  const dictEntry = lookupDict(word.en);
+  if (dictEntry) {
+    state.answerSyls = dictEntry.syls.slice();
+    state.answerRomaji = dictEntry.romaji.slice();
+    state.answerStressIdx = dictEntry.romaji.findIndex(r => r === r.toUpperCase() && /[A-Z]/.test(r));
+    if (state.answerStressIdx < 0) state.answerStressIdx = 0;
+    state.answerSource = 'dict';
+  } else {
+    state.answerSyls = syllabify(word.en);
+    const ipaIdx = parseStressFromIPA(word.phonetic, state.answerSyls.length - 1);
+    state.answerStressIdx = (ipaIdx !== null) ? ipaIdx : pickStress(state.answerSyls, word.en);
+    state.answerRomaji = state.answerSyls.map((s, i) => i === state.answerStressIdx ? s.toUpperCase() : s.toLowerCase());
+    state.answerSource = (ipaIdx !== null) ? 'ipa' : 'heuristic';
+  }
   state.answerBounds = syllablesToBounds(state.answerSyls);
   state.playerBounds = new Set();
   state.playerStressIdx = -1;
@@ -997,7 +1017,7 @@ function renderResult(r) {
     yc.appendChild(slot);
   });
 
-  // answer cards (with orthographic syllable as romaji-reference)
+  // answer cards (orthographic syllable + romaji from dict/heuristic)
   const ac = $('answerCards');
   ac.innerHTML = '';
   state.answerSyls.forEach((s, i) => {
@@ -1009,14 +1029,16 @@ function renderResult(r) {
     c.textContent = s;
     slot.appendChild(c);
     const rj = document.createElement('div');
-    rj.className = 'c-romaji empty';
-    rj.textContent = s.toLowerCase();
+    rj.className = 'c-romaji';
+    rj.textContent = state.answerRomaji[i] || s.toLowerCase();
+    if (state.answerSource !== 'dict') rj.classList.add('empty');
     slot.appendChild(rj);
     ac.appendChild(slot);
   });
-  $('answerSource').textContent = state.answerSource === 'ipa'
-    ? '· 依据你填的 IPA'
-    : '· 启发式估算,可能错(去词表填 IPA 修正)';
+  $('answerSource').textContent =
+    state.answerSource === 'dict' ? '· 标准答案(字典)' :
+    state.answerSource === 'ipa'  ? '· 依据你填的 IPA' :
+                                    '· 启发式估算,可能错(去词表填 IPA 修正)';
 
   // breakdown
   const sb = $('scoreBreakdown');
