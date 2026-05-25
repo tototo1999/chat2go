@@ -173,17 +173,22 @@ body {
   letter-spacing: 2px;
   display: flex; align-items: center;
 }
+.preview-row .syl-slot {
+  display: flex; flex-direction: column;
+  gap: 4px; min-width: 76px;
+}
 .preview-row .syl-card {
   position: relative;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 10px;
-  padding: 14px 18px;
+  padding: 12px 14px;
   font-family: 'SF Mono', monospace;
   font-size: 22px; font-weight: 600;
   color: var(--text);
   cursor: pointer;
   transition: all 0.15s;
+  width: 100%;
 }
 .preview-row .syl-card:hover { border-color: var(--neon); }
 .preview-row .syl-card.stress {
@@ -195,6 +200,36 @@ body {
   font-weight: 800;
   box-shadow: 0 0 18px rgba(255,215,0,0.4);
 }
+.preview-row .romaji {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text);
+  font-family: 'SF Mono', monospace;
+  font-size: 13px;
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  transition: border-color 0.1s;
+}
+.preview-row .romaji:focus { border-color: var(--neon); box-shadow: 0 0 8px rgba(0,255,229,0.2); }
+.preview-row .romaji:disabled { opacity: 0.6; cursor: default; }
+.preview-row .romaji::placeholder { color: var(--dim); opacity: 0.6; }
+.compare-cards .c-syl-slot {
+  display: flex; flex-direction: column; gap: 3px;
+  align-items: stretch; min-width: 70px;
+}
+.compare-cards .c-romaji {
+  font-size: 11px; color: var(--dim);
+  font-family: 'SF Mono', monospace;
+  text-align: center;
+  padding: 3px 4px;
+  background: rgba(0,0,0,0.25);
+  border-radius: 4px;
+}
+.compare-cards .c-romaji.empty { color: rgba(255,255,255,0.2); }
 
 /* result comparison */
 .compare-block {
@@ -457,7 +492,7 @@ footer a:hover { text-decoration: underline; }
     <div class="step-label">① 点字母之间的 · 切分音节</div>
     <div class="letter-row" id="letterRow"></div>
 
-    <div class="step-label">② 点音节卡标记重音(金色)</div>
+    <div class="step-label">② 点音节卡标记重音(金色) · ③ 在下面方框写罗马音</div>
     <div class="preview-row" id="previewRow">
       <div class="hint-empty">先切分上面的字母,这里会自动显示音节</div>
     </div>
@@ -700,6 +735,7 @@ const state = {
   answerBounds: [],     // boundary positions in answer (after letter index)
   playerBounds: new Set(), // boundary positions player has clicked
   playerStressIdx: -1,  // -1 = not set
+  playerRomaji: [],     // string per syllable index
   hintsUsed: 0,
   submitted: false
 };
@@ -801,6 +837,7 @@ function startBattle(word) {
   state.answerBounds = syllablesToBounds(state.answerSyls);
   state.playerBounds = new Set();
   state.playerStressIdx = -1;
+  state.playerRomaji = [];
   state.hintsUsed = 0;
   state.submitted = false;
 
@@ -856,13 +893,26 @@ function renderPreview() {
     return;
   }
   syls.forEach((s, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'syl-slot';
     const card = document.createElement('button');
     card.className = 'syl-card' + (i === state.playerStressIdx ? ' stress' : '');
     card.textContent = s;
     card.dataset.i = i;
     card.disabled = state.submitted;
     card.onclick = () => toggleStress(i);
-    preview.appendChild(card);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'romaji';
+    input.placeholder = '罗马音';
+    input.value = state.playerRomaji[i] || '';
+    input.disabled = state.submitted;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.oninput = e => { state.playerRomaji[i] = e.target.value; };
+    slot.appendChild(card);
+    slot.appendChild(input);
+    preview.appendChild(slot);
   });
 }
 
@@ -894,8 +944,10 @@ function submitAnswer() {
   const perfect = (correctBounds.length === state.answerBounds.length &&
                    extraBounds.length === 0 && stressOK);
   const perfectBonus = perfect ? 40 : 0;
+  const romajiFilled = state.playerRomaji.slice(0, playerSyls.length).filter(r => r && r.trim()).length;
+  const romajiPoints = romajiFilled * 10;
   const hintPenalty = state.hintsUsed * 30;
-  const total = Math.max(0, boundPoints - extraPenalty - missedPenalty + stressPoints + perfectBonus - hintPenalty);
+  const total = Math.max(0, boundPoints - extraPenalty - missedPenalty + stressPoints + perfectBonus + romajiPoints - hintPenalty);
 
   // rank by ratio
   const maxPossible = state.answerBounds.length * 30 + 60 + 40;
@@ -910,7 +962,7 @@ function submitAnswer() {
     rank, total, playerSyls, playerBounds, playerStress: state.playerStressIdx,
     answerSyls: state.answerSyls, answerStress: state.answerStressIdx,
     correctBounds, extraBounds, missedBounds, stressOK, perfect,
-    boundPoints, extraPenalty, missedPenalty, stressPoints, perfectBonus, hintPenalty
+    boundPoints, extraPenalty, missedPenalty, stressPoints, perfectBonus, romajiPoints, romajiFilled, hintPenalty
   });
 }
 
@@ -922,35 +974,45 @@ function renderResult(r) {
   rk.className = 'rank ' + r.rank.toLowerCase();
   $('resultSummary').textContent = 'SCORE ' + r.total;
 
-  // your cards (with match indication)
+  // your cards with romaji label
   const yc = $('yourCards');
   yc.innerHTML = '';
-  const playerBoundsSet = new Set(r.playerBounds);
-  const answerBoundsSet = new Set(state.answerBounds);
   r.playerSyls.forEach((s, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'c-syl-slot';
     const c = document.createElement('div');
     c.className = 'c-syl';
-    // a syllable "matches" if its boundary positions (its end if any) are in answer
-    // approximation: card matches if its end-boundary is in answer OR it's a perfect-set syllable
-    const start = r.playerBounds.slice(0, i).reduce((a, b, idx) => idx === i-1 ? b+1 : a, 0);
-    const end = i < r.playerBounds.length ? r.playerBounds[i] : state.letters.length - 1;
     const isExactMatch = state.answerSyls[i] && s.toLowerCase() === state.answerSyls[i].toLowerCase();
     if (isExactMatch) c.classList.add('match');
     if (i === r.playerStress) c.classList.add('stress');
     if (i === r.playerStress && !r.stressOK) c.classList.add('miss');
     c.textContent = s;
-    yc.appendChild(c);
+    slot.appendChild(c);
+    const rj = document.createElement('div');
+    rj.className = 'c-romaji';
+    const txt = (state.playerRomaji[i] || '').trim();
+    if (txt) rj.textContent = txt;
+    else { rj.textContent = '—'; rj.classList.add('empty'); }
+    slot.appendChild(rj);
+    yc.appendChild(slot);
   });
 
-  // answer cards
+  // answer cards (with orthographic syllable as romaji-reference)
   const ac = $('answerCards');
   ac.innerHTML = '';
   state.answerSyls.forEach((s, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'c-syl-slot';
     const c = document.createElement('div');
     c.className = 'c-syl';
     if (i === state.answerStressIdx) c.classList.add('stress');
     c.textContent = s;
-    ac.appendChild(c);
+    slot.appendChild(c);
+    const rj = document.createElement('div');
+    rj.className = 'c-romaji empty';
+    rj.textContent = s.toLowerCase();
+    slot.appendChild(rj);
+    ac.appendChild(slot);
   });
   $('answerSource').textContent = state.answerSource === 'ipa'
     ? '· 依据你填的 IPA'
@@ -964,6 +1026,7 @@ function renderResult(r) {
   if (r.extraPenalty > 0) rows.push(['多余切分 ×' + r.extraBounds.length, '-' + r.extraPenalty, 'neg']);
   if (r.missedPenalty > 0) rows.push(['漏切 ×' + r.missedBounds.length, '-' + r.missedPenalty, 'neg']);
   rows.push(['重音 ' + (r.stressOK ? '✓' : '✗'), (r.stressOK ? '+' : '') + r.stressPoints, r.stressOK ? 'pos' : '']);
+  if (r.romajiPoints) rows.push(['罗马音填写 ×' + r.romajiFilled, '+' + r.romajiPoints, 'pos']);
   if (r.perfectBonus) rows.push(['完美 bonus', '+' + r.perfectBonus, 'pos']);
   if (r.hintPenalty) rows.push(['听读音 ×' + state.hintsUsed, '-' + r.hintPenalty, 'neg']);
   sb.innerHTML = rows.map(([k, v, cls]) =>
