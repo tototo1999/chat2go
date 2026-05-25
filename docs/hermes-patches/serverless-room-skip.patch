@@ -1,0 +1,16 @@
+diff --git a/hermes-agent/gateway/platforms/chat2go.py b/hermes-agent/gateway/platforms/chat2go.py
+--- a/hermes-agent/gateway/platforms/chat2go.py
++++ b/hermes-agent/gateway/platforms/chat2go.py
+@@ -362,6 +362,12 @@ class Chat2GoPlatform(BasePlatform):
+         try:
+             room_id = msg.get("room_id")
+             room = self._rooms.get(room_id) or {}
++            # ⚡ 2026-05-25:rooms.serverless = true 的房完全脱钩 Hermes。
++            # chat2go.ai 全量去 Hermes 化:chat.html → chat2go-ingest Edge Function
++            # → Modal worker (worker/chat2go_worker.py) → UPDATE placeholder。
++            if room.get("serverless"):
++                logger.info("Chat2GO: skip serverless room (handled by chat2go-ingest) msg=%s room=%s", msg_id, room_id)
++                return
+             # ⚡ glass-demo 房完全脱钩 Hermes:product='speak2go-demo' 全部走 Supabase Edge Function
+             # 双重 guard:product 字段 + 硬编码 UUID(防 self._rooms 缓存未刷新时漏判)
+             _GLASS_DEMO_ROOM_ID = "7e9d2c08-15a4-4f3b-9c8e-d1a5f6e3b209"

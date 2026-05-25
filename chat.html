@@ -1684,6 +1684,10 @@
     <a href="/" class="logo">Chat<span>2GO</span><span class="logo-tld">.ai</span></a>
   </div>
   <div class="nav-right">
+    <a href="/orbit.html" style="font-size:12px;text-decoration:none;color:#8B5CF6;border:0.5px solid rgba(139,92,246,0.3);padding:5px 10px;border-radius:6px;background:rgba(139,92,246,0.06);display:inline-flex;align-items:center;gap:4px;font-weight:700;transition:all 0.15s;margin-right:8px;" onmouseover="this.style.background='rgba(139,92,246,0.12)';this.style.boxShadow='0 0 10px rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(139,92,246,0.06)';this.style.boxShadow='none'">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      Antigravity Orbit
+    </a>
     <button class="icon-btn" id="settingsBtn" onclick="openSettings()" title="设置" style="display:none;">
       <i class="ti ti-settings"></i>
     </button>
@@ -3387,6 +3391,9 @@
         table: 'messages',
         filter: `room_id=eq.${roomId}`
       }, payload => {
+        // 内容更新(placeholder 渐进刷新 / multimodal worker 写回 / Gemini 摘要替换)
+        // 任意 role / 任意 type,只要内容变了就原地重渲气泡
+        applyContentUpdate(payload.new.id, payload.new.content || '', payload.new.type === 'markdown')
         // 评价 ratings 更新(双方共识用),同步 UI + 刷做题进度 + 重排 sidebar 置顶 + 刷新房顶公告
         if (payload.new?.role === 'ai') {
           applyRatingsToMsg(payload.new.id, payload.new.ratings || {})
@@ -3603,8 +3610,14 @@
       <div class="msg-attachments">
         ${attachments.map(a => {
           const isImage = (a.mime_type || '').startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp)$/i.test(a.name || '')
+          const isVideo = (a.mime_type || '').startsWith('video/') || /\.(mp4|webm|mov|m4v|ogv)$/i.test(a.name || '')
+          const glassMeta = a._glass_capture_meta
+          const glassBadge = glassMeta ? `<div class="msg-glass-badge" style="font-size:11px;color:var(--text3);margin-bottom:4px;">📷 课堂抓拍${glassMeta.triggered_by ? ' · ' + escHtml(glassMeta.triggered_by) : ''}</div>` : ''
           if (isImage) {
-            return `<img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}" onclick="openImageLightbox('${escHtml(a.url)}')">`
+            return `${glassBadge}<img class="msg-image" src="${escHtml(a.url)}" alt="${escHtml(a.name)}" onclick="openImageLightbox('${escHtml(a.url)}')">`
+          }
+          if (isVideo) {
+            return `${glassBadge}<video class="msg-video" controls preload="metadata" src="${escHtml(a.url)}" style="max-width:100%;border-radius:8px;"></video>`
           }
           return `
             <a class="msg-attachment" href="${escHtml(a.url)}" target="_blank" rel="noopener">
@@ -3821,6 +3834,23 @@
         clearPendingQuote()
         autoResize(input)
       }
+    }
+  }
+  // 把 messages.content 的 UPDATE 原地刷到气泡(placeholder 渐进更新 / Modal worker 完成后替换文案)
+  // 不重建整个 msg-group(保留 ratings/rate-bar/attachments 等已渲染状态),只换气泡 innerHTML
+  function applyContentUpdate(msgId, newContent, isMarkdown) {
+    const group = document.querySelector(`.msg-group[data-msg-id="${msgId}"]`)
+    if (!group) return
+    // markdown 消息:换 md-body 内 HTML
+    const mdBody = group.querySelector(`#md-${msgId}`)
+    if (mdBody) {
+      try { mdBody.innerHTML = marked.parse(newContent || '') } catch (e) { mdBody.textContent = newContent || '' }
+      return
+    }
+    // 普通文本气泡:替换 innerHTML
+    const bubble = group.querySelector('.msg-bubble')
+    if (bubble && !bubble.classList.contains('markdown')) {
+      bubble.innerHTML = highlightMentions(escHtml(newContent || ''))
     }
   }
   // 把 messages.ratings 应用到 AI 消息 UI（DOM 状态 + 按钮 active + 双钩 badge）
@@ -4122,7 +4152,41 @@
         hideTyping()
         setBridgeStatus(false)
       }, 600000)
+
+      // 2026-05-25:serverless 房走 chat2go-ingest Edge Function(替代 Hermes daemon)。
+      // 老房 serverless=false 时,继续等 Hermes Realtime 接管(本端点不调用)。
+      if (currentRoom.serverless) {
+        triggerChat2goIngest(currentRoom.id, msgData.id, currentChannel).catch(err => {
+          console.warn('[chat2go-ingest] trigger failed:', err)
+          showToast('AI 触发失败：' + (err?.message ?? err).toString().slice(0, 80))
+        })
+      }
     }
+  }
+
+  // 触发 serverless 链路:Edge Function INSERT placeholder + 派 Modal worker。
+  // 失败 throw,sendMessage 调用方捕获 toast 提示。
+  async function triggerChat2goIngest(roomId, messageId, channel) {
+    const { data: { session } } = await sb.auth.getSession()
+    const token = session?.access_token || SUPABASE_ANON_KEY
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/chat2go-ingest`, {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${token}`,
+        'apikey': SUPABASE_ANON_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        room_id: roomId,
+        message_id: messageId,
+        channel,
+      }),
+    })
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '')
+      throw new Error(`HTTP ${resp.status} ${txt.slice(0, 200)}`)
+    }
+    return resp.json()
   }
 
   function setBridgeStatus(online) {
@@ -4340,7 +4404,8 @@
       industry,
       product: DEMO_PRODUCT,
       expert_id: currentUser.id,
-      status: 'active'
+      status: 'active',
+      serverless: true   // 2026-05-25:新建房默认走 chat2go-ingest serverless 链路,Hermes 跳过
     }).select().single()
 
     btn.disabled = false; btn.textContent = '创建'
