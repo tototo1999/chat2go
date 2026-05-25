@@ -67,7 +67,7 @@
       background: rgba(0,0,0,0.85);
       padding: 30px 40px;
       border-radius: 12px;
-      border: 1px solid rgba(236,72,153,0.3);
+      border: 1px solid rgba(217,119,6,0.3);
       box-shadow: 0 10px 40px rgba(0,0,0,0.5);
       cursor: pointer;
       backdrop-filter: blur(10px);
@@ -76,8 +76,8 @@
     #instructions h1 {
       margin-top: 0;
       font-size: 22px;
-      color: #ec4899; /* Neon pink */
-      text-shadow: 0 0 10px rgba(236,72,153,0.4);
+      color: #d97706; /* Warm gold */
+      text-shadow: 0 0 10px rgba(217,119,6,0.4);
     }
     #instructions p {
       font-size: 13px;
@@ -102,11 +102,11 @@
       font-family: monospace;
       font-size: 14px;
       z-index: 10;
-      background: rgba(236, 72, 153, 0.8);
+      background: rgba(217, 119, 6, 0.8);
       padding: 8px 16px;
       border-radius: 6px;
-      border: 1px solid #ff79c6;
-      box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+      border: 1px solid #fbbf24;
+      box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
       display: none;
       pointer-events: none;
       animation: float 2s infinite alternate;
@@ -137,7 +137,7 @@
     }
     #dialog-sender {
       font-weight: bold;
-      color: #ec4899;
+      color: #d97706;
       margin-bottom: 6px;
     }
     #crosshair {
@@ -170,10 +170,10 @@
       transition: all 0.2s;
     }
     #exit-btn:hover {
-      background: #ec4899;
-      border-color: #ec4899;
+      background: #d97706;
+      border-color: #d97706;
       color: #fff;
-      box-shadow: 0 0 15px rgba(236,72,153,0.3);
+      box-shadow: 0 0 15px rgba(217,119,6,0.3);
     }
   </style>
   <!-- Three.js CDN -->
@@ -182,27 +182,27 @@
 <body>
 
   <div id="crosshair"></div>
-  <a href="lexi_apartment_lounge.html" id="exit-btn">退出 3D 沙盒</a>
+  <a href="lexi_apartment_lounge.html" id="exit-btn">退出 3D 咖啡厅</a>
 
   <div id="hud">
-    <h2><span class="status-dot" id="hud-dot"></span> <span id="hud-title">微醺天台派对 (Lounge Party)</span></h2>
+    <h2><span class="status-dot" id="hud-dot" style="background:#d97706; box-shadow:0 0 10px #d97706;"></span> <span id="hud-title">大堂精奢咖啡厅 (Lobby Cafe)</span></h2>
     <div>[AGY] 智能总指挥在线</div>
     <div style="margin-top: 8px;">状态码: <span style="color:#fff;">200 OK</span></div>
-    <div>速率: <span style="color:#fff;">120 BPM</span></div>
+    <div>环境: <span id="hud-tempo" style="color:#fff;">明朗晨光 Bossa (72 BPM)</span></div>
     <div style="margin-top: 8px;">
       100万上下文已用限制: <br>
-      <span style="color: #6cf; font-weight: bold;">218.6K / 1.00M Token (21.8%)</span>
+      <span style="color: #d97706; font-weight: bold;">218.6K / 1.00M Token (21.8%)</span>
     </div>
   </div>
 
   <div id="instructions">
-    <h1>Lexi Studio 3D 协作沙盒</h1>
+    <h1>Lexi Studio 3D 咖啡大堂</h1>
     <p>
-      请点击屏幕进入沉浸式第一人称三维场景<br><br>
+      请点击屏幕进入沉浸式第一人称大堂空间<br><br>
       <span class="key-btn">W</span> <span class="key-btn">A</span> <span class="key-btn">S</span> <span class="key-btn">D</span> / 方向键 移动角色<br>
       移动鼠标 环顾四周<br>
-      靠近虚拟角色时，按 <span class="key-btn">E</span> 或 <span class="key-btn">Q</span> 进行交互与场景切换<br><br>
-      <strong style="color: #ec4899;">点击任意位置开启旅程</strong>
+      靠近咖啡拉花师或房客，按 <span class="key-btn">E</span> 或 <span class="key-btn">Q</span> 进行交互与环境光照切换<br><br>
+      <strong style="color: #d97706;">点击任意位置开启旅程</strong>
     </p>
   </div>
 
@@ -223,7 +223,7 @@
     let prevTime = performance.now();
     let velocity = new THREE.Vector3();
     let direction = new THREE.Vector3();
-    let currentMood = 'party'; // 'party' or 'lounge'
+    let currentMood = 'day'; // 'day' or 'sunset'
 
     // Interactive NPCs list
     let npcs = [];
@@ -282,31 +282,32 @@
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       
-      // 瞬态音高扫描 (Pitch sweep for Kick thump)
-      osc.frequency.setValueAtTime(150, time);
-      osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.3);
+      // Softer pitch sweep for a cozy cafe acoustic wood-block click
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, time);
+      osc.frequency.exponentialRampToValueAtTime(80, time + 0.07);
       
-      // 音量包络衰减
-      gain.gain.setValueAtTime(0.8, time);
-      gain.gain.linearRampToValueAtTime(0.0, time + 0.3);
+      // Extremely warm, non-intrusive organic percussion volume
+      gain.gain.setValueAtTime(0.12, time);
+      gain.gain.linearRampToValueAtTime(0.0, time + 0.07);
       
       osc.start(time);
-      osc.stop(time + 0.32);
+      osc.stop(time + 0.08);
     }
 
     function playChordSynth(ch, time, duration) {
       const gain = audioCtx.createGain();
       gain.connect(audioCtx.destination);
       
-      // 呼吸式 Sidechain Pumping 音量包络 (Sidechain simulation against kick!)
+      // Warm, delicate volume envelope for organic bossa-nova
       gain.gain.setValueAtTime(0.0, time);
-      gain.gain.linearRampToValueAtTime(0.2, time + 0.15);
-      gain.gain.linearRampToValueAtTime(0.05, time + duration - 0.1);
+      gain.gain.linearRampToValueAtTime(0.12, time + 0.2); // Slower attack
+      gain.gain.linearRampToValueAtTime(0.06, time + duration - 0.1);
       gain.gain.linearRampToValueAtTime(0.0, time + duration);
 
       ch.forEach(freq => {
         const osc = audioCtx.createOscillator();
-        osc.type = 'triangle'; // 温暖的三角波模拟 Rhodes 柔润电钢
+        osc.type = 'triangle'; // Warm triangle wave mimicking electric Rhodes
         osc.frequency.value = freq;
         osc.connect(gain);
         osc.start(time);
@@ -316,15 +317,15 @@
 
     function scheduler() {
       while (nextNoteTime < audioCtx.currentTime + 0.1) {
-        const tempo = (currentMood === 'party' ? 120 : 72);
+        const tempo = (currentMood === 'day' ? 72 : 60);
         const secondsPerBeat = 60.0 / tempo;
         
-        // 播放 4/4 拍 Kick (Lounge 模式下偶数拍休止)
-        if (currentMood === 'party' || beatCount % 2 === 0) {
+        // Soft organic tap on specific beats
+        if (currentMood === 'day' || beatCount % 2 === 0) {
           playKick(nextNoteTime);
         }
         
-        // 每 4 拍循环播放 Rhodes 和弦和 sidechain 包络
+        // Every 4 beats play the warm Rhodes chords
         if (beatCount % 4 === 0) {
           const chord = chords[currentChordIdx];
           playChordSynth(chord, nextNoteTime, secondsPerBeat * 4);
@@ -340,8 +341,8 @@
     function init() {
       // 1. Scene setup
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x050608);
-      scene.fog = new THREE.FogExp2(0x050608, 0.04);
+      scene.background = new THREE.Color(0xf3f4f6); // Soft linen white background
+      scene.fog = new THREE.FogExp2(0xf3f4f6, 0.03);
 
       // 2. Camera setup with custom camera holder for Third-Person follow
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -361,70 +362,91 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-      // 4. Lighting design (High-end lounge / party contrasts)
-      const ambientLight = new THREE.AmbientLight(0x0c0f16, 0.6);
+      // 4. Lighting design (Bright Warm Scandinavian Daylight Lobby)
+      const ambientLight = new THREE.AmbientLight(0xfffdf9, 0.85); // Warm sun ambient
       scene.add(ambientLight);
 
-      // Neon Spotlights (Pink and Cyan dynamic highlights)
-      const pinkLight = new THREE.PointLight(0xec4899, 1.5, 20);
-      pinkLight.position.set(-6, 4, -4);
-      pinkLight.castShadow = true;
-      scene.add(pinkLight);
+      // Warm sun stream casting shadows
+      const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+      sunLight.position.set(10, 20, 8);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.bias = -0.001;
+      scene.add(sunLight);
 
-      const cyanLight = new THREE.PointLight(0x06b6d4, 1.8, 25);
-      cyanLight.position.set(6, 4, 4);
-      cyanLight.castShadow = true;
-      scene.add(cyanLight);
+      // Cozy warm pendant lamp light over central lounge
+      const warmSpot = new THREE.PointLight(0xf59e0b, 1.0, 18);
+      warmSpot.position.set(0, 5, 2);
+      warmSpot.castShadow = true;
+      scene.add(warmSpot);
 
-      // 5. Ground (Sleek dark concrete)
+      // Warm gold accent light over coffee bar
+      const barSpot = new THREE.PointLight(0xd97706, 1.2, 15);
+      barSpot.position.set(-10, 5, -8);
+      barSpot.castShadow = true;
+      scene.add(barSpot);
+
+      // 5. Ground (Luxurious Carrara White Marble floor)
       const floorGeo = new THREE.PlaneGeometry(60, 60);
-      const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x111318,
-        roughness: 0.8,
-        metalness: 0.2
+      const floorMat = new THREE.MeshPhysicalMaterial({
+        color: 0xfafafa,
+        roughness: 0.12,
+        metalness: 0.1,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.1,
+        transmission: 0.1
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // 6. Architectural minimalist concrete walls
-      createWall(0, 5, -20, 40, 10, 1, 0x1a1d24); // Back Wall
-      createWall(-20, 5, 0, 1, 10, 40, 0x1a1d24); // Left Wall
-      createWall(20, 5, 0, 1, 10, 40, 0x1a1d24);  // Right Wall
+      // 6. Architectural minimalist limestone walls
+      createWall(0, 5, -20, 40, 10, 1, 0xe5e7eb); // Back Wall
+      createWall(-20, 5, 0, 1, 10, 40, 0xe5e7eb); // Left Wall
+      createWall(20, 5, 0, 1, 10, 40, 0xe5e7eb);  // Right Wall
 
-      // 7. Architectural Glass partitions (frosted effect)
+      // 7. Architectural Glass partitions (brass frosted emerald partition)
       const glassGeo = new THREE.BoxGeometry(16, 8, 0.2);
       const glassMat = new THREE.MeshPhysicalMaterial({
-        color: 0x34d399,
+        color: 0xd9f9e7, // Soft sage green
         transparent: true,
-        opacity: 0.2,
-        roughness: 0.1,
-        transmission: 0.6,
-        thickness: 1.2
+        opacity: 0.3,
+        roughness: 0.15,
+        transmission: 0.8,
+        thickness: 1.5
       });
       const glassPartition = new THREE.Mesh(glassGeo, glassMat);
       glassPartition.position.set(0, 4, -10);
       scene.add(glassPartition);
 
-      // 8. Custom 3D Lounge Furniture
-      // Luxury Emerald Sofa
-      createSofa(-8, 0.5, 2, 6, 1, 1.5, 0x064e3b); // Emerald Velvet Left
-      createSofa(8, 0.5, 2, 6, 1, 1.5, 0x064e3b);  // Emerald Velvet Right
-      // Minimalist marble coffee table
-      createBox(0, 0.3, 2, 3, 0.6, 1.5, 0x111317, 0.9, 0.1); 
+      // Elegant brass framing at bottom
+      createBox(0, 0.15, -10, 16.2, 0.3, 0.4, 0xd97706, 0.2, 0.9);
 
-      // 9. Interactive DJ Stand & DJ Setup (Neon pink platform)
-      const djStand = createBox(0, 0.8, -6, 4, 1.2, 1.5, 0x08090c, 0.5, 0.8);
-      // DJ glowing neon strip
-      const djNeonGeo = new THREE.BoxGeometry(4.2, 0.1, 1.7);
-      const djNeonMat = new THREE.MeshBasicMaterial({ color: 0xec4899 });
-      const djNeon = new THREE.Mesh(djNeonGeo, djNeonMat);
-      djNeon.position.set(0, 0.65, -6);
-      scene.add(djNeon);
+      // 8. Custom Lobby Furniture (Scandinavian Cognac Leather & Marble)
+      // Cognac Leather Armchair / Sofa Sets
+      createSofa(-8, 0.5, 2, 5, 0.9, 1.6, 0x9a3412); // Cognac Leather Left
+      createSofa(8, 0.5, 2, 5, 0.9, 1.6, 0x9a3412);  // Cognac Leather Right
+      
+      // Round gold-trimmed white marble coffee table
+      const tableTop = createBox(0, 0.45, 2, 2.2, 0.1, 2.2, 0xffffff, 0.1, 0.1); 
+      const tableLeg = createBox(0, 0.22, 2, 0.2, 0.45, 0.2, 0xd97706, 0.2, 0.9);
 
-      // 10. Bar Counter & Mixologist Bar
-      const barCounter = createBox(-14, 1.0, -8, 2, 1.8, 6, 0x1f2937, 0.2, 0.1);
+      // 9. Interactive Espresso Bar (Oak Wood & Gold Accents)
+      const barBase = createBox(0, 0.8, -6, 4.5, 1.2, 1.8, 0x78350f, 0.6, 0.1); // Oak wood base
+      const barTop = createBox(0, 1.25, -6, 4.6, 0.1, 1.9, 0xffffff, 0.1, 0.1); // White marble top
+
+      // Espresso Machine Silhouette
+      createBox(-1.0, 1.5, -6, 1.0, 0.4, 0.8, 0x374151, 0.2, 0.8); // Espresso body
+      createBox(-1.0, 1.7, -5.6, 0.2, 0.1, 0.3, 0xd97706, 0.1, 0.9); // Brass group head
+      // Coffee cups on the bar counter
+      createBox(0.8, 1.35, -5.8, 0.2, 0.15, 0.2, 0xf3f4f6, 0.5, 0.0); // Cup 1
+      createBox(1.2, 1.35, -6.0, 0.2, 0.15, 0.2, 0xd97706, 0.4, 0.1); // Cup 2
+
+      // 10. Oak Pastry Display Counter
+      createBox(-14, 0.9, -8, 2.2, 1.5, 5, 0x78350f, 0.7, 0.1); // Pastry Bar base
+      createBox(-14, 1.45, -8, 2.0, 0.4, 4.6, 0xffffff, 0.1, 0.1); // Marble top plate
 
       // ── 创建第三人称玩家 Avatar (红发少女 Lexi) ──
       playerGroup = new THREE.Group();
@@ -471,22 +493,22 @@
       playerGroup.position.set(0, 0, 8); // 初始放置在地面上
       scene.add(playerGroup);
 
-      // 11. NPC Geometries (Glowing Capsule Demos)
-      // DJ NPC
-      let djNpc = createNPC(0, 1.8, -6.5, 0xec4899, 'dj', '【派对 DJ】', '准备好切歌了吗？[按 E 切换至静谧 Lounge 爵士声轨]');
-      // Bartender NPC
-      let barNpc = createNPC(-14, 1.8, -8, 0x06b6d4, 'bartender', '【明星调酒师】', '欢迎光临！点一杯“微醺情绪”鸡尾酒？[按 Q 切换全局色彩氛围]');
+      // 11. NPC Geometries (Glowing Cafe Avatars)
+      // Barista NPC (replaces DJ)
+      let djNpc = createNPC(0, 1.8, -6.5, 0xd97706, 'dj', '【首席拉花咖啡师】', '准备好换一杯新鲜烘焙的手冲单源咖啡了吗？[按 E 切换至夕阳黄昏暖色光照]');
+      // Baker NPC (replaces Bartender)
+      let barNpc = createNPC(-14, 1.8, -8, 0x65a30d, 'bartender', '【法式甜品烘焙师】', '欢迎光临！要尝尝刚出炉的黄油可颂和肉桂卷吗？[按 Q 切换全局温润艺术滤镜]');
       // Front Desk Receptionist NPC
-      let frontNpc = createNPC(14, 1.8, -4, 0x10b981, 'receptionist', '【公寓接待前台】', '校验成功。已通过 local bypass 权限授权。系统处于极度健康态。');
+      let frontNpc = createNPC(14, 1.8, -4, 0x10b981, 'receptionist', '【大堂前台服务经理】', '校验成功。已通过 local bypass 权限授权。尊贵的公寓住户，欢迎回家喝咖啡！');
 
-      // 接待大楼经理 NPC
-      createNPC(-4, 1.8, 2, 0xf59e0b, 'host', '【接待大楼经理】', '欢迎来到公寓派对！在大堂沙发上尽情放松吧，或者去吧台尝尝明星调酒师的新品。[按 E 深入对话]');
-      // 房客 Lily NPC
-      createNPC(-3, 1.8, -4, 0xa78bfa, 'dancing_lily', '【房客 Lily】', '这个 120 BPM 的 Deep House 鼓点太带感了！侧链压制（Sidechain）的颤动感简直像心跳一样！[按 E 深入对话]');
-      // 房客 Alex NPC
-      createNPC(8, 1.8, 2, 0x3b82f6, 'chilling_alex', '【房客 Alex】', '刚刚用 100万 上下文跑了一遍情绪提取，不得不说，AGY 总制片人的多智能体分工太让人工智能震撼了。[按 E 深入对话]');
-      // 房客 Chloe NPC
-      createNPC(0, 1.8, -12, 0xf472b6, 'chatting_chloe', '【房客 Chloe】', '听说 Zine 部门今天通宵在画册里画了红发少女 Lexi 头戴亚克力头冠的样子，瞧，就在您 3D Avatar 头上顶着呢！[按 E 深入对话]');
+      // 大堂经理 NPC
+      createNPC(-4, 1.8, 2, 0xf59e0b, 'host', '【大堂经理】', '欢迎来到公寓大堂咖啡厅！今天大堂的温度是 24℃，我们特地调配了轻柔的 Bossa Nova 背景音乐，请在大堂扶手椅上尽情享受。[按 E 深入对话]');
+      // 自由插画师 Lily NPC
+      createNPC(-3, 1.8, -4, 0xa78bfa, 'dancing_lily', '【自由插画师 Lily】', '噢！大堂背景里 72 BPM 的 Bossa Nova 和弦太舒服了！在这种轻松的氛围下作画，笔触都变得十分丝滑！[按 E 深入对话]');
+      // 独立开发者 Alex NPC
+      createNPC(8, 1.8, 2, 0x3b82f6, 'chilling_alex', '【独立开发者 Alex】', '听着 Procedural Vinyl 的黑胶底噪，喝着冰美式，在 100万 上下文环境里跑智能体分工编译，这就是自由职业的终极快乐吧！[按 E 深入对话]');
+      // 专栏作家 Chloe NPC
+      createNPC(0, 1.8, -12, 0xf472b6, 'chatting_chloe', '【专栏作家 Chloe】', '你看，那边的黄铜包边毛玻璃隔断做得很漂亮吧？阳光透过它投射出的漫反射，简直像一幅天然的油画。[按 E 深入对话]');
 
       // 12. Star Dust / Floating neon particles
       const starGeo = new THREE.BufferGeometry();
@@ -718,39 +740,41 @@
       dialog.style.display = 'block';
     }
 
-    // Toggle between Party (Neon Pink) and Lounge (Emerald Sunset) Modes!
+    // Toggle between Day (Sunny Bossa) and Sunset (Golden Lo-fi) Modes!
     function handleNPCInteraction() {
       if (!currentActiveNpc) return;
 
       if (currentActiveNpc.roleId === 'dj') {
-        // Toggle Global Theme!
-        if (currentMood === 'party') {
-          currentMood = 'lounge';
-          scene.background = new THREE.Color(0x070c0e);
-          scene.fog.color = new THREE.Color(0x070c0e);
-          document.getElementById('hud-title').textContent = '静谧公寓大堂 (Apartment Lounge)';
-          document.getElementById('hud-dot').style.background = '#10b981';
-          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #10b981';
-          showDialog('【派对 DJ】', '已为您无感切换为：72 BPM 慵懒大堂爵士伴奏。背景粒子呼吸频率已降低。');
-          scene.userData.starParticles.material.color.setHex(0x10b981);
+        // Toggle Global Theme between Day and Sunset!
+        if (currentMood === 'day') {
+          currentMood = 'sunset';
+          scene.background = new THREE.Color(0xfef3c7); // Warm Sunset Golden Amber
+          scene.fog.color = new THREE.Color(0xfef3c7);
+          document.getElementById('hud-title').textContent = '黄昏精奢大堂 (Golden Hour Lobby)';
+          document.getElementById('hud-dot').style.background = '#f59e0b';
+          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #f59e0b';
+          document.getElementById('hud-tempo').textContent = '金黄夕阳 Lo-fi (60 BPM)';
+          showDialog('【首席拉花咖啡师】', '已为您无感调节大堂环境：夕阳黄昏暖色光照已渲染，背景音乐切换至 60 BPM 极缓 Rhodes 电钢和暖胶沙沙背景音。');
+          scene.userData.starParticles.material.color.setHex(0xf59e0b); // golden particles
         } else {
-          currentMood = 'party';
-          scene.background = new THREE.Color(0x050608);
-          scene.fog.color = new THREE.Color(0x050608);
-          document.getElementById('hud-title').textContent = '微醺天台派对 (Lounge Party)';
-          document.getElementById('hud-dot').style.background = '#ec4899';
-          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #ec4899';
-          showDialog('【派对 DJ】', '已为您拉升律动：120 BPM 深邃浩室电声。霓虹光栅正弦跃动开启！');
-          scene.userData.starParticles.material.color.setHex(0xec4899);
+          currentMood = 'day';
+          scene.background = new THREE.Color(0xf3f4f6); // Sunny Day Linen White
+          scene.fog.color = new THREE.Color(0xf3f4f6);
+          document.getElementById('hud-title').textContent = '大堂精奢咖啡厅 (Lobby Cafe)';
+          document.getElementById('hud-dot').style.background = '#d97706';
+          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #d97706';
+          document.getElementById('hud-tempo').textContent = '明朗晨光 Bossa (72 BPM)';
+          showDialog('【首席拉花咖啡师】', '已为您重置大堂环境：明朗晨光天光已拉起，背景音乐切换至 72 BPM 慵懒 Bossa Nova 和弦打击乐。');
+          scene.userData.starParticles.material.color.setHex(0xd97706); // warm gold particles
         }
       } else if (currentActiveNpc.roleId === 'host') {
-        showDialog('【接待大楼经理】', '呼... 昨晚 100M Token 的吞吐量把大楼的主网络都占满了，当时整个控制面板的仪表盘都在爆表呢！不过今天派对的无限特调鸡尾酒，大家都喝开心了吗？');
+        showDialog('【大堂经理】', '呼... 昨晚 100M Token 的并发吞吐量把大楼的主网络都占满了，当时控制中心大屏幕的主频曲线都在发红呢！好在今天大堂已经恢复了静谧，大家喝着咖啡聊着天，一切都安详健康。');
       } else if (currentActiveNpc.roleId === 'dancing_lily') {
-        showDialog('【房客 Lily】', '噢！你的亚克力头冠也随着和弦起伏而闪烁呢！这简直像黑客帝国的数字跳动，配合 120 BPM 的 Deep House 节奏，我们来斗个舞吧！');
+        showDialog('【自由插画师 Lily】', '噢！你的发光亚克力头冠也随着木质 Bossa 和弦的起伏而微微呼吸呢！在这么惬意明朗的大理石天光下作画，灵感简直像泉水一样涌出！');
       } else if (currentActiveNpc.roleId === 'chilling_alex') {
-        showDialog('【房客 Alex】', '听着 Procedural Vinyl 的沙沙底噪，喝着莫吉托，看 AGY SDK 编排的这套 3D 元宇宙互动... 这大概就是未来数字游民的下午茶吧。');
+        showDialog('【独立开发者 Alex】', '听着黑胶的 Procedural Vinyl 灰尘沙沙声，喝着冰美式，在 100万 上下文的编译环境里跑 AGY SDK 分工脚本... 这就是属于全栈黑客的惬意咖啡馆下午茶吧。');
       } else if (currentActiveNpc.roleId === 'chatting_chloe') {
-        showDialog('【房客 Chloe】', '你看，那边的发光毛玻璃隔断做得很漂亮吧？听说这是 Orbit 引擎使用 PhysicalMaterial 特意拉升了 transmission（透光率）打磨的哦！');
+        showDialog('【专栏作家 Chloe】', '你看，那边的黄铜包边毛玻璃隔断做得很漂亮吧？听说这是 Orbit 引擎使用 PhysicalMaterial 特意拉升了 transmission（透光率）打磨的哦！在阳光漫反射下有一种精奢的奶油风。');
       }
     }
 
@@ -758,12 +782,12 @@
     function handleMoodShiftInteraction() {
       if (!currentActiveNpc || currentActiveNpc.roleId !== 'bartender') return;
 
-      const colors = [0xec4899, 0x06b6d4, 0xf59e0b, 0xa78bfa, 0x10b981];
+      const colors = [0xd97706, 0x65a30d, 0x10b981, 0x3b82f6, 0xf472b6];
       const selectedColor = colors[Math.floor(Math.random() * colors.length)];
       scene.userData.starParticles.material.color.setHex(selectedColor);
       
       const lightHex = selectedColor.toString(16);
-      showDialog('【明星调酒师】', `您的微醺鸡尾酒已摇晃完毕！全局艺术滤镜已切换至：#${lightHex}`);
+      showDialog('【法式甜品烘焙师】', `您点的新鲜可颂与热咖啡已呈上！为您切换大堂氛围点缀色至：#${lightHex}`);
     }
 
     function onWindowResize() {
@@ -815,29 +839,29 @@
       // 摄像机锚点 yawObject 平滑跟随玩家位置 (Spring follow)
       yawObject.position.lerp(playerGroup.position, 0.1);
 
-      // Animate star particles breathing / drifting
+      // Animate star dust / floating lobby particles breathing / drifting
       const starParticles = scene.userData.starParticles;
       if (starParticles) {
-        starParticles.rotation.y += (currentMood === 'party' ? 0.002 : 0.0005);
+        starParticles.rotation.y += (currentMood === 'day' ? 0.001 : 0.0003); // Slower, calmer cafe drift
       }
 
-      // Rhythmic animations for NPCs based on BPM (tempo)
-      const tempo = (currentMood === 'party' ? 120 : 72);
+      // Rhythmic animations for NPCs based on Bossa/Lo-fi tempo
+      const tempo = (currentMood === 'day' ? 72 : 60);
       npcs.forEach(npc => {
         if (npc.roleId === 'dancing_lily') {
-          // Dancing Lily: bounces and rotates rhythmically
+          // Illustrator Lily: sways and paints to the Bossa/Lo-fi acoustics
           npc.mesh.position.y = 1.8 + Math.sin(time * 0.006 * (tempo / 60.0)) * 0.22;
           npc.mesh.rotation.y = Math.sin(time * 0.004 * (tempo / 60.0)) * 0.4;
         } else if (npc.roleId === 'chilling_alex') {
-          // Chilling Alex: sways left to right and tilts slightly
+          // Coder Alex: sways gently while sipping flat white
           npc.mesh.position.x = 8.0 + Math.sin(time * 0.003 * (tempo / 60.0)) * 0.15;
           npc.mesh.rotation.z = Math.sin(time * 0.002 * (tempo / 60.0)) * 0.06;
         } else if (npc.roleId === 'chatting_chloe') {
-          // Chatting Chloe: hovers gently up and down and drifts slightly
+          // Writer Chloe: hovers and drafts her novel near the window
           npc.mesh.position.y = 1.8 + Math.sin(time * 0.002 * (tempo / 60.0)) * 0.08;
           npc.mesh.position.z = -12.0 + Math.cos(time * 0.002 * (tempo / 60.0)) * 0.15;
         } else if (npc.roleId === 'dj') {
-          // DJ: headbangs and swings side to side to BGM beats
+          // Barista: nods to the gentle Bossa beat
           npc.mesh.position.y = 1.8 + Math.sin(time * 0.008 * (tempo / 60.0)) * 0.05;
           npc.mesh.rotation.y = Math.sin(time * 0.004 * (tempo / 60.0)) * 0.15;
         }
