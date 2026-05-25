@@ -1684,6 +1684,10 @@
     <a href="/" class="logo">Chat<span>2GO</span><span class="logo-tld">.ai</span></a>
   </div>
   <div class="nav-right">
+    <a href="/lexi_creative_loop_showcase.html" style="font-size:12px;text-decoration:none;color:#FF2E93;border:0.5px solid rgba(255,46,147,0.3);padding:5px 10px;border-radius:6px;background:rgba(255,46,147,0.06);display:inline-flex;align-items:center;gap:4px;font-weight:700;transition:all 0.15s;margin-right:8px;" onmouseover="this.style.background='rgba(255,46,147,0.12)';this.style.boxShadow='0 0 10px rgba(255,46,147,0.2)'" onmouseout="this.style.background='rgba(255,46,147,0.06)';this.style.boxShadow='none'">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      Lexi's Creative Loop
+    </a>
     <a href="/orbit.html" style="font-size:12px;text-decoration:none;color:#8B5CF6;border:0.5px solid rgba(139,92,246,0.3);padding:5px 10px;border-radius:6px;background:rgba(139,92,246,0.06);display:inline-flex;align-items:center;gap:4px;font-weight:700;transition:all 0.15s;margin-right:8px;" onmouseover="this.style.background='rgba(139,92,246,0.12)';this.style.boxShadow='0 0 10px rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(139,92,246,0.06)';this.style.boxShadow='none'">
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="4 2"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
       Antigravity Orbit
@@ -1824,9 +1828,9 @@
             </span>
           </div>
           <div class="chat-status">
-            <div class="status-item offline" id="bridgeStatus" title="AI 未连接 · 点击请求重启" onclick="requestBridgeRestart()" style="cursor:pointer;">
+            <div class="status-item offline" id="bridgeStatus" title="AI 服务状态">
               <div class="dot"></div>
-              <span class="brain-badge" id="brainBadge" title="重启 hermes！">hermes</span>
+              <span class="brain-badge" id="brainBadge" title="AI 后端在线指示">serverless</span>
               <span id="chatRoomModel">AI</span>
               <svg class="signal-online" width="14" height="11" viewBox="0 0 14 11" fill="currentColor" aria-hidden="true">
                 <rect x="1"   y="7" width="3" height="3" rx="0.5"/>
@@ -4153,8 +4157,8 @@
         setBridgeStatus(false)
       }, 600000)
 
-      // 2026-05-25:serverless 房走 chat2go-ingest Edge Function(替代 Hermes daemon)。
-      // 老房 serverless=false 时,继续等 Hermes Realtime 接管(本端点不调用)。
+      // 2026-05-25:serverless 房走 chat2go-ingest Edge Function。
+      // 老房 serverless=false 时跳过(用于历史灰度);本端点只供 serverless 房使用。
       if (currentRoom.serverless) {
         triggerChat2goIngest(currentRoom.id, msgData.id, currentChannel).catch(err => {
           console.warn('[chat2go-ingest] trigger failed:', err)
@@ -4324,7 +4328,7 @@
   let _typingVerbTimer = null
   let _typingElapsedTimer = null
   let _typingStartAt = 0
-  // 估算 token:中文约 1.5 char/token,英文约 4 char/token(粗略,真值得等 Hermes brain 回传)
+  // 估算 token:中文约 1.5 char/token,英文约 4 char/token(粗略,真值由后端返回时再覆盖)
   function estimateTokens(text) {
     if (!text) return 0
     let zh = 0, other = 0
@@ -4405,7 +4409,7 @@
       product: DEMO_PRODUCT,
       expert_id: currentUser.id,
       status: 'active',
-      serverless: true   // 2026-05-25:新建房默认走 chat2go-ingest serverless 链路,Hermes 跳过
+      serverless: true   // 2026-05-25:新建房默认走 chat2go-ingest serverless 链路
     }).select().single()
 
     btn.disabled = false; btn.textContent = '创建'
