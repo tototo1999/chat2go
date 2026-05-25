@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Romanizer · 罗曼驭词师 Demo</title>
+<style>
+:root {
+  --bg: #0a0a14;
+  --bg2: #13132a;
+  --surface: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --text: #e8e8f5;
+  --dim: #7878a0;
+  --neon: #00ffe5;
+  --gold: #ffd700;
+  --pink: #ff4be8;
+  --red: #ff3b6b;
+  --good: #5cffaa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+body {
+  font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', monospace;
+  background:
+    radial-gradient(ellipse at top, rgba(0,255,229,0.06), transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(255,75,232,0.04), transparent 50%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; padding: 20px 16px 40px;
+  overflow-x: hidden;
+}
+.title {
+  font-size: 13px; font-weight: 500;
+  color: var(--dim); letter-spacing: 6px;
+  margin-bottom: 4px;
+}
+.title .accent { color: var(--neon); text-shadow: 0 0 10px var(--neon); }
+.subtitle { font-size: 10px; color: var(--dim); margin-bottom: 24px; letter-spacing: 3px; }
+
+.stage {
+  width: 100%; max-width: 760px;
+  background: var(--surface);
+  border: 1px solid rgba(0,255,229,0.12);
+  border-radius: 18px;
+  padding: 28px 22px;
+  box-shadow: 0 0 80px rgba(0,255,229,0.04), inset 0 0 60px rgba(0,255,229,0.02);
+  display: flex; flex-direction: column;
+  gap: 22px;
+}
+
+/* ---- screens ---- */
+.screen { display: none; flex-direction: column; gap: 22px; }
+.screen.show { display: flex; }
+
+/* ---- intro ---- */
+.intro-stat {
+  text-align: center;
+  font-size: 10px; letter-spacing: 4px;
+  color: var(--dim);
+}
+.intro-stat .big {
+  font-family: -apple-system, sans-serif;
+  font-size: 48px; font-weight: 800;
+  color: var(--gold); margin-top: 6px;
+  text-shadow: 0 0 20px rgba(255,215,0,0.4);
+}
+.intro-stat .big.empty { color: var(--red); text-shadow: 0 0 20px rgba(255,59,107,0.4); }
+.manual-input {
+  display: flex; gap: 8px; justify-content: center;
+}
+.manual-input input {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit; font-size: 14px;
+  padding: 10px 14px; border-radius: 8px;
+  width: 220px; outline: none;
+}
+.manual-input input:focus { border-color: var(--neon); box-shadow: 0 0 12px rgba(0,255,229,0.2); }
+.word-picker {
+  display: none;
+  flex-wrap: wrap; gap: 6px;
+  justify-content: center;
+  max-height: 180px; overflow-y: auto;
+  padding: 8px; border-top: 1px dashed var(--border);
+}
+.word-picker.show { display: flex; }
+.word-picker .pick {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: inherit; font-size: 12px;
+  padding: 5px 11px; border-radius: 6px;
+  cursor: pointer;
+}
+.word-picker .pick:hover { background: rgba(0,255,229,0.1); border-color: var(--neon); color: var(--neon); }
+
+/* ---- battle ---- */
+.word-info { text-align: center; }
+.word-info .label {
+  font-size: 10px; letter-spacing: 4px; color: var(--dim);
+}
+.word-info .word {
+  font-family: -apple-system, sans-serif;
+  font-size: 32px; font-weight: 700;
+  color: var(--text); margin-top: 6px;
+}
+.word-info .zh { font-size: 13px; color: var(--dim); margin-top: 2px; }
+
+.countdown {
+  text-align: center;
+  font-size: 56px; font-weight: 900;
+  color: var(--neon);
+  text-shadow: 0 0 30px var(--neon);
+  height: 70px; line-height: 70px;
+}
+.countdown:empty { display: none; }
+
+.syllable-track {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 110px;
+  padding-bottom: 26px;
+}
+.syl {
+  position: relative;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 20px 18px;
+  font-family: 'SF Mono', monospace;
+  font-size: 24px; font-weight: 600;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center;
+  min-width: 64px;
+  transition: transform 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.syl.stress {
+  background: linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,107,0,0.12));
+  border-color: var(--gold);
+  color: var(--gold);
+  font-size: 30px;
+  font-weight: 800;
+  box-shadow: 0 0 18px rgba(255,215,0,0.25);
+  text-transform: uppercase;
+}
+.syl.active {
+  transform: scale(1.12);
+  background: rgba(0,255,229,0.18);
+  border-color: var(--neon);
+  box-shadow: 0 0 32px rgba(0,255,229,0.5);
+}
+.syl.active.stress {
+  background: linear-gradient(135deg, rgba(255,215,0,0.4), rgba(255,107,0,0.25));
+  box-shadow: 0 0 48px rgba(255,215,0,0.7);
+}
+.syl.hit-perfect { animation: hit-p 0.5s; }
+.syl.hit-good { animation: hit-g 0.5s; }
+.syl.hit-miss { animation: hit-m 0.5s; opacity: 0.35; }
+.syl .judge {
+  position: absolute; bottom: -22px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  white-space: nowrap;
+  opacity: 0;
+  animation: judge-pop 0.9s forwards;
+  pointer-events: none;
+}
+.syl .judge.perfect { color: var(--gold); text-shadow: 0 0 8px var(--gold); }
+.syl .judge.good { color: var(--good); text-shadow: 0 0 8px var(--good); }
+.syl .judge.miss { color: var(--red); }
+@keyframes hit-p {
+  0% { background: rgba(255,215,0,0.7); box-shadow: 0 0 60px var(--gold); }
+  100% {}
+}
+@keyframes hit-g {
+  0% { background: rgba(92,255,170,0.5); }
+  100% {}
+}
+@keyframes hit-m {
+  0% { background: rgba(255,59,107,0.4); }
+  100% {}
+}
+@keyframes judge-pop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.8); }
+  20% { opacity: 1; transform: translateX(-50%) translateY(-2px) scale(1.1); }
+  60% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(1); }
+}
+
+.progress-bar {
+  height: 3px; background: rgba(255,255,255,0.08);
+  border-radius: 3px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon), var(--pink));
+  width: 0%; transition: width 0.05s linear;
+  box-shadow: 0 0 8px var(--neon);
+}
+
+.scoreboard {
+  display: flex; justify-content: space-around;
+  font-size: 10px; color: var(--dim); letter-spacing: 3px;
+  text-align: center;
+}
+.scoreboard .col { flex: 1; }
+.scoreboard .val {
+  display: block;
+  font-family: -apple-system, sans-serif;
+  font-size: 28px; font-weight: 800;
+  color: var(--text);
+  margin-top: 4px;
+  letter-spacing: 0;
+}
+.scoreboard .val.gold { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,0.4); }
+.scoreboard .val.neon { color: var(--neon); text-shadow: 0 0 12px rgba(0,255,229,0.4); }
+.scoreboard .val.pink { color: var(--pink); }
+
+.tap-zone {
+  width: 100%;
+  padding: 22px 16px;
+  background: rgba(0,255,229,0.04);
+  border: 2px dashed rgba(0,255,229,0.35);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--neon);
+  letter-spacing: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.06s, background 0.1s;
+  font-weight: 600;
+}
+.tap-zone:active { transform: scale(0.97); background: rgba(0,255,229,0.18); }
+.tap-zone .hint {
+  display: block;
+  font-size: 10px; color: var(--dim); margin-top: 6px;
+  letter-spacing: 2px; font-weight: 400;
+}
+
+/* ---- result ---- */
+.rank-display { text-align: center; }
+.rank-display .rank {
+  font-family: -apple-system, sans-serif;
+  font-size: 96px; font-weight: 900;
+  line-height: 1; letter-spacing: -4px;
+}
+.rank-display .rank.s { color: var(--gold); text-shadow: 0 0 30px var(--gold); }
+.rank-display .rank.a { color: var(--neon); text-shadow: 0 0 28px var(--neon); }
+.rank-display .rank.b { color: var(--good); text-shadow: 0 0 20px var(--good); }
+.rank-display .rank.c { color: var(--pink); }
+.rank-display .rank.d { color: var(--red); }
+.rank-display .summary {
+  font-size: 11px; color: var(--dim); letter-spacing: 3px;
+  margin-top: 14px;
+}
+
+/* ---- buttons ---- */
+.controls {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  justify-content: center;
+}
+button.action {
+  background: rgba(0,255,229,0.08);
+  color: var(--neon);
+  border: 1px solid rgba(0,255,229,0.5);
+  border-radius: 8px;
+  padding: 11px 22px;
+  font-family: inherit;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+button.action:hover { background: rgba(0,255,229,0.2); box-shadow: 0 0 16px rgba(0,255,229,0.4); }
+button.action.primary {
+  background: var(--neon); color: var(--bg);
+  border-color: var(--neon);
+  box-shadow: 0 0 22px rgba(0,255,229,0.5);
+}
+button.action.primary:hover { background: #66fff0; }
+button.action.dim { color: var(--dim); border-color: var(--border); background: transparent; }
+
+footer {
+  font-size: 10px; color: var(--dim);
+  margin-top: 24px; letter-spacing: 2px;
+  text-align: center; max-width: 600px;
+}
+footer a { color: var(--neon); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="title"><span class="accent">⬢</span> ROMANIZER <span class="accent">⬢</span></div>
+<div class="subtitle">罗曼驭词师 · DEMO v0</div>
+
+<div class="stage">
+
+  <!-- ============ INTRO ============ -->
+  <div class="screen show" id="introScreen">
+    <div class="intro-stat">
+      收藏中的词
+      <div class="big" id="favCount">0</div>
+    </div>
+    <div class="controls">
+      <button class="action primary" id="startBtn">▶ 随机抽词</button>
+      <button class="action" id="pickBtn">📋 选词</button>
+    </div>
+    <div class="manual-input">
+      <input type="text" id="manualInput" placeholder="或输入任意词…" autocomplete="off" autocapitalize="none" autocorrect="off">
+      <button class="action" id="manualBtn">挑战</button>
+    </div>
+    <div class="word-picker" id="wordPicker"></div>
+    <div class="controls">
+      <a href="glossary-web-coding.html" style="color:var(--dim);font-size:11px;letter-spacing:2px;text-decoration:none;">← 回词表</a>
+    </div>
+  </div>
+
+  <!-- ============ BATTLE ============ -->
+  <div class="screen" id="battleScreen">
+    <div class="word-info">
+      <div class="label">TARGET</div>
+      <div class="word" id="battleWord">—</div>
+      <div class="zh" id="battleZh"></div>
+    </div>
+    <div class="countdown" id="countdown"></div>
+    <div class="syllable-track" id="track"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="scoreboard">
+      <div class="col">SCORE<span class="val neon" id="scoreVal">0</span></div>
+      <div class="col">COMBO<span class="val gold" id="comboVal">0</span></div>
+      <div class="col">JUDGE<span class="val" id="judgeVal">—</span></div>
+    </div>
+    <div class="tap-zone" id="tapZone">
+      ⚡ TAP / SPACE ⚡
+      <span class="hint">在音节高亮时点击 · 金色 = 重音暴击点</span>
+    </div>
+  </div>
+
+  <!-- ============ RESULT ============ -->
+  <div class="screen" id="resultScreen">
+    <div class="word-info">
+      <div class="label">CLEARED</div>
+      <div class="word" id="resultWord">—</div>
+      <div class="zh" id="resultZh"></div>
+    </div>
+    <div class="rank-display">
+      <div class="rank" id="resultRank">—</div>
+      <div class="summary" id="resultSummary">— / — / —</div>
+    </div>
+    <div class="controls">
+      <button class="action" id="replayBtn">🔊 听标准读音</button>
+      <button class="action primary" id="nextBtn">▶ 再来一词</button>
+      <button class="action dim" id="backBtn">← 选词</button>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  启发式 G2P · 音节拆分 + 重音定位准确率 ~70% · 教学 demo · 用 Web Speech API 播报
+  <br>
+  <a href="glossary-web-coding.html">← 回词表挑收藏</a>
+</footer>
+
+<script>
+/* ============================================================
+   HEURISTIC G2P — syllable split + stress
+   ============================================================ */
+const VOWELS = 'aeiouy';
+const DIGRAPHS = ['ch','sh','th','ph','wh','ng','ck','qu','gh'];
+
+function syllabify(word) {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return [];
+  // group consecutive same-type chars (V vs C)
+  const groups = [];
+  let cur = '', state = null;
+  for (const ch of w) {
+    const t = VOWELS.includes(ch) ? 'V' : 'C';
+    if (state && t === state) cur += ch;
+    else { if (cur) groups.push({t: state, s: cur}); cur = ch; state = t; }
+  }
+  if (cur) groups.push({t: state, s: cur});
+
+  const syls = [];
+  let buf = '';
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    if (g.t === 'V') {
+      // merge vowel into current syllable (buf = onset consonants)
+      buf += g.s;
+    } else {
+      const next = groups[i+1];
+      if (!next) {
+        // word-final coda — sticks to last syllable
+        buf += g.s;
+      } else if (!buf) {
+        // word-initial cluster — all goes with first vowel
+        buf = g.s;
+      } else if (g.s.length === 1) {
+        // VCV → V|CV
+        syls.push(buf);
+        buf = g.s;
+      } else {
+        // multi-consonant cluster — VC|CV (digraph aware)
+        const ending = g.s.slice(-2);
+        if (DIGRAPHS.includes(ending) && g.s.length === 2) {
+          // digraph stays as onset of next syllable
+          syls.push(buf);
+          buf = g.s;
+        } else if (g.s.length >= 3 && DIGRAPHS.includes(g.s.slice(-2))) {
+          // VC|CCV(digraph)
+          buf += g.s.slice(0, -2);
+          syls.push(buf);
+          buf = g.s.slice(-2);
+        } else {
+          buf += g.s[0];
+          syls.push(buf);
+          buf = g.s.slice(1);
+        }
+      }
+    }
+  }
+  if (buf) syls.push(buf);
+
+  // post: silent-e merger (e.g., "make" → "make" not "ma|ke")
+  if (syls.length >= 2) {
+    const last = syls[syls.length-1];
+    if (/^[bcdfghjklmnpqrstvwxz]e$/.test(last) || last === 'e') {
+      syls[syls.length-2] += last;
+      syls.pop();
+    }
+  }
+  // post: if last syllable has no vowel, merge backwards
+  while (syls.length >= 2 && !/[aeiouy]/.test(syls[syls.length-1])) {
+    syls[syls.length-2] += syls[syls.length-1];
+    syls.pop();
+  }
+  return syls.length ? syls : [w];
+}
+
+function pickStress(syls, full) {
+  const n = syls.length;
+  if (n <= 1) return 0;
+  const lower = full.toLowerCase();
+  // antepenultimate-stress suffixes (-ity, -ical)
+  if (n >= 3 && /(ity|ical|ically|opathy|ography|ology|onomy|ocracy)$/.test(lower)) return n - 3;
+  // -ate/-ize/-ify (3+) → antepenult
+  if (n >= 3 && /(ate|ize|ise|ify)$/.test(lower)) return n - 3;
+  // penultimate-stress suffixes (-tion, -sion, -ic, -ial, -ious, -eous)
+  if (/(tion|sion|cian|cial|tial|cious|tious|gious|ious|eous|ic|ial|ient|ience|graphy)$/.test(lower)) return Math.max(0, n - 2);
+  // self-stressing suffixes
+  if (/(ee|eer|ese|esque|ique|aire|oon|een)$/.test(lower)) return n - 1;
+  // 2-syllable: default first (most nouns/adj)
+  if (n === 2) return 0;
+  // 3-syllable: default first
+  if (n === 3) return 0;
+  // 4+: default second
+  return 1;
+}
+
+/* ============================================================
+   TTS — Web Speech API
+   ============================================================ */
+let _voice = null;
+function pickVoice() {
+  if (typeof speechSynthesis === 'undefined') return;
+  const voices = speechSynthesis.getVoices();
+  _voice = voices.find(v => /en[-_]US/i.test(v.lang) && /female|samantha|google/i.test(v.name)) ||
+           voices.find(v => /en[-_]US/i.test(v.lang)) ||
+           voices.find(v => /^en/i.test(v.lang)) || null;
+}
+if (typeof speechSynthesis !== 'undefined') {
+  speechSynthesis.addEventListener('voiceschanged', pickVoice);
+  pickVoice();
+}
+function speak(text, rate = 0.85) {
+  return new Promise(resolve => {
+    if (typeof speechSynthesis === 'undefined') { setTimeout(resolve, 800); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = rate;
+    if (_voice) u.voice = _voice;
+    u.onend = u.onerror = () => resolve();
+    speechSynthesis.speak(u);
+    setTimeout(resolve, text.length * 100 + 1500); // safety timeout
+  });
+}
+
+/* ============================================================
+   SAMPLE WORDS — fallback when no favorites
+   ============================================================ */
+const SAMPLE_WORDS = [
+  ['Component', '组件'],
+  ['Specificity', '优先级'],
+  ['Hydration', '注水/激活'],
+  ['Asynchronous', '异步的'],
+  ['Polyfill', '兼容垫片'],
+  ['Idempotent', '幂等'],
+  ['Authentication', '认证'],
+  ['Serialization', '序列化'],
+  ['Encapsulation', '封装'],
+  ['Throttle', '节流'],
+  ['Debounce', '防抖'],
+  ['Closure', '闭包'],
+  ['Singleton', '单例'],
+  ['Observable', '可观察对象'],
+];
+
+/* ============================================================
+   FAVORITES — read from glossary localStorage
+   ============================================================ */
+function getFavoritePool() {
+  try {
+    const ids = JSON.parse(localStorage.getItem('glossary-favorites') || '[]');
+    if (!ids.length) return [];
+    const edits = JSON.parse(localStorage.getItem('glossary-edits') || '{}');
+    return ids.map(id => {
+      const parts = id.split('::');
+      const en = parts[1] || parts[0];
+      const edit = edits[id] || {};
+      return { en, zh: edit.zh || '', cat: parts[0] || '' };
+    });
+  } catch (e) { return []; }
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  current: null,
+  syllables: [],
+  stressIdx: 0,
+  schedule: [],
+  startTime: 0,
+  totalDuration: 0,
+  score: 0,
+  combo: 0,
+  maxCombo: 0,
+  judges: [],
+  rafId: null,
+  ended: false,
+  started: false
+};
+
+/* ============================================================
+   ELEMENTS
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const introScreen = $('introScreen');
+const battleScreen = $('battleScreen');
+const resultScreen = $('resultScreen');
+
+function showScreen(name) {
+  introScreen.classList.toggle('show', name === 'intro');
+  battleScreen.classList.toggle('show', name === 'battle');
+  resultScreen.classList.toggle('show', name === 'result');
+}
+
+/* ============================================================
+   INTRO
+   ============================================================ */
+function refreshIntro() {
+  const pool = getFavoritePool();
+  const big = $('favCount');
+  big.textContent = pool.length;
+  big.classList.toggle('empty', pool.length === 0);
+  $('pickBtn').textContent = pool.length ? '📋 选词 (' + pool.length + ')' : '📋 示例词';
+}
+
+function buildPicker() {
+  const wp = $('wordPicker');
+  if (wp.classList.contains('show')) { wp.classList.remove('show'); return; }
+  let pool = getFavoritePool();
+  if (!pool.length) pool = SAMPLE_WORDS.map(([en, zh]) => ({ en, zh }));
+  wp.innerHTML = '';
+  pool.forEach(w => {
+    const p = document.createElement('button');
+    p.className = 'pick';
+    p.textContent = w.en;
+    p.onclick = () => startBattle(w);
+    wp.appendChild(p);
+  });
+  wp.classList.add('show');
+}
+
+function randomBattle() {
+  let pool = getFavoritePool();
+  if (!pool.length) pool = SAMPLE_WORDS.map(([en, zh]) => ({ en, zh }));
+  const w = pool[Math.floor(Math.random() * pool.length)];
+  startBattle(w);
+}
+
+function manualBattle() {
+  const input = $('manualInput');
+  const en = input.value.trim();
+  if (!en) return;
+  startBattle({ en, zh: '' });
+}
+
+/* ============================================================
+   BATTLE
+   ============================================================ */
+async function startBattle(word) {
+  state.current = word;
+  state.syllables = syllabify(word.en);
+  state.stressIdx = pickStress(state.syllables, word.en);
+  state.score = 0;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.judges = [];
+  state.ended = false;
+  state.started = false;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+
+  $('battleWord').textContent = word.en;
+  $('battleZh').textContent = word.zh || '';
+  $('scoreVal').textContent = '0';
+  $('comboVal').textContent = '0';
+  $('judgeVal').textContent = '—';
+  $('judgeVal').className = 'val';
+  $('progress').style.width = '0%';
+
+  // build syllable track
+  const track = $('track');
+  track.innerHTML = '';
+  const BEAT_MS = 650;
+  let t = 800; // initial lead-in
+  state.schedule = state.syllables.map((s, i) => {
+    const isStress = i === state.stressIdx;
+    const dur = isStress ? BEAT_MS * 1.4 : BEAT_MS;
+    const entry = { start: t, end: t + dur, dur, stressed: isStress, hit: null };
+    t += dur;
+    const el = document.createElement('div');
+    el.className = 'syl' + (isStress ? ' stress' : '');
+    el.textContent = s;
+    el.dataset.i = i;
+    el.addEventListener('click', e => { e.stopPropagation(); onTap(); });
+    track.appendChild(el);
+    return entry;
+  });
+  state.totalDuration = t + 400;
+
+  showScreen('battle');
+
+  // intro TTS at slower speed (reference)
+  await speak(word.en, 0.7);
+  if (state.ended) return;
+
+  // 3-2-1 countdown
+  const cd = $('countdown');
+  for (const n of ['3', '2', '1', 'GO!']) {
+    cd.textContent = n;
+    await wait(450);
+    if (state.ended) return;
+  }
+  cd.textContent = '';
+
+  // start tick
+  state.startTime = performance.now();
+  state.started = true;
+  tick();
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function tick() {
+  if (state.ended) return;
+  const now = performance.now() - state.startTime;
+  $('progress').style.width = Math.min(100, (now / state.totalDuration) * 100) + '%';
+
+  const syls = $('track').querySelectorAll('.syl');
+  // mark current active
+  let activeI = -1;
+  for (let i = 0; i < state.schedule.length; i++) {
+    if (now >= state.schedule[i].start && now < state.schedule[i].end) { activeI = i; break; }
+  }
+  syls.forEach((el, i) => el.classList.toggle('active', i === activeI));
+
+  // miss any past-due unhit
+  for (let i = 0; i < state.schedule.length; i++) {
+    const s = state.schedule[i];
+    if (s.hit === null && now > s.end + 120) {
+      registerHit(i, 'miss', 0);
+    }
+  }
+
+  if (now >= state.totalDuration) {
+    endBattle();
+    return;
+  }
+  state.rafId = requestAnimationFrame(tick);
+}
+
+function onTap() {
+  if (!state.started || state.ended) return;
+  const now = performance.now() - state.startTime;
+  // find best unhit syllable within window
+  let bestI = -1, bestDelta = Infinity;
+  for (let i = 0; i < state.schedule.length; i++) {
+    const s = state.schedule[i];
+    if (s.hit !== null) continue;
+    if (now < s.start - 250 || now > s.end + 120) continue;
+    const center = (s.start + s.end) / 2;
+    const delta = Math.abs(now - center);
+    if (delta < bestDelta) { bestI = i; bestDelta = delta; }
+  }
+  if (bestI < 0) return; // early tap, nothing to score
+  const s = state.schedule[bestI];
+  const center = (s.start + s.end) / 2;
+  const delta = Math.abs(now - center);
+  const half = s.dur / 2;
+  let judge, base;
+  if (delta < half * 0.4) { judge = 'perfect'; base = 100; }
+  else if (delta < half * 0.85) { judge = 'good'; base = 50; }
+  else { judge = 'good'; base = 30; }
+  const points = s.stressed ? base * 3 : base;
+  registerHit(bestI, judge, points);
+}
+
+function registerHit(i, judge, points) {
+  const s = state.schedule[i];
+  if (s.hit !== null) return;
+  s.hit = judge;
+  state.judges.push(judge);
+  if (judge !== 'miss') {
+    state.score += points;
+    state.combo += 1;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+  } else {
+    state.combo = 0;
+  }
+  $('scoreVal').textContent = state.score;
+  $('comboVal').textContent = state.combo;
+  const jv = $('judgeVal');
+  jv.textContent = judge.toUpperCase();
+  jv.className = 'val ' + (judge === 'perfect' ? 'gold' : (judge === 'good' ? 'neon' : 'pink'));
+  const el = $('track').querySelectorAll('.syl')[i];
+  el.classList.add('hit-' + judge);
+  const j = document.createElement('div');
+  j.className = 'judge ' + judge;
+  j.textContent = judge === 'perfect' ? (s.stressed ? 'CRIT!' : 'PERFECT!') : (judge === 'good' ? 'GOOD' : 'MISS');
+  // remove any old judge first
+  const old = el.querySelector('.judge');
+  if (old) old.remove();
+  el.appendChild(j);
+}
+
+function endBattle() {
+  state.ended = true;
+  state.started = false;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  // compute rank
+  const total = state.schedule.length;
+  const perfects = state.judges.filter(j => j === 'perfect').length;
+  const goods = state.judges.filter(j => j === 'good').length;
+  const misses = state.judges.filter(j => j === 'miss').length;
+  const ratio = total ? (perfects + goods * 0.5) / total : 0;
+  let rank = 'D';
+  if (ratio >= 0.95) rank = 'S';
+  else if (ratio >= 0.85) rank = 'A';
+  else if (ratio >= 0.7) rank = 'B';
+  else if (ratio >= 0.5) rank = 'C';
+  const rk = $('resultRank');
+  rk.textContent = rank;
+  rk.className = 'rank ' + rank.toLowerCase();
+  $('resultWord').textContent = state.current.en;
+  $('resultZh').textContent = state.current.zh || '';
+  $('resultSummary').textContent =
+    'SCORE ' + state.score + '  ·  P:' + perfects + '  G:' + goods + '  M:' + misses + '  ·  MAX COMBO ' + state.maxCombo;
+  setTimeout(() => showScreen('result'), 900);
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+$('startBtn').addEventListener('click', randomBattle);
+$('pickBtn').addEventListener('click', buildPicker);
+$('manualBtn').addEventListener('click', manualBattle);
+$('manualInput').addEventListener('keydown', e => { if (e.key === 'Enter') manualBattle(); });
+$('tapZone').addEventListener('click', onTap);
+$('replayBtn').addEventListener('click', () => speak(state.current.en, 0.7));
+$('nextBtn').addEventListener('click', randomBattle);
+$('backBtn').addEventListener('click', () => {
+  state.ended = true;
+  if (state.rafId) cancelAnimationFrame(state.rafId);
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  refreshIntro();
+  showScreen('intro');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    if (battleScreen.classList.contains('show')) { e.preventDefault(); onTap(); }
+  } else if (e.code === 'Escape') {
+    if (battleScreen.classList.contains('show')) {
+      state.ended = true;
+      if (state.rafId) cancelAnimationFrame(state.rafId);
+      if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+      refreshIntro();
+      showScreen('intro');
+    }
+  }
+});
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+refreshIntro();
+</script>
+
+</body>
+</html>
