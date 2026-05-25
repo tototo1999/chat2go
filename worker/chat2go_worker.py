@@ -185,6 +185,37 @@ def _resolve_system_prompt(industry: str, room_system_prompt: str) -> str:
     return INDUSTRY_PROMPTS.get(key, DEFAULT_SYSTEM)
 
 
+# room-scope memory 注入上限(防止 system prompt 过长)
+MEMORY_LIMIT = 30
+
+
+def _load_memories(sb, room_id: str, limit: int = MEMORY_LIMIT) -> list[dict]:
+    """SELECT 本房 scope='room' 的 memories,按时间升序返回最近 N 条。
+    迁移自 Hermes 老 sync_memory 机制,让大咖的偏好/事实沉淀跨对话保留。
+    """
+    rows = sb.table("memories") \
+        .select("content, tags, created_at") \
+        .eq("scope", "room") \
+        .eq("scope_id", room_id) \
+        .order("created_at", desc=True) \
+        .limit(limit) \
+        .execute().data or []
+    rows.reverse()
+    return rows
+
+
+def _format_memories(memories: list[dict]) -> str:
+    """把 memory 行拼成 markdown 段,前置到 system prompt。空时返回空串。"""
+    if not memories:
+        return ""
+    lines = ["", "## 大咖偏好与历史沉淀(按时间顺序,请遵守)"]
+    for m in memories:
+        tag_str = " · ".join(m.get("tags") or [])
+        prefix = f"[{tag_str}] " if tag_str else ""
+        lines.append(f"- {prefix}{(m.get('content') or '').strip()}")
+    return "\n".join(lines) + "\n"
+
+
 def _looks_markdown(text: str) -> bool:
     """简单启发:含 ## / **/ - 列表 / ```代码块 等 → markdown 类型。"""
     triggers = ("##", "**", "```", "\n- ", "\n* ", "\n1. ")
@@ -232,7 +263,9 @@ def ingest(payload: dict) -> dict:
                                 "⚠️ 没拉到上下文消息,无法回复。请重新发一条试试。")
             return {"ok": False, "error": "empty_history"}
 
-        system = _resolve_system_prompt(industry, room_system_prompt)
+        base_system = _resolve_system_prompt(industry, room_system_prompt)
+        mem_rows = _load_memories(sb, room_id)
+        system = base_system + _format_memories(mem_rows)
 
         cli = _anthropic_client()
         resp = cli.messages.create(
@@ -258,6 +291,7 @@ def ingest(payload: dict) -> dict:
             "elapsed_s": round(dt, 1),
             "model": model,
             "input_msgs": len(messages),
+            "memories": len(mem_rows),
             "output_chars": len(out_text),
         }
     except Exception as e:
