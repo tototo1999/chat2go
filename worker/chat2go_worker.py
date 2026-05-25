@@ -86,8 +86,11 @@ INDUSTRY_PROMPTS: dict[str, str] = {
 用户给生辰八字时按公历转干支后排盘,看不全的字段直接问追问。""",
 }
 
-# 同义词映射(数据库里有 '算命' 和 '命理' 两种写法时统一)
-INDUSTRY_ALIASES = {"命理": "算命"}
+# 同义词映射(数据库里历史写法对齐 INDUSTRY_PROMPTS 的 key)
+INDUSTRY_ALIASES = {
+    "命理": "算命",
+    "外贸跟单": "外贸",   # tradego 老房复用外贸 prompt;失去 contract_lib 等 Hermes 专属能力
+}
 
 DEFAULT_SYSTEM = """你是 Chat2GO.ai 平台的专属 AI 助手,工作在"Chat 调试室"中。
 你的目标是帮助小白和大咖共同理清需求,展示 AI 能做什么,最终为小白交付一个可以独立使用的专属 AI 助手。
