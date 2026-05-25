@@ -1096,10 +1096,16 @@ $('backBtn').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', e => {
+  // 不抢输入框 (含 IME 候选选择) / 不抢输入法 composition 中的回车
+  const tag = e.target && e.target.tagName;
+  const inInput = tag === 'INPUT' || tag === 'TEXTAREA';
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.code === 'Enter' && battleScreen.classList.contains('show') && !state.submitted) {
+    if (inInput) return;
     e.preventDefault();
     submitAnswer();
   } else if (e.code === 'Escape' && battleScreen.classList.contains('show')) {
+    if (inInput) { e.target.blur(); return; }
     if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
     refreshIntro();
     showScreen('intro');
