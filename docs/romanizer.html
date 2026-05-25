@@ -489,7 +489,7 @@ footer a:hover { text-decoration: underline; }
         <div class="compare-cards" id="yourCards"></div>
       </div>
       <div class="compare-row">
-        <div class="compare-label">参考答案</div>
+        <div class="compare-label">参考答案 <span id="answerSource" style="color:var(--neon);opacity:0.7;font-weight:600;"></span></div>
         <div class="compare-cards" id="answerCards"></div>
       </div>
       <div class="score-breakdown" id="scoreBreakdown"></div>
@@ -586,6 +586,8 @@ function syllabify(word) {
   return syls.length ? syls : [w];
 }
 
+const UNSTRESSED_PREFIXES = ['de','re','dis','pre','mis','ex','en','com','con','ob','be','sub'];
+
 function pickStress(syls, full) {
   const n = syls.length;
   if (n <= 1) return 0;
@@ -598,12 +600,27 @@ function pickStress(syls, full) {
   if (/(tion|sion|cian|cial|tial|cious|tious|gious|ious|eous|ic|ial|ient|ience|graphy)$/.test(lower)) return Math.max(0, n - 2);
   // self-stressing suffixes
   if (/(ee|eer|ese|esque|ique|aire|oon|een)$/.test(lower)) return n - 1;
+  // Unstressed-prefix rule: 2-3 syll words starting with de/re/dis/etc → stress on idx 1
+  // (debounce, decide, return, observe, compete, component, prevent, expand…)
+  if (n >= 2 && n <= 3 && UNSTRESSED_PREFIXES.includes(syls[0].toLowerCase())) return 1;
   // 2-syllable: default first (most nouns/adj)
   if (n === 2) return 0;
   // 3-syllable: default first
   if (n === 3) return 0;
   // 4+: default second
   return 1;
+}
+
+/* IPA → stress index: count vowel clusters before primary-stress mark ˈ */
+function parseStressFromIPA(ipa, maxIdx) {
+  if (!ipa) return null;
+  const inner = String(ipa).replace(/[\/\[\]]/g, '').trim();
+  if (!inner.includes('ˈ')) return null;
+  const before = inner.split('ˈ')[0];
+  // IPA vowels (rough set)
+  const clusters = before.match(/[aeiouɪɛæɑɒɔʊʌəɜɚyøœɨɯ]+/gi);
+  const idx = clusters ? clusters.length : 0;
+  return Math.min(idx, maxIdx);
 }
 
 /* ============================================================
@@ -667,7 +684,7 @@ function getFavoritePool() {
       const parts = id.split('::');
       const en = parts[1] || parts[0];
       const edit = edits[id] || {};
-      return { en, zh: edit.zh || '', cat: parts[0] || '' };
+      return { en, zh: edit.zh || '', cat: parts[0] || '', phonetic: edit.phonetic || '' };
     });
   } catch (e) { return []; }
 }
@@ -777,7 +794,10 @@ function startBattle(word) {
   state.current = word;
   state.letters = word.en.split('');
   state.answerSyls = syllabify(word.en);
-  state.answerStressIdx = pickStress(state.answerSyls, word.en);
+  // IPA-driven stress if user filled phonetic field; else heuristic
+  const ipaIdx = parseStressFromIPA(word.phonetic, state.answerSyls.length - 1);
+  state.answerStressIdx = (ipaIdx !== null) ? ipaIdx : pickStress(state.answerSyls, word.en);
+  state.answerSource = (ipaIdx !== null) ? 'ipa' : 'heuristic';
   state.answerBounds = syllablesToBounds(state.answerSyls);
   state.playerBounds = new Set();
   state.playerStressIdx = -1;
@@ -932,6 +952,9 @@ function renderResult(r) {
     c.textContent = s;
     ac.appendChild(c);
   });
+  $('answerSource').textContent = state.answerSource === 'ipa'
+    ? '· 依据你填的 IPA'
+    : '· 启发式估算,可能错(去词表填 IPA 修正)';
 
   // breakdown
   const sb = $('scoreBreakdown');
