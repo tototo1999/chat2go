@@ -67,7 +67,7 @@
       background: rgba(0,0,0,0.85);
       padding: 30px 40px;
       border-radius: 12px;
-      border: 1px solid rgba(217,119,6,0.3);
+      border: 1px solid rgba(236,72,153,0.3);
       box-shadow: 0 10px 40px rgba(0,0,0,0.5);
       cursor: pointer;
       backdrop-filter: blur(10px);
@@ -76,8 +76,8 @@
     #instructions h1 {
       margin-top: 0;
       font-size: 22px;
-      color: #d97706; /* Warm gold */
-      text-shadow: 0 0 10px rgba(217,119,6,0.4);
+      color: #ec4899; /* Neon pink */
+      text-shadow: 0 0 10px rgba(236,72,153,0.4);
     }
     #instructions p {
       font-size: 13px;
@@ -102,11 +102,11 @@
       font-family: monospace;
       font-size: 14px;
       z-index: 10;
-      background: rgba(217, 119, 6, 0.8);
+      background: rgba(236, 72, 153, 0.8);
       padding: 8px 16px;
       border-radius: 6px;
-      border: 1px solid #fbbf24;
-      box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
+      border: 1px solid #ff79c6;
+      box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
       display: none;
       pointer-events: none;
       animation: float 2s infinite alternate;
@@ -137,7 +137,7 @@
     }
     #dialog-sender {
       font-weight: bold;
-      color: #d97706;
+      color: #ec4899;
       margin-bottom: 6px;
     }
     #crosshair {
@@ -170,10 +170,10 @@
       transition: all 0.2s;
     }
     #exit-btn:hover {
-      background: #d97706;
-      border-color: #d97706;
+      background: #ec4899;
+      border-color: #ec4899;
       color: #fff;
-      box-shadow: 0 0 15px rgba(217,119,6,0.3);
+      box-shadow: 0 0 15px rgba(236,72,153,0.3);
     }
   </style>
   <!-- Three.js CDN -->
@@ -182,27 +182,27 @@
 <body>
 
   <div id="crosshair"></div>
-  <a href="lexi_apartment_lounge.html" id="exit-btn">退出 3D 咖啡厅</a>
+  <a href="lexi_apartment_lounge.html" id="exit-btn">退出高空天台</a>
 
   <div id="hud">
-    <h2><span class="status-dot" id="hud-dot" style="background:#d97706; box-shadow:0 0 10px #d97706;"></span> <span id="hud-title">大堂精奢咖啡厅 (Lobby Cafe)</span></h2>
+    <h2><span class="status-dot" id="hud-dot" style="background:#ec4899; box-shadow:0 0 10px #ec4899;"></span> <span id="hud-title">纽约云端天台派对 (NYC Penthouse Party)</span></h2>
     <div>[AGY] 智能总指挥在线</div>
     <div style="margin-top: 8px;">状态码: <span style="color:#fff;">200 OK</span></div>
-    <div>环境: <span id="hud-tempo" style="color:#fff;">明朗晨光 Bossa (72 BPM)</span></div>
+    <div>音乐律动: <span id="hud-tempo" style="color:#fff;">深邃日落 House (90 BPM)</span></div>
     <div style="margin-top: 8px;">
       100万上下文已用限制: <br>
-      <span style="color: #d97706; font-weight: bold;">218.6K / 1.00M Token (21.8%)</span>
+      <span style="color: #ec4899; font-weight: bold;">218.6K / 1.00M Token (21.8%)</span>
     </div>
   </div>
 
   <div id="instructions">
-    <h1>Lexi Studio 3D 咖啡大堂</h1>
+    <h1>Lexi Studio 3D 曼哈顿天台</h1>
     <p>
-      请点击屏幕进入沉浸式第一人称大堂空间<br><br>
+      请点击屏幕进入沉浸式第一人称高空派对<br><br>
       <span class="key-btn">W</span> <span class="key-btn">A</span> <span class="key-btn">S</span> <span class="key-btn">D</span> / 方向键 移动角色<br>
       移动鼠标 环顾四周<br>
-      靠近咖啡拉花师或房客，按 <span class="key-btn">E</span> 或 <span class="key-btn">Q</span> 进行交互与环境光照切换<br><br>
-      <strong style="color: #d97706;">点击任意位置开启旅程</strong>
+      靠近首席调酒大师或DJ，按 <span class="key-btn">E</span> 或 <span class="key-btn">Q</span> 进行交互与日落余晖切换<br><br>
+      <strong style="color: #ec4899;">点击任意位置开启旅程</strong>
     </p>
   </div>
 
@@ -223,7 +223,7 @@
     let prevTime = performance.now();
     let velocity = new THREE.Vector3();
     let direction = new THREE.Vector3();
-    let currentMood = 'day'; // 'day' or 'sunset'
+    let currentMood = 'sunset'; // 'sunset' or 'twilight'
 
     // Interactive NPCs list
     let npcs = [];
@@ -282,32 +282,47 @@
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       
-      // Softer pitch sweep for a cozy cafe acoustic wood-block click
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(320, time);
-      osc.frequency.exponentialRampToValueAtTime(80, time + 0.07);
-      
-      // Extremely warm, non-intrusive organic percussion volume
-      gain.gain.setValueAtTime(0.12, time);
-      gain.gain.linearRampToValueAtTime(0.0, time + 0.07);
-      
-      osc.start(time);
-      osc.stop(time + 0.08);
+      if (currentMood === 'sunset') {
+        // Deep Sunset House Kick sweep
+        osc.frequency.setValueAtTime(140, time);
+        osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.28);
+        gain.gain.setValueAtTime(0.55, time); // Solid warm house kick volume
+        gain.gain.linearRampToValueAtTime(0.0, time + 0.28);
+        osc.start(time);
+        osc.stop(time + 0.3);
+      } else {
+        // Soft Twilight wood block click
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(280, time);
+        osc.frequency.exponentialRampToValueAtTime(80, time + 0.08);
+        gain.gain.setValueAtTime(0.12, time);
+        gain.gain.linearRampToValueAtTime(0.0, time + 0.08);
+        osc.start(time);
+        osc.stop(time + 0.09);
+      }
     }
 
     function playChordSynth(ch, time, duration) {
       const gain = audioCtx.createGain();
       gain.connect(audioCtx.destination);
       
-      // Warm, delicate volume envelope for organic bossa-nova
-      gain.gain.setValueAtTime(0.0, time);
-      gain.gain.linearRampToValueAtTime(0.12, time + 0.2); // Slower attack
-      gain.gain.linearRampToValueAtTime(0.06, time + duration - 0.1);
-      gain.gain.linearRampToValueAtTime(0.0, time + duration);
+      if (currentMood === 'sunset') {
+        // Sunset Deep House Pumping Sidechain Envelope
+        gain.gain.setValueAtTime(0.0, time);
+        gain.gain.linearRampToValueAtTime(0.18, time + 0.14);
+        gain.gain.linearRampToValueAtTime(0.04, time + duration - 0.08);
+        gain.gain.linearRampToValueAtTime(0.0, time + duration);
+      } else {
+        // Twilight soft ambient slow envelope
+        gain.gain.setValueAtTime(0.0, time);
+        gain.gain.linearRampToValueAtTime(0.12, time + 0.22);
+        gain.gain.linearRampToValueAtTime(0.06, time + duration - 0.1);
+        gain.gain.linearRampToValueAtTime(0.0, time + duration);
+      }
 
       ch.forEach(freq => {
         const osc = audioCtx.createOscillator();
-        osc.type = 'triangle'; // Warm triangle wave mimicking electric Rhodes
+        osc.type = 'triangle';
         osc.frequency.value = freq;
         osc.connect(gain);
         osc.start(time);
@@ -317,11 +332,11 @@
 
     function scheduler() {
       while (nextNoteTime < audioCtx.currentTime + 0.1) {
-        const tempo = (currentMood === 'day' ? 72 : 60);
+        const tempo = (currentMood === 'sunset' ? 90 : 72);
         const secondsPerBeat = 60.0 / tempo;
         
-        // Soft organic tap on specific beats
-        if (currentMood === 'day' || beatCount % 2 === 0) {
+        // In Sunset House, play kick on every beat. In Twilight, play on even beats.
+        if (currentMood === 'sunset' || beatCount % 2 === 0) {
           playKick(nextNoteTime);
         }
         
@@ -341,8 +356,8 @@
     function init() {
       // 1. Scene setup
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0xf3f4f6); // Soft linen white background
-      scene.fog = new THREE.FogExp2(0xf3f4f6, 0.03);
+      scene.background = new THREE.Color(0x2d122d); // Sunset purple twilight haze
+      scene.fog = new THREE.FogExp2(0x2d122d, 0.025);
 
       // 2. Camera setup with custom camera holder for Third-Person follow
       camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -362,91 +377,198 @@
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-      // 4. Lighting design (Bright Warm Scandinavian Daylight Lobby)
-      const ambientLight = new THREE.AmbientLight(0xfffdf9, 0.85); // Warm sun ambient
+      // 4. Lighting design (Sunset Twilight NYC Penthouse Party)
+      const ambientLight = new THREE.AmbientLight(0x4a2a4a, 0.7); // Twilight magenta ambient
       scene.add(ambientLight);
 
-      // Warm sun stream casting shadows
-      const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
-      sunLight.position.set(10, 20, 8);
-      sunLight.castShadow = true;
-      sunLight.shadow.mapSize.width = 2048;
-      sunLight.shadow.mapSize.height = 2048;
-      sunLight.shadow.bias = -0.001;
-      scene.add(sunLight);
+      // Warm intense orange sunset directional light
+      const sunsetSun = new THREE.DirectionalLight(0xf97316, 1.8); 
+      sunsetSun.position.set(-15, 6, -15);
+      sunsetSun.castShadow = true;
+      sunsetSun.shadow.mapSize.width = 2048;
+      sunsetSun.shadow.mapSize.height = 2048;
+      sunsetSun.shadow.bias = -0.001;
+      scene.add(sunsetSun);
 
-      // Cozy warm pendant lamp light over central lounge
-      const warmSpot = new THREE.PointLight(0xf59e0b, 1.0, 18);
-      warmSpot.position.set(0, 5, 2);
-      warmSpot.castShadow = true;
-      scene.add(warmSpot);
+      // Twilight horizon purple-pink backlighting
+      const rimLight = new THREE.DirectionalLight(0xa855f7, 0.8);
+      rimLight.position.set(15, 8, 15);
+      scene.add(rimLight);
 
-      // Warm gold accent light over coffee bar
-      const barSpot = new THREE.PointLight(0xd97706, 1.2, 15);
-      barSpot.position.set(-10, 5, -8);
+      // Warm glowing accent spotlights over bars
+      const barSpot = new THREE.PointLight(0xec4899, 1.5, 15);
+      barSpot.position.set(0, 4, -6);
       barSpot.castShadow = true;
       scene.add(barSpot);
 
-      // 5. Ground (Luxurious Carrara White Marble floor)
+      // 5. Ground (Luxurious Teak Wood Rooftop Deck)
       const floorGeo = new THREE.PlaneGeometry(60, 60);
-      const floorMat = new THREE.MeshPhysicalMaterial({
-        color: 0xfafafa,
-        roughness: 0.12,
-        metalness: 0.1,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.1,
-        transmission: 0.1
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x27140e, // Deep elegant teak wood
+        roughness: 0.65,
+        metalness: 0.15
       });
       const floor = new THREE.Mesh(floorGeo, floorMat);
       floor.rotation.x = -Math.PI / 2;
       floor.receiveShadow = true;
       scene.add(floor);
 
-      // 6. Architectural minimalist limestone walls
-      createWall(0, 5, -20, 40, 10, 1, 0xe5e7eb); // Back Wall
-      createWall(-20, 5, 0, 1, 10, 40, 0xe5e7eb); // Left Wall
-      createWall(20, 5, 0, 1, 10, 40, 0xe5e7eb);  // Right Wall
+      // Procedural teak deck lines for high-fidelity wood deck paneling texture
+      for (let i = -20; i <= 20; i += 2) {
+        createBox(i, 0.005, 0, 0.04, 0.01, 40, 0x140a07, 0.9, 0.0);
+      }
 
-      // 7. Architectural Glass partitions (brass frosted emerald partition)
+      // 6. Transparent Glass Guardrails (height: 1.2) for skyline view
+      function createGlassRail(x, y, z, w, h, d, rotationY = 0) {
+        const railGroup = new THREE.Group();
+        railGroup.position.set(x, y, z);
+        railGroup.rotation.y = rotationY;
+
+        // Glass panel mesh
+        const glassGeo = new THREE.BoxGeometry(w, h, d);
+        const glassMat = new THREE.MeshPhysicalMaterial({
+          color: 0xffa8ff,
+          transparent: true,
+          opacity: 0.15,
+          roughness: 0.1,
+          transmission: 0.9,
+          thickness: 0.5
+        });
+        const glass = new THREE.Mesh(glassGeo, glassMat);
+        glass.position.y = h/2;
+        railGroup.add(glass);
+
+        // Metal guardrail support posts
+        const postGeo = new THREE.BoxGeometry(0.1, h + 0.1, 0.1);
+        const postMat = new THREE.MeshStandardMaterial({ color: 0x0f1115, metalness: 0.9, roughness: 0.2 });
+        
+        const post1 = new THREE.Mesh(postGeo, postMat);
+        post1.position.set(-w/2, (h+0.1)/2, 0);
+        railGroup.add(post1);
+
+        const post2 = new THREE.Mesh(postGeo, postMat);
+        post2.position.set(w/2, (h+0.1)/2, 0);
+        railGroup.add(post2);
+
+        // Top horizontal handrail
+        const handGeo = new THREE.BoxGeometry(w + 0.1, 0.08, d + 0.06);
+        const hand = new THREE.Mesh(handGeo, postMat);
+        hand.position.y = h + 0.04;
+        railGroup.add(hand);
+
+        scene.add(railGroup);
+      }
+
+      createGlassRail(0, 0, -20, 40, 1.2, 0.1); // Back Guardrail
+      createGlassRail(-20, 0, 0, 40, 1.2, 0.1, Math.PI / 2); // Left Guardrail
+      createGlassRail(20, 0, 0, 40, 1.2, 0.1, Math.PI / 2);  // Right Guardrail
+
+      // 7. Procedural Spawning of 30 Distant NYC Skyscrapers Skyline in Background!
+      for (let i = 0; i < 32; i++) {
+        const angle = (i / 31) * Math.PI - Math.PI; // Arrange skyscrapers in a scenic arc
+        const radius = 45 + Math.random() * 10;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius - 8;
+
+        const w = 3.5 + Math.random() * 4.5;
+        const h = 14 + Math.random() * 20;
+        const d = 3.5 + Math.random() * 4.5;
+
+        // Dark skyscraper towers silhouettes
+        const bldGeo = new THREE.BoxGeometry(w, h, d);
+        const bldMat = new THREE.MeshStandardMaterial({ 
+          color: 0x090a0f, // Silhouette color
+          roughness: 0.9, 
+          metalness: 0.1 
+        });
+        const bld = new THREE.Mesh(bldGeo, bldMat);
+        bld.position.set(x, h/2 - 2, z);
+        scene.add(bld);
+
+        // Luminous golden and cyan window grid stars twinkling
+        const winCount = 12 + Math.floor(Math.random() * 20);
+        const winCoords = [];
+        for (let j = 0; j < winCount; j++) {
+          const wx = (Math.random() - 0.5) * (w - 0.6);
+          const wy = Math.random() * (h - 2) + 1;
+          const wz = d/2 + 0.05; // Placed slightly outside building mesh face
+          winCoords.push(wx, wy, wz);
+        }
+        const winGeo = new THREE.BufferGeometry();
+        winGeo.setAttribute('position', new THREE.Float32BufferAttribute(winCoords, 3));
+        
+        const winColor = (Math.random() > 0.4 ? 0xfef08a : 0x22d3ee); // Yellow or cyan lit windows
+        const winMat = new THREE.PointsMaterial({
+          color: winColor,
+          size: 0.16,
+          transparent: true,
+          opacity: 0.95
+        });
+        const winPoints = new THREE.Points(winGeo, winMat);
+        winPoints.position.set(x, h/2 - 2, z);
+        scene.add(winPoints);
+      }
+
+      // 7.5 Architectural Glass partitions (translucent violet partition)
       const glassGeo = new THREE.BoxGeometry(16, 8, 0.2);
       const glassMat = new THREE.MeshPhysicalMaterial({
-        color: 0xd9f9e7, // Soft sage green
+        color: 0xf472b6, // Violet pink tint
         transparent: true,
-        opacity: 0.3,
-        roughness: 0.15,
+        opacity: 0.2,
+        roughness: 0.1,
         transmission: 0.8,
-        thickness: 1.5
+        thickness: 1.2
       });
       const glassPartition = new THREE.Mesh(glassGeo, glassMat);
       glassPartition.position.set(0, 4, -10);
       scene.add(glassPartition);
 
-      // Elegant brass framing at bottom
-      createBox(0, 0.15, -10, 16.2, 0.3, 0.4, 0xd97706, 0.2, 0.9);
+      // Elegant dark chrome framing at bottom
+      createBox(0, 0.15, -10, 16.2, 0.3, 0.4, 0x0f1115, 0.2, 0.9);
 
-      // 8. Custom Lobby Furniture (Scandinavian Cognac Leather & Marble)
-      // Cognac Leather Armchair / Sofa Sets
-      createSofa(-8, 0.5, 2, 5, 0.9, 1.6, 0x9a3412); // Cognac Leather Left
-      createSofa(8, 0.5, 2, 5, 0.9, 1.6, 0x9a3412);  // Cognac Leather Right
+      // 8. Custom Penthouse Furniture (White Outdoor Sectionals & Mirror Table)
+      createSofa(-8, 0.5, 2, 5, 0.9, 1.6, 0xf9fafb); // White Lounge Sofa Left
+      createSofa(8, 0.5, 2, 5, 0.9, 1.6, 0xf9fafb);  // White Lounge Sofa Right
+
+      // Add hot-pink throw pillows on top of sofas
+      createBox(-8.5, 0.8, 1.6, 0.6, 0.6, 0.2, 0xec4899, 0.6, 0.1).rotation.y = Math.PI/6;
+      createBox(8.5, 0.8, 1.6, 0.6, 0.6, 0.2, 0xec4899, 0.6, 0.1).rotation.y = -Math.PI/6;
       
-      // Round gold-trimmed white marble coffee table
-      const tableTop = createBox(0, 0.45, 2, 2.2, 0.1, 2.2, 0xffffff, 0.1, 0.1); 
-      const tableLeg = createBox(0, 0.22, 2, 0.2, 0.45, 0.2, 0xd97706, 0.2, 0.9);
+      // Round dark mirror-glass coffee table
+      createBox(0, 0.45, 2, 2.2, 0.1, 2.2, 0x0f1115, 0.05, 0.95); 
+      createBox(0, 0.22, 2, 0.2, 0.45, 0.2, 0xec4899, 0.2, 0.8);
 
-      // 9. Interactive Espresso Bar (Oak Wood & Gold Accents)
-      const barBase = createBox(0, 0.8, -6, 4.5, 1.2, 1.8, 0x78350f, 0.6, 0.1); // Oak wood base
-      const barTop = createBox(0, 1.25, -6, 4.6, 0.1, 1.9, 0xffffff, 0.1, 0.1); // White marble top
+      // 9. Interactive Mirror-Glass Cocktail Bar (Backlit Neon Bar Counter)
+      const barBase = createBox(0, 0.8, -6, 4.5, 1.2, 1.8, 0x0b0d12, 0.1, 0.9); // Black mirror base
+      const barTop = createBox(0, 1.25, -6, 4.6, 0.1, 1.9, 0x1e293b, 0.02, 0.95); // Dark chrome top plate
 
-      // Espresso Machine Silhouette
-      createBox(-1.0, 1.5, -6, 1.0, 0.4, 0.8, 0x374151, 0.2, 0.8); // Espresso body
-      createBox(-1.0, 1.7, -5.6, 0.2, 0.1, 0.3, 0xd97706, 0.1, 0.9); // Brass group head
-      // Coffee cups on the bar counter
-      createBox(0.8, 1.35, -5.8, 0.2, 0.15, 0.2, 0xf3f4f6, 0.5, 0.0); // Cup 1
-      createBox(1.2, 1.35, -6.0, 0.2, 0.15, 0.2, 0xd97706, 0.4, 0.1); // Cup 2
+      // Backlit bottle shelves
+      createBox(0, 1.8, -6.6, 3.8, 1.0, 0.2, 0x0f1115, 0.1, 0.9);
+      
+      // Spawn glowing drink bottles (emissive mini cylinders)
+      function spawnBottle(bx, by, bz, color) {
+        const botGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.35, 8);
+        const botMat = new THREE.MeshStandardMaterial({ 
+          color: color, 
+          emissive: color, 
+          emissiveIntensity: 1.8,
+          roughness: 0.1 
+        });
+        const bot = new THREE.Mesh(botGeo, botMat);
+        bot.position.set(bx, by, bz);
+        scene.add(bot);
+      }
+      spawnBottle(-1.2, 1.5, -6.4, 0xec4899); // Pink Champagne
+      spawnBottle(-0.8, 1.5, -6.4, 0x06b6d4); // Cyan Curacao
+      spawnBottle(-0.4, 1.5, -6.4, 0x3b82f6); // Sapphire Gin
+      spawnBottle(0.0, 1.5, -6.4, 0xf59e0b);  // Amber Whisky
+      spawnBottle(0.4, 1.5, -6.4, 0x10b981);  // Green Chartreuse
+      spawnBottle(0.8, 1.5, -6.4, 0x8b5cf6);  // Violet Absinthe
+      spawnBottle(1.2, 1.5, -6.4, 0xef4444);  // Red Campari
 
-      // 10. Oak Pastry Display Counter
-      createBox(-14, 0.9, -8, 2.2, 1.5, 5, 0x78350f, 0.7, 0.1); // Pastry Bar base
-      createBox(-14, 1.45, -8, 2.0, 0.4, 4.6, 0xffffff, 0.1, 0.1); // Marble top plate
+      // 10. Secondary Side Cocktail Bar Counter
+      createBox(-14, 0.9, -8, 2.2, 1.5, 5, 0x0b0d12, 0.1, 0.9); // Side bar base
+      createBox(-14, 1.45, -8, 2.0, 0.4, 4.6, 0x1e293b, 0.02, 0.95); // Back chrome top plate
 
       // ── 创建第三人称玩家 Avatar (红发少女 Lexi) ──
       playerGroup = new THREE.Group();
@@ -493,22 +615,22 @@
       playerGroup.position.set(0, 0, 8); // 初始放置在地面上
       scene.add(playerGroup);
 
-      // 11. NPC Geometries (Glowing Cafe Avatars)
-      // Barista NPC (replaces DJ)
-      let djNpc = createNPC(0, 1.8, -6.5, 0xd97706, 'dj', '【首席拉花咖啡师】', '准备好换一杯新鲜烘焙的手冲单源咖啡了吗？[按 E 切换至夕阳黄昏暖色光照]');
-      // Baker NPC (replaces Bartender)
-      let barNpc = createNPC(-14, 1.8, -8, 0x65a30d, 'bartender', '【法式甜品烘焙师】', '欢迎光临！要尝尝刚出炉的黄油可颂和肉桂卷吗？[按 Q 切换全局温润艺术滤镜]');
-      // Front Desk Receptionist NPC
-      let frontNpc = createNPC(14, 1.8, -4, 0x10b981, 'receptionist', '【大堂前台服务经理】', '校验成功。已通过 local bypass 权限授权。尊贵的公寓住户，欢迎回家喝咖啡！');
+      // 11. NPC Geometries (Glowing Penthouse Party Avatars)
+      // Rooftop DJ NPC (replaces Baker)
+      let djNpc = createNPC(0, 1.8, -6.5, 0xec4899, 'dj', '【天台驻场 DJ】', '曼哈顿天际线的余晖太迷人了！准备好切歌来拉满气氛了吗？[按 E 切换至深夜微醺 72 BPM 爵士电声轨]');
+      // Celebrity Mixologist NPC (replaces Barista)
+      let barNpc = createNPC(-14, 1.8, -8, 0x06b6d4, 'bartender', '【明星调酒大师】', '今夜特别推荐：“纽约暮色”马天尼！[按 Q 切换全局霓虹折射艺术色彩]');
+      // Penthouse Butler NPC
+      let frontNpc = createNPC(14, 1.8, -4, 0x10b981, 'receptionist', '【Penthouse 服务管家】', '校验成功。已通过 local bypass 权限授权。纽约云端天台狂欢派对已为您全量开启！');
 
-      // 大堂经理 NPC
-      createNPC(-4, 1.8, 2, 0xf59e0b, 'host', '【大堂经理】', '欢迎来到公寓大堂咖啡厅！今天大堂的温度是 24℃，我们特地调配了轻柔的 Bossa Nova 背景音乐，请在大堂扶手椅上尽情享受。[按 E 深入对话]');
+      // 项目总制片人 Host NPC
+      createNPC(-4, 1.8, 2, 0xf59e0b, 'host', '【项目总制片人 Host】', '欢迎来到曼哈顿 Penthouse 楼顶派对！欣赏一下远处的纽约 Skyline 吧。今天大楼承载了极高的人气与智能体流量！[按 E 深入对话]');
       // 自由插画师 Lily NPC
-      createNPC(-3, 1.8, -4, 0xa78bfa, 'dancing_lily', '【自由插画师 Lily】', '噢！大堂背景里 72 BPM 的 Bossa Nova 和弦太舒服了！在这种轻松的氛围下作画，笔触都变得十分丝滑！[按 E 深入对话]');
-      // 独立开发者 Alex NPC
-      createNPC(8, 1.8, 2, 0x3b82f6, 'chilling_alex', '【独立开发者 Alex】', '听着 Procedural Vinyl 的黑胶底噪，喝着冰美式，在 100万 上下文环境里跑智能体分工编译，这就是自由职业的终极快乐吧！[按 E 深入对话]');
-      // 专栏作家 Chloe NPC
-      createNPC(0, 1.8, -12, 0xf472b6, 'chatting_chloe', '【专栏作家 Chloe】', '你看，那边的黄铜包边毛玻璃隔断做得很漂亮吧？阳光透过它投射出的漫反射，简直像一幅天然的油画。[按 E 深入对话]');
+      createNPC(-3, 1.8, -4, 0xa78bfa, 'dancing_lily', '【自由插画师 Lily】', '看！Manhattan 的大楼里，一盏一盏金黄与青蓝的灯光亮起来了，映着紫红的暮色，简直就是赛博朋克的天然画卷！[按 E 深入对话]');
+      // 软件架构师 Alex NPC
+      createNPC(8, 1.8, 2, 0x3b82f6, 'chilling_alex', '【软件架构师 Alex】', '在高空俯视曼哈顿，吹着晚风喝着香槟，在 100万 上下文编译多智能体架构分工... 这真是属于全栈黑客的终极狂想曲！[按 E 深入对话]');
+      // 时尚博主 Chloe NPC
+      createNPC(0, 1.8, -12, 0xf472b6, 'chatting_chloe', '【时尚博主 Chloe】', '你看，那边的低矮超透玻璃护栏做得很漂亮吧？远处的曼哈顿大楼剪影通过磨砂紫红隔断折射过来，真是拍照的绝佳背景！[按 E 深入对话]');
 
       // 12. Star Dust / Floating neon particles
       const starGeo = new THREE.BufferGeometry();
@@ -719,7 +841,7 @@
         currentActiveNpc = closestNpc;
         prompt.style.display = 'block';
         if (closestNpc.roleId === 'dj') {
-          prompt.textContent = '【按 E 切换至静谧大堂】';
+          prompt.textContent = '【按 E 切换至深夜模式】';
         } else if (closestNpc.roleId === 'bartender') {
           prompt.textContent = '【按 Q 改变微醺氛围色彩】';
         } else {
@@ -740,41 +862,41 @@
       dialog.style.display = 'block';
     }
 
-    // Toggle between Day (Sunny Bossa) and Sunset (Golden Lo-fi) Modes!
+    // Toggle between Sunset (90 BPM) and Twilight (72 BPM) Modes!
     function handleNPCInteraction() {
       if (!currentActiveNpc) return;
 
       if (currentActiveNpc.roleId === 'dj') {
-        // Toggle Global Theme between Day and Sunset!
-        if (currentMood === 'day') {
-          currentMood = 'sunset';
-          scene.background = new THREE.Color(0xfef3c7); // Warm Sunset Golden Amber
-          scene.fog.color = new THREE.Color(0xfef3c7);
-          document.getElementById('hud-title').textContent = '黄昏精奢大堂 (Golden Hour Lobby)';
-          document.getElementById('hud-dot').style.background = '#f59e0b';
-          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #f59e0b';
-          document.getElementById('hud-tempo').textContent = '金黄夕阳 Lo-fi (60 BPM)';
-          showDialog('【首席拉花咖啡师】', '已为您无感调节大堂环境：夕阳黄昏暖色光照已渲染，背景音乐切换至 60 BPM 极缓 Rhodes 电钢和暖胶沙沙背景音。');
-          scene.userData.starParticles.material.color.setHex(0xf59e0b); // golden particles
+        // Toggle Global Theme between Sunset (90 BPM) and Twilight (72 BPM)!
+        if (currentMood === 'sunset') {
+          currentMood = 'twilight';
+          scene.background = new THREE.Color(0x12071f); // Deep Twilight Midnight Purple
+          scene.fog.color = new THREE.Color(0x12071f);
+          document.getElementById('hud-title').textContent = '深夜微醺天台 (Midnight Penthouse)';
+          document.getElementById('hud-dot').style.background = '#8b5cf6'; // Violet
+          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #8b5cf6';
+          document.getElementById('hud-tempo').textContent = '深夜星光 Lo-fi (72 BPM)';
+          showDialog('【天台驻场 DJ】', '已为您过渡音轨：天色渐入深夜，星光粒子撒落，音乐切换至 72 BPM 慵懒黑胶爵士电音，高空天台派对进入舒缓时光。');
+          scene.userData.starParticles.material.color.setHex(0x8b5cf6); // violet particles
         } else {
-          currentMood = 'day';
-          scene.background = new THREE.Color(0xf3f4f6); // Sunny Day Linen White
-          scene.fog.color = new THREE.Color(0xf3f4f6);
-          document.getElementById('hud-title').textContent = '大堂精奢咖啡厅 (Lobby Cafe)';
-          document.getElementById('hud-dot').style.background = '#d97706';
-          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #d97706';
-          document.getElementById('hud-tempo').textContent = '明朗晨光 Bossa (72 BPM)';
-          showDialog('【首席拉花咖啡师】', '已为您重置大堂环境：明朗晨光天光已拉起，背景音乐切换至 72 BPM 慵懒 Bossa Nova 和弦打击乐。');
-          scene.userData.starParticles.material.color.setHex(0xd97706); // warm gold particles
+          currentMood = 'sunset';
+          scene.background = new THREE.Color(0x2d122d); // Sunset purple twilight haze
+          scene.fog.color = new THREE.Color(0x2d122d);
+          document.getElementById('hud-title').textContent = '纽约云端天台派对 (NYC Penthouse Party)';
+          document.getElementById('hud-dot').style.background = '#ec4899'; // Hot pink
+          document.getElementById('hud-dot').style.boxShadow = '0 0 10px #ec4899';
+          document.getElementById('hud-tempo').textContent = '深邃日落 House (90 BPM)';
+          showDialog('【天台驻场 DJ】', '已为您拉升律动：纽约 Skyline 日落余晖正绚烂，音乐切换至 90 BPM 经典深邃浩室 (Deep House) 舞曲节奏，派对气氛拉满！');
+          scene.userData.starParticles.material.color.setHex(0xec4899); // pink particles
         }
       } else if (currentActiveNpc.roleId === 'host') {
-        showDialog('【大堂经理】', '呼... 昨晚 100M Token 的并发吞吐量把大楼的主网络都占满了，当时控制中心大屏幕的主频曲线都在发红呢！好在今天大堂已经恢复了静谧，大家喝着咖啡聊着天，一切都安详健康。');
+        showDialog('【项目总制片人 Host】', '呼... 昨晚 100M Token 的并发吞吐量把大楼的主网络都占满了，当时控制中心大屏幕的主频曲线都在发红呢！今天天台派对开业，吹着哈德逊河的晚风，看着曼哈顿天际线，咱们彻底放松一下！');
       } else if (currentActiveNpc.roleId === 'dancing_lily') {
-        showDialog('【自由插画师 Lily】', '噢！你的发光亚克力头冠也随着木质 Bossa 和弦的起伏而微微呼吸呢！在这么惬意明朗的大理石天光下作画，灵感简直像泉水一样涌出！');
+        showDialog('【自由插画师 Lily】', '看！Manhattan 的大楼里，一盏一盏金黄与青蓝的灯光亮起来了，映着紫红的暮色，简直就是赛博朋克的天然画卷！高空天台派对的气氛太让人灵感爆发了！');
       } else if (currentActiveNpc.roleId === 'chilling_alex') {
-        showDialog('【独立开发者 Alex】', '听着黑胶的 Procedural Vinyl 灰尘沙沙声，喝着冰美式，在 100万 上下文的编译环境里跑 AGY SDK 分工脚本... 这就是属于全栈黑客的惬意咖啡馆下午茶吧。');
+        showDialog('【软件架构师 Alex】', '在高空俯视曼哈顿，吹着晚风喝着香槟，在 100万 上下文编译多智能体架构分工... 刚才我在后台确认了一下 local bypass 授权，系统运行状态极度健康！这真是属于全栈黑客的终极狂想曲！');
       } else if (currentActiveNpc.roleId === 'chatting_chloe') {
-        showDialog('【专栏作家 Chloe】', '你看，那边的黄铜包边毛玻璃隔断做得很漂亮吧？听说这是 Orbit 引擎使用 PhysicalMaterial 特意拉升了 transmission（透光率）打磨的哦！在阳光漫反射下有一种精奢的奶油风。');
+        showDialog('【时尚博主 Chloe】', '你看，那边的低矮超透玻璃护栏做得很漂亮吧？远处的曼哈顿大楼剪影通过磨砂紫红隔断折射过来，在夕阳余晖里真是一个精奢的高级布景，拍照发在 Zine 频道一定能收获满赞！');
       }
     }
 
@@ -782,12 +904,12 @@
     function handleMoodShiftInteraction() {
       if (!currentActiveNpc || currentActiveNpc.roleId !== 'bartender') return;
 
-      const colors = [0xd97706, 0x65a30d, 0x10b981, 0x3b82f6, 0xf472b6];
+      const colors = [0xec4899, 0x06b6d4, 0xf59e0b, 0x8b5cf6, 0x10b981];
       const selectedColor = colors[Math.floor(Math.random() * colors.length)];
       scene.userData.starParticles.material.color.setHex(selectedColor);
       
       const lightHex = selectedColor.toString(16);
-      showDialog('【法式甜品烘焙师】', `您点的新鲜可颂与热咖啡已呈上！为您切换大堂氛围点缀色至：#${lightHex}`);
+      showDialog('【明星调酒大师】', `这杯“纽约暮色”特调马天尼已为您摇制完成！大堂氛围折射色已切换至：#${lightHex}`);
     }
 
     function onWindowResize() {
