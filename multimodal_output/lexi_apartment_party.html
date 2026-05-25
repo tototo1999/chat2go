@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Lexi Studio - 霓虹派对 (The Lounge Party)</title>
+  <style>
+    body {
+      background: #090a0f;
+      color: #eaeaea;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(236, 72, 153, 0.15); /* Pink accent border */
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5), 0 0 30px rgba(236, 72, 153, 0.05);
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: #ec4899; /* Pink neon */
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+    }
+    p {
+      color: #9ca3af;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .video-viewport {
+      background: #000;
+      border-radius: 12px;
+      height: 380px;
+      width: 100%;
+      margin: 20px 0;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      box-shadow: 0 0 25px rgba(236, 72, 153, 0.25), 0 0 15px rgba(6, 182, 212, 0.15); /* Pink & Cyan glow */
+    }
+    .video-overlay {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #06b6d4; /* Cyan */
+      background: rgba(0, 0, 0, 0.85);
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .visualizer {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 90px;
+    }
+    .bar {
+      width: 5px;
+      background: linear-gradient(0deg, #ec4899, #06b6d4);
+      border-radius: 2px;
+      animation: bounce 0.6s ease-in-out infinite alternate;
+    }
+    .bar:nth-child(2) { animation-delay: 0.1s; height: 50px; }
+    .bar:nth-child(3) { animation-delay: 0.3s; height: 80px; }
+    .bar:nth-child(4) { animation-delay: 0.05s; height: 35px; }
+    .bar:nth-child(5) { animation-delay: 0.4s; height: 95px; }
+    @keyframes bounce {
+      0% { height: 15px; }
+      100% { height: 90px; }
+    }
+    .btn-back {
+      background: transparent;
+      border: 1px solid rgba(236, 72, 153, 0.3);
+      color: #eaeaea;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .btn-back:hover {
+      background: #ec4899;
+      border-color: #ec4899;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1><span style="display:inline-block; width:12px; height:12px; border-radius:50%; background:#ec4899; box-shadow: 0 0 10px #ec4899;"></span> 霓虹微醺派对 (The Lounge Party)</h1>
+    <p>总制片人 <strong>AGY SDK</strong> 指导，由 <strong>Zine</strong>（剧本）、<strong>Orbit</strong>（DJ/调酒/宾客 NPC 及霓虹关卡）以及 <strong>Genie</strong>（120 BPM Deep House Mix）联合流式制作的场景画片已合成完毕。</p>
+    
+    <div class="video-viewport">
+      <div class="video-overlay">🎧 SCENE_02: APARTMENT_PARTY | STREAMING 120 BPM DEEP HOUSE</div>
+      <div class="visualizer">
+        <div class="bar" style="height: 60px;"></div>
+        <div class="bar" style="height: 40px;"></div>
+        <div class="bar" style="height: 85px;"></div>
+        <div class="bar" style="height: 55px;"></div>
+        <div class="bar" style="height: 75px;"></div>
+      </div>
+      <p style="color: #ec4899; font-family: monospace; font-size: 13px; margin-top: 20px; letter-spacing: 1px; text-shadow: 0 0 8px rgba(236, 72, 153, 0.3);">DEEP HOUSE AUDIO SYNCHRONIZED</p>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+      <span style="font-size: 12px; color: #6b7280; font-family: monospace;">UUID: 03d60644-82a9-4b4d-82e4-a37785a9bdfb</span>
+      <a href="https://chat2go.cn/chat.html" class="btn-back">返回 Chat2GO 调试室</a>
+    </div>
+  </div>
+</body>
+</html>
