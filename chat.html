@@ -4293,52 +4293,18 @@
     return resp.json()
   }
 
-  function setBridgeStatus(online) {
+  // 2026-05-26: serverless cutover 后,bridge_state 不再写心跳,badge 直接钉绿。
+  // 保留函数名让调用方无需改动;参数被忽略。
+  function setBridgeStatus(_online) {
     const el = document.getElementById('bridgeStatus')
-    el.className = 'status-item ' + (online ? 'online' : 'offline')
-    const canRestart = currentRoomRole === 'expert'
-    el.title = canRestart
-      ? (online ? 'AI 已连接 · 点击请求重启' : 'AI 未连接 · 点击请求重启')
-      : (online ? 'AI 已连接' : 'AI 未连接 · 仅OG可重启')
-    el.style.cursor = canRestart ? 'pointer' : 'default'
+    if (!el) return
+    el.className = 'status-item online'
+    el.title = 'AI 服务状态'
+    el.style.cursor = 'default'
   }
-
-  // ── bridge 心跳轮询 ──（每 6 秒拉 bridge_state.last_seen，> 30 秒未更新当离线）
-  let _bridgeHeartbeatTimer = null
-  let _bridgeStatusFailCount = 0  // 连续异常计数；> 3 强制 offline，避免无限保留旧绿状态
-  async function refreshBridgeStatus() {
-    try {
-      const { data, error } = await sb
-        .from('bridge_state').select('last_seen').eq('id', 'singleton').maybeSingle()
-      _bridgeStatusFailCount = 0
-      if (error || !data || !data.last_seen) { setBridgeStatus(false); return }
-      const lastSeenMs = new Date(data.last_seen).getTime()
-      const ageSec = (Date.now() - lastSeenMs) / 1000
-      setBridgeStatus(ageSec < 30)
-    } catch (e) {
-      _bridgeStatusFailCount++
-      console.warn('[bridge status]', e)
-      // 连续 3 次失败（约 18 秒）后转 offline，防止 bridge 中风但 UI 永远满格
-      if (_bridgeStatusFailCount >= 3) setBridgeStatus(false)
-    }
-  }
-  function startBridgeHeartbeatPolling() {
-    if (_bridgeHeartbeatTimer) return
-    refreshBridgeStatus()
-    _bridgeHeartbeatTimer = setInterval(refreshBridgeStatus, 6000)
-  }
-
-  // 点击图标 → 请求 bridge 重启（落入 bridge_state.restart_requested_at，bridge 下一轮自我退出，launchd 拉起）
-  async function requestBridgeRestart() {
-    if (currentRoomRole !== 'expert') { showToast('只有OG能重启 AI'); return }
-    const ok = confirm('AI 桥接重启一次？（适用于 AI 不响应）')
-    if (!ok) return
-    const { error } = await sb.rpc('request_bridge_restart')
-    if (error) { showToast('请求失败：' + (error.message || error.code)); return }
-    showToast('已请求重启，5~10 秒后生效')
-    // 立刻刷一下状态（lasts_seen 还没更新，会显示离线，等 bridge 拉起再变绿）
-    refreshBridgeStatus()
-  }
+  async function refreshBridgeStatus() { setBridgeStatus(true) }
+  function startBridgeHeartbeatPolling() { setBridgeStatus(true) }
+  async function requestBridgeRestart() { /* deprecated:无 daemon 可重启 */ }
 
   // Claude Code 风 typing 词池(中文,3-6 字,~500 个)。正经命理 + 玄学搞笑 + 茶馆江湖 + 思辨修行混搭。
   const TYPING_VERBS = [
