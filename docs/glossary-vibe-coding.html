@@ -346,6 +346,53 @@ section h2 .count {
 .sentence-reasons li.r-pos { color: var(--accent); background: var(--accent-soft); }
 .sentence-reasons li.r-neg { color: #b91c1c; background: rgba(239,68,68,0.08); }
 .sentence-reasons li.r-tip { color: #b45309; background: rgba(245,158,11,0.1); }
+.sentence-feedback {
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+.fb-row { display: flex; gap: 10px; align-items: center; }
+.ab-compare {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ab-row {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 12px;
+}
+.ab-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1px;
+  padding: 2px 6px; border-radius: 3px;
+  background: var(--text-dim); color: #fff;
+  flex-shrink: 0;
+  min-width: 28px; text-align: center;
+}
+.ab-label.ref { background: var(--accent); }
+.ab-text {
+  flex: 1;
+  font-family: -apple-system, sans-serif;
+  color: var(--text);
+  word-break: break-word;
+}
+.ab-text.ref { color: var(--accent); font-weight: 500; }
+.ab-speak {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 13px;
+  padding: 0 4px; flex-shrink: 0;
+}
+.ab-speak:hover { color: var(--accent); }
+.sentence-ai {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  color: #fff; border: none;
+  border-radius: 5px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; letter-spacing: 1px;
+}
+.sentence-ai:hover { opacity: 0.88; }
 .add-term-btn {
   background: rgba(29,158,117,0.06);
   border: 1px dashed var(--accent);
@@ -833,109 +880,108 @@ function getTermData(catId, en) {
 
 /* 造句题:100 句通用中文语式 — 翻译成英文,用上目标词 */
 const SENTENCE_BANK = [
-  // ── 疑问句 40 ──
-  '你听说过 {zh} 吗?',
-  '你知道什么是 {zh} 吗?',
-  '你能解释一下 {zh} 吗?',
-  '什么是 {zh}?',
-  '怎么用 {zh}?',
-  '你用过 {zh} 吗?',
-  '{zh} 是什么意思?',
-  '你能教我 {zh} 吗?',
-  '{zh} 难学吗?',
-  '你为什么学 {zh}?',
-  '哪里可以学 {zh}?',
-  '学 {zh} 要多久?',
-  '你做 {zh} 多久了?',
-  '谁发明了 {zh}?',
-  '为什么大家都在讨论 {zh}?',
-  '你为什么对 {zh} 感兴趣?',
-  '{zh} 是什么时候出现的?',
-  '你下次还会用 {zh} 吗?',
-  '没有 {zh} 你能做这个吗?',
-  '{zh} 跟以前版本有什么不同?',
-  '{zh} 的好处是什么?',
-  '{zh} 的缺点是什么?',
-  '你觉得 {zh} 怎么样?',
-  '{zh} 适合初学者吗?',
-  '这个项目用了 {zh} 吗?',
-  '{zh} 是免费的吗?',
-  '我应该先学 {zh} 吗?',
-  '{zh} 还有别的用法吗?',
-  '怎么测试 {zh}?',
-  '怎么调试 {zh}?',
-  '{zh} 的英文怎么念?',
-  '你能用一句话解释 {zh} 吗?',
-  '在哪些场景会用到 {zh}?',
-  '用 {zh} 解决了什么问题?',
-  '{zh} 是个工具吗?',
-  '{zh} 已经过时了吗?',
-  '你们公司用 {zh} 吗?',
-  '老师讲的就是 {zh} 吗?',
-  '你能写一个 {zh} 的例子吗?',
-  '我们应该用 {zh} 吗?',
-  // ── 陈述句 60 ──
-  '我今天学了 {zh}。',
-  '我每天都在用 {zh}。',
-  '{zh} 是一个常用的概念。',
-  '我喜欢 {zh}。',
-  '我刚开始学 {zh}。',
-  '我已经学会了 {zh}。',
-  '{zh} 比我想的难。',
-  '{zh} 比我想的简单。',
-  '这个项目用了 {zh}。',
-  '我们正在评估 {zh}。',
-  '团队决定用 {zh}。',
-  '上次会议讨论了 {zh}。',
-  '老师重点讲了 {zh}。',
-  '这本书有一章是关于 {zh} 的。',
-  '我把 {zh} 加到了简历里。',
-  '没有 {zh} 就没办法做这个。',
-  '{zh} 让一切变简单了。',
-  '{zh} 改变了我的工作方式。',
-  '我会推荐 {zh} 给朋友。',
-  '我们公司不用 {zh}。',
-  '{zh} 适合大型项目。',
-  '{zh} 适合小型项目。',
-  '这是我第一次接触 {zh}。',
-  '{zh} 是面试常考的点。',
-  '{zh} 的文档很详细。',
-  '我们昨天用了 {zh}。',
-  '{zh} 是开源的。',
-  '{zh} 的社区很活跃。',
-  '我打算下个月深入学 {zh}。',
-  '{zh} 比预期更稳定。',
-  '{zh} 还有很多 bug。',
-  '{zh} 是这个领域的标准。',
-  '我已经习惯用 {zh} 了。',
-  '我从同事那里学到了 {zh}。',
-  '我在视频教程里看到了 {zh}。',
-  '{zh} 让代码更整洁。',
-  '{zh} 让团队效率翻倍。',
-  '这就是 {zh}。',
-  '那不是真正的 {zh}。',
-  '{zh} 需要练习才能掌握。',
-  '我刚才在 {zh} 上花了三小时。',
-  '我对 {zh} 很有信心。',
-  '这次面试问到了 {zh}。',
-  '{zh} 是基础知识。',
-  '{zh} 是高级概念。',
-  '我经常忘记 {zh} 怎么用。',
-  '{zh} 跟我以前用的不一样。',
-  '我可以用例子说明 {zh}。',
-  '{zh} 出现在每个教程里。',
-  '{zh} 不适合所有场景。',
-  '总有一天会用上 {zh}。',
-  '我已经收藏了 {zh}。',
-  '我用 {zh} 写了一个小项目。',
-  '{zh} 是我最近学到的最有用的东西。',
-  '{zh} 让我对编程有了新理解。',
-  '我刚好用到 {zh}。',
-  '我对 {zh} 还不熟。',
-  '学 {zh} 之前要先懂基础。',
-  '{zh} 比想象中实用。',
-  '没人不知道 {zh}。',
-  '我把 {zh} 教给了我朋友。'
+  // [Chinese template, Reference English answer]
+  ['你听说过 {zh} 吗?', 'Have you heard of {en}?'],
+  ['你知道什么是 {zh} 吗?', 'Do you know what {en} is?'],
+  ['你能解释一下 {zh} 吗?', 'Could you explain {en}?'],
+  ['什么是 {zh}?', 'What is {en}?'],
+  ['怎么用 {zh}?', 'How do you use {en}?'],
+  ['你用过 {zh} 吗?', 'Have you used {en}?'],
+  ['{zh} 是什么意思?', 'What does {en} mean?'],
+  ['你能教我 {zh} 吗?', 'Can you teach me {en}?'],
+  ['{zh} 难学吗?', 'Is {en} hard to learn?'],
+  ['你为什么学 {zh}?', 'Why are you learning {en}?'],
+  ['哪里可以学 {zh}?', 'Where can I learn {en}?'],
+  ['学 {zh} 要多久?', 'How long does it take to learn {en}?'],
+  ['你做 {zh} 多久了?', 'How long have you been doing {en}?'],
+  ['谁发明了 {zh}?', 'Who invented {en}?'],
+  ['为什么大家都在讨论 {zh}?', 'Why is everyone talking about {en}?'],
+  ['你为什么对 {zh} 感兴趣?', 'Why are you interested in {en}?'],
+  ['{zh} 是什么时候出现的?', 'When did {en} come out?'],
+  ['你下次还会用 {zh} 吗?', 'Will you use {en} again next time?'],
+  ['没有 {zh} 你能做这个吗?', 'Can you do this without {en}?'],
+  ['{zh} 跟以前版本有什么不同?', 'How is {en} different from previous versions?'],
+  ['{zh} 的好处是什么?', 'What are the benefits of {en}?'],
+  ['{zh} 的缺点是什么?', 'What are the drawbacks of {en}?'],
+  ['你觉得 {zh} 怎么样?', 'What do you think of {en}?'],
+  ['{zh} 适合初学者吗?', 'Is {en} suitable for beginners?'],
+  ['这个项目用了 {zh} 吗?', 'Does this project use {en}?'],
+  ['{zh} 是免费的吗?', 'Is {en} free?'],
+  ['我应该先学 {zh} 吗?', 'Should I learn {en} first?'],
+  ['{zh} 还有别的用法吗?', 'Are there other uses for {en}?'],
+  ['怎么测试 {zh}?', 'How do you test {en}?'],
+  ['怎么调试 {zh}?', 'How do you debug {en}?'],
+  ['{zh} 的英文怎么念?', 'How do you pronounce {en} in English?'],
+  ['你能用一句话解释 {zh} 吗?', 'Can you explain {en} in one sentence?'],
+  ['在哪些场景会用到 {zh}?', 'In what scenarios is {en} used?'],
+  ['用 {zh} 解决了什么问题?', 'What problem does {en} solve?'],
+  ['{zh} 是个工具吗?', 'Is {en} a tool?'],
+  ['{zh} 已经过时了吗?', 'Is {en} outdated?'],
+  ['你们公司用 {zh} 吗?', 'Does your company use {en}?'],
+  ['老师讲的就是 {zh} 吗?', 'Is {en} what the teacher was talking about?'],
+  ['你能写一个 {zh} 的例子吗?', 'Can you write an example using {en}?'],
+  ['我们应该用 {zh} 吗?', 'Should we use {en}?'],
+  ['我今天学了 {zh}。', 'I learned {en} today.'],
+  ['我每天都在用 {zh}。', 'I use {en} every day.'],
+  ['{zh} 是一个常用的概念。', '{en} is a commonly used concept.'],
+  ['我喜欢 {zh}。', 'I like {en}.'],
+  ['我刚开始学 {zh}。', 'I just started learning {en}.'],
+  ['我已经学会了 {zh}。', 'I have already mastered {en}.'],
+  ['{zh} 比我想的难。', '{en} is harder than I thought.'],
+  ['{zh} 比我想的简单。', '{en} is easier than I thought.'],
+  ['这个项目用了 {zh}。', 'This project uses {en}.'],
+  ['我们正在评估 {zh}。', 'We are evaluating {en}.'],
+  ['团队决定用 {zh}。', 'The team decided to use {en}.'],
+  ['上次会议讨论了 {zh}。', 'We discussed {en} at the last meeting.'],
+  ['老师重点讲了 {zh}。', 'The teacher emphasized {en}.'],
+  ['这本书有一章是关于 {zh} 的。', 'This book has a chapter about {en}.'],
+  ['我把 {zh} 加到了简历里。', 'I added {en} to my résumé.'],
+  ['没有 {zh} 就没办法做这个。', "Without {en}, we can't do this."],
+  ['{zh} 让一切变简单了。', '{en} makes everything simpler.'],
+  ['{zh} 改变了我的工作方式。', '{en} changed the way I work.'],
+  ['我会推荐 {zh} 给朋友。', 'I would recommend {en} to my friends.'],
+  ['我们公司不用 {zh}。', "Our company doesn't use {en}."],
+  ['{zh} 适合大型项目。', '{en} is suitable for large projects.'],
+  ['{zh} 适合小型项目。', '{en} is suitable for small projects.'],
+  ['这是我第一次接触 {zh}。', 'This is my first time encountering {en}.'],
+  ['{zh} 是面试常考的点。', '{en} is often tested in interviews.'],
+  ['{zh} 的文档很详细。', 'The documentation for {en} is very detailed.'],
+  ['我们昨天用了 {zh}。', 'We used {en} yesterday.'],
+  ['{zh} 是开源的。', '{en} is open source.'],
+  ['{zh} 的社区很活跃。', 'The {en} community is very active.'],
+  ['我打算下个月深入学 {zh}。', 'I plan to study {en} in depth next month.'],
+  ['{zh} 比预期更稳定。', '{en} is more stable than expected.'],
+  ['{zh} 还有很多 bug。', '{en} still has many bugs.'],
+  ['{zh} 是这个领域的标准。', '{en} is the standard in this field.'],
+  ['我已经习惯用 {zh} 了。', "I'm already used to using {en}."],
+  ['我从同事那里学到了 {zh}。', 'I learned {en} from my colleagues.'],
+  ['我在视频教程里看到了 {zh}。', 'I saw {en} in a video tutorial.'],
+  ['{zh} 让代码更整洁。', '{en} makes the code cleaner.'],
+  ['{zh} 让团队效率翻倍。', "{en} doubled the team's efficiency."],
+  ['这就是 {zh}。', 'This is {en}.'],
+  ['那不是真正的 {zh}。', "That's not the real {en}."],
+  ['{zh} 需要练习才能掌握。', '{en} requires practice to master.'],
+  ['我刚才在 {zh} 上花了三小时。', 'I just spent three hours on {en}.'],
+  ['我对 {zh} 很有信心。', "I'm confident about {en}."],
+  ['这次面试问到了 {zh}。', 'This interview asked about {en}.'],
+  ['{zh} 是基础知识。', '{en} is foundational knowledge.'],
+  ['{zh} 是高级概念。', '{en} is an advanced concept.'],
+  ['我经常忘记 {zh} 怎么用。', 'I often forget how to use {en}.'],
+  ['{zh} 跟我以前用的不一样。', '{en} is different from what I used before.'],
+  ['我可以用例子说明 {zh}。', 'I can illustrate {en} with examples.'],
+  ['{zh} 出现在每个教程里。', '{en} appears in every tutorial.'],
+  ['{zh} 不适合所有场景。', '{en} is not suitable for all scenarios.'],
+  ['总有一天会用上 {zh}。', 'Someday I will use {en}.'],
+  ['我已经收藏了 {zh}。', 'I have already saved {en}.'],
+  ['我用 {zh} 写了一个小项目。', 'I wrote a small project with {en}.'],
+  ['{zh} 是我最近学到的最有用的东西。', '{en} is the most useful thing I learned recently.'],
+  ['{zh} 让我对编程有了新理解。', '{en} gave me a new understanding of programming.'],
+  ['我刚好用到 {zh}。', 'I happen to need {en} right now.'],
+  ['我对 {zh} 还不熟。', "I'm not familiar with {en} yet."],
+  ['学 {zh} 之前要先懂基础。', 'You need to know the basics before learning {en}.'],
+  ['{zh} 比想象中实用。', '{en} is more practical than imagined.'],
+  ['没人不知道 {zh}。', "There's no one who doesn't know {en}."],
+  ['我把 {zh} 教给了我朋友。', 'I taught {en} to my friend.']
 ];
 /* 中文 → 英文 提示词典:模板里出现的常用词点击可显示英文 */
 const CN_HINTS = {
@@ -990,12 +1036,20 @@ function annotateChinese(text) {
 }
 
 function buildSentencePrompt(idx, en, zh) {
-  const tpl = SENTENCE_BANK[idx % SENTENCE_BANK.length];
+  const pair = SENTENCE_BANK[idx % SENTENCE_BANK.length];
+  const tpl = Array.isArray(pair) ? pair[0] : pair;
   const term = zh || en;
-  // annotate Chinese hints first, THEN substitute the {zh} placeholder (so {zh} content itself isn't re-annotated)
   const annotated = annotateChinese(tpl);
   const s = annotated.replace(/\{zh\}/g, '<b>' + escapeHtml(term) + '</b>');
   return s + ' <span style="color:var(--text-dim);font-size:11px;">(译成英文,需含 ' + escapeHtml(en) + ')</span>';
+}
+
+/* 取参考答案 — 用于提交后 AB 对比展示 */
+function getReferenceAnswer(idx, en) {
+  const pair = SENTENCE_BANK[idx % SENTENCE_BANK.length];
+  const ref = Array.isArray(pair) ? pair[1] : '';
+  if (!ref) return '';
+  return ref.replace(/\{en\}/g, en);
 }
 
 /* 启发式打分 — 不依赖 AI,本地检查 */
@@ -1061,10 +1115,11 @@ function buildSentenceSectionHtml(en, zh, sentences) {
       '<div class="sentence-prompt" data-tpl="' + initIdx + '">' + buildSentencePrompt(initIdx, en, zh) + '</div>' +
       '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
     '</div>' +
-    '<textarea name="sentence-input" rows="2" placeholder="把上面的中文译成英文…" spellcheck="false"></textarea>' +
+    '<textarea name="sentence-input" rows="5" placeholder="把上面的中文译成英文…" spellcheck="false" style="font-size:14px;line-height:1.5;min-height:90px;"></textarea>' +
     '<div class="sentence-feedback" data-role="sentence-feedback" style="display:none;"></div>' +
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
       '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
+      '<button type="button" class="sentence-ai" data-action="ai-grade" title="AI Agent 评分(尚未接通)">🤖 AI 评分</button>' +
       (sentences.length > 0 ?
         '<button type="button" class="sentence-clear" data-action="clear-sentences" title="清空该词所有造句">🗑 清空 ' + sentences.length + ' 句</button>' :
         '') +
@@ -1794,6 +1849,19 @@ main.addEventListener('click', e => {
     return;
   }
 
+  // 朗读参考答案
+  if (action === 'speak-ref') {
+    const refEl = btn.parentElement && btn.parentElement.querySelector('.ab-text.ref');
+    if (refEl && refEl.textContent) speakTerm(refEl.textContent, btn);
+    return;
+  }
+
+  // AI Agent 评分(占位 — 等 Edge Function 接通)
+  if (action === 'ai-grade') {
+    alert('🤖 AI Agent 评分功能开发中\n\n规划:Supabase Edge Function + Gemini Flash\n输入:你的翻译 + 目标词 + 模板\n输出:AI 评分 + 修正建议 + 语法点评\n\n暂用启发式评分(✓ 检查并记下),AI 评分待接通后立即上线');
+    return;
+  }
+
   // 造句 — 换一题 (从 100 句里随机抽,跳过当前)
   if (action === 'rotate-prompt') {
     const promptEl = container.querySelector('.sentence-prompt');
@@ -1835,12 +1903,22 @@ main.addEventListener('click', e => {
     save();
     const feedbackEl = container.querySelector('[data-role="sentence-feedback"]');
     if (feedbackEl) {
+      // 取参考答案,做 AB 对比
+      const promptEl = container.querySelector('.sentence-prompt');
+      const tplIdx = promptEl ? (parseInt(promptEl.dataset.tpl, 10) || 0) : 0;
+      const reference = getReferenceAnswer(tplIdx, en);
       feedbackEl.innerHTML =
-        '<span class="sentence-rank r-' + grade.rank.toLowerCase() + '">' + grade.rank + '</span>' +
-        '<span class="sentence-score">' + grade.score + ' 分</span>' +
+        '<div class="fb-row">' +
+          '<span class="sentence-rank r-' + grade.rank.toLowerCase() + '">' + grade.rank + '</span>' +
+          '<span class="sentence-score">' + grade.score + ' 分</span>' +
+        '</div>' +
         '<ul class="sentence-reasons">' +
           grade.reasons.map(([txt, cls]) => '<li class="r-' + cls + '">' + escapeHtml(txt) + '</li>').join('') +
-        '</ul>';
+        '</ul>' +
+        (reference ? '<div class="ab-compare">' +
+          '<div class="ab-row"><span class="ab-label">你的</span><span class="ab-text">' + escapeHtml(sentence) + '</span></div>' +
+          '<div class="ab-row"><span class="ab-label ref">参考</span><span class="ab-text ref">' + escapeHtml(reference) + '</span><button class="speak-sentence ab-speak" data-action="speak-ref" title="朗读参考">🔊</button></div>' +
+        '</div>' : '');
       feedbackEl.style.display = 'flex';
     }
     ta.value = '';
