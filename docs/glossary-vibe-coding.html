@@ -660,6 +660,16 @@ const DATA = [
       ['Subagent', '子 agent', '把独立任务委派给隔离的 sub-Claude 跑,主对话不被污染'],
       ['Hook', '钩子', '工具调用前后自动跑的命令(PreToolUse/PostToolUse/Stop 等)'],
       ['Worktree', '隔离工作树', 'Git worktree 让 agent 在独立分支上跑,不污染主分支'],
+      ['Slash command', '斜杠命令', '用 / 开头的内置命令的总称(/init /compact /clear /agents 等)'],
+      ['Permission', '权限', 'Claude 调工具前要批准 — Allow / Deny / Allow always'],
+      ['Allowlist', '允许列表', 'settings.json 里配自动批准的工具调用,减少弹窗'],
+      ['Sandbox', '沙箱', '隔离的安全执行环境,防止误操作扩散到系统'],
+      ['Plan file', '计划文件', 'Plan mode 产出的 .md 文档,描述要做什么'],
+      ['Memory', '持久记忆', '跨会话保留的笔记(用户偏好 / 项目状态 / 反馈规则)'],
+      ['Tool use', '工具调用', 'Claude 主动调用 Read/Edit/Bash/Grep 等工具'],
+      ['Settings', '设置', 'settings.json 配置文件 — 权限/钩子/env 都在里面'],
+      ['Context window', '上下文窗口', 'Claude 一次能看到的 token 上限(Opus 4.7 是 1M)'],
+      ['Artifact', '制品', '会话产出的可分享代码 / 文档 / 图表'],
     ]
   },
   {
