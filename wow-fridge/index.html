@@ -361,6 +361,56 @@
     margin-top: 2px;
   }
   
+  /* Expressive Q-style Cartoon Robot Eyes Screen */
+  .robot-eyes-screen {
+    width: 100%; height: 100%;
+    background: #0e1017; /* Charcoal black high-contrast digital screen */
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    position: absolute; top: 0; left: 0;
+  }
+  .robot-eyes-container {
+    display: flex; gap: 12px;
+    align-items: center; justify-content: center;
+    margin-top: -6px;
+  }
+  .robot-eye {
+    width: 22px; height: 28px;
+    background: radial-gradient(circle at 35% 35%, #90e0ef 0%, #0077b6 40%, #03045e 85%);
+    border-radius: 50%;
+    position: relative;
+    box-shadow: 0 0 8px rgba(0, 180, 216, 0.7), 0 0 16px rgba(114, 9, 183, 0.4), inset -2px -2px 4px rgba(0,0,0,0.6);
+    animation: robot-eye-blink 4s infinite ease-in-out;
+  }
+  .robot-eye::before {
+    content: '';
+    position: absolute;
+    top: 5px; left: 5px;
+    width: 6px; height: 6px;
+    background: #ffffff;
+    border-radius: 50%;
+    filter: drop-shadow(0 0 1px rgba(255,255,255,0.8));
+  }
+  .robot-eye::after {
+    content: '';
+    position: absolute;
+    bottom: 5px; right: 5px;
+    width: 3px; height: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+  }
+  @keyframes robot-eye-blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
+  }
+  
+  .screen-overlay-tag {
+    position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark);
+    border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold;
+    white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif;
+  }
+  
   /* Speaker lines at bottom */
   .magnet-grill {
     display: flex; gap: 2px; justify-content: center;
@@ -830,10 +880,11 @@
             <div class="fridge-magnet shape-circle active" id="mag-mom" onclick="selectMagnet('mom')" style="background: var(--dopa-pink-light); border-color: var(--dopa-pink); transform: rotate(-1deg);">
               <div class="magnet-lens"></div>
               <div class="magnet-window">
-                <div class="screen-card-box" style="background-image: url('assets/family_selfie.png'); background-size: cover; background-position: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
-                  <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark); border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold; white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif;">
-                    👨‍👩‍👧 幸福日常 📸
-                  </div>
+                <video autoplay loop muted playsinline class="screen-card-box" style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                  <source src="assets/lexi_30s_campaign_vlog.mp4" type="video/mp4">
+                </video>
+                <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark); border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold; white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif; z-index: 10;">
+                  ✈️ 旅行 Vlog 🎥
                 </div>
               </div>
               <div class="magnet-grill">
@@ -860,10 +911,14 @@
             <div class="fridge-magnet shape-circle" id="mag-kid" onclick="selectMagnet('kid')" style="background: var(--dopa-blue-light); border-color: var(--dopa-blue); transform: rotate(-2deg);">
               <div class="magnet-lens"></div>
               <div class="magnet-window">
-                <div class="screen-card-box">
-                  <span class="card-emoji">👧</span>
-                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">🗣️ Speak2Go<br>Apple! /æpl/ 🌟</div>
-                  <span class="card-subtext">宝贝学拼读</span>
+                <div class="robot-eyes-screen">
+                  <div class="robot-eyes-container">
+                    <div class="robot-eye"></div>
+                    <div class="robot-eye"></div>
+                  </div>
+                  <div class="screen-overlay-tag">
+                    👧 宝贝学拼读 🌟
+                  </div>
                 </div>
               </div>
               <div class="magnet-grill">
@@ -876,11 +931,15 @@
               <div class="magnet-lens"></div>
               <div class="magnet-window">
                 
-                <!-- Normal view: Health recommendation -->
-                <div class="screen-card-box" id="agent-normal-view">
-                  <span class="card-emoji">🤖</span>
-                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">🥗 建议晚餐多加<br>清炒菠菜哦</div>
-                  <span class="card-subtext">AI 助手</span>
+                <!-- Normal view: Blinking AI robot eyes -->
+                <div class="robot-eyes-screen" id="agent-normal-view">
+                  <div class="robot-eyes-container">
+                    <div class="robot-eye"></div>
+                    <div class="robot-eye"></div>
+                  </div>
+                  <div class="screen-overlay-tag">
+                    🤖 AI 智能体 ⚙️
+                  </div>
                 </div>
                 
                 <!-- Deploy Success view: Checked off status -->
