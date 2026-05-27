@@ -372,20 +372,41 @@
   .minion-eyes-container {
     display: flex;
     align-items: center; justify-content: center;
-    margin-top: -4px;
+    margin-top: 4px; /* Offset for eyelashes */
+    position: relative;
   }
+  
+  /* Exaggerated, Q-style Eyelashes on top of Goggles */
+  .minion-eyelashes {
+    position: absolute;
+    top: -11px; left: 50%;
+    transform: translateX(-50%);
+    display: flex; gap: 4px;
+    z-index: 12;
+  }
+  .lash {
+    width: 3.5px; height: 10px;
+    background: var(--coffee-dark);
+    border-radius: 3px;
+    transform-origin: bottom center;
+  }
+  .lash-1 { transform: rotate(-30deg) translateY(3px); }
+  .lash-2 { height: 12px; transform: translateY(0px); }
+  .lash-3 { transform: rotate(30deg) translateY(3px); }
+  
   .minion-goggles {
-    width: 32px; height: 32px;
-    background: #e5e5e5; /* Silver grey frame */
-    border: 1.5px solid var(--coffee-dark);
+    width: 44px; height: 44px;
+    background: #f0f0f0; /* Silver grey frame */
+    border: 2px solid var(--coffee-dark);
     border-radius: 50%;
     display: flex; justify-content: center; align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15), inset -1px -1px 3px rgba(0,0,0,0.2);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.18), inset -2px -2px 4px rgba(0,0,0,0.25);
+    position: relative;
   }
   .minion-eyeball {
-    width: 24px; height: 24px;
+    width: 32px; height: 32px;
     background: #ffffff;
-    border: 1px solid var(--coffee-dark);
+    border: 1.5px solid var(--coffee-dark);
     border-radius: 50%;
     position: relative;
     display: flex; justify-content: center; align-items: center;
@@ -393,14 +414,14 @@
     overflow: hidden;
   }
   .minion-iris {
-    width: 12px; height: 12px;
+    width: 16px; height: 16px;
     background: radial-gradient(circle, #291507 20%, #8b5a2b 55%, #b58253 90%);
     border-radius: 50%;
     position: relative;
     display: flex; justify-content: center; align-items: center;
   }
   .minion-pupil {
-    width: 6px; height: 6px;
+    width: 8px; height: 8px;
     background: #1c1c1c;
     border-radius: 50%;
   }
@@ -408,7 +429,7 @@
     content: '';
     position: absolute;
     top: 2px; left: 2px;
-    width: 3px; height: 3px;
+    width: 4px; height: 4px;
     background: #ffffff;
     border-radius: 50%;
   }
@@ -416,13 +437,13 @@
     content: '';
     position: absolute;
     bottom: 2px; right: 2px;
-    width: 1.5px; height: 1.5px;
+    width: 2px; height: 2px;
     background: #ffffff;
     border-radius: 50%;
   }
   @keyframes minion-eye-blink {
     0%, 90%, 100% { transform: scaleY(1); }
-    95% { transform: scaleY(0.1); }
+    95% { transform: scaleY(0.15); }
   }
   
   .screen-overlay-tag {
@@ -902,11 +923,10 @@
             <div class="fridge-magnet shape-circle active" id="mag-mom" onclick="selectMagnet('mom')" style="background: var(--dopa-pink-light); border-color: var(--dopa-pink); transform: rotate(-1deg);">
               <div class="magnet-lens"></div>
               <div class="magnet-window">
-                <video autoplay loop muted playsinline class="screen-card-box" style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
-                  <source src="../assets/lexi_30s_campaign_vlog.mp4" type="video/mp4">
-                </video>
-                <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark); border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold; white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif; z-index: 10;">
-                  ✈️ 旅行 Vlog 🎥
+                <div class="screen-card-box" style="background-image: url('../assets/family_selfie.png'); background-size: cover; background-position: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                  <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark); border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold; white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif;">
+                    👨‍👩‍👧 幸福日常 📸
+                  </div>
                 </div>
               </div>
               <div class="magnet-grill">
@@ -953,6 +973,11 @@
                 <!-- Normal view: Blinking Minion Eye -->
                 <div class="minion-eye-screen" id="agent-normal-view">
                   <div class="minion-eyes-container">
+                    <div class="minion-eyelashes">
+                      <span class="lash lash-1"></span>
+                      <span class="lash lash-2"></span>
+                      <span class="lash lash-3"></span>
+                    </div>
                     <div class="minion-goggles">
                       <div class="minion-eyeball">
                         <div class="minion-iris">
