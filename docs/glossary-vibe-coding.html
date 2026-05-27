@@ -394,6 +394,17 @@ section h2 .count {
 }
 .sentence-ai:hover { opacity: 0.88; }
 .sentence-ai:disabled { opacity: 0.5; cursor: wait; }
+.sentence-sample {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 12px; font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 5px;
+  cursor: pointer; letter-spacing: 1px;
+}
+.sentence-sample:hover { background: var(--accent-soft); }
 .ai-comment {
   background: linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(99,102,241,0.08) 100%);
   border-left: 3px solid #a855f7;
@@ -1133,11 +1144,12 @@ function buildSentenceSectionHtml(en, zh, sentences) {
       '<div class="sentence-prompt" data-tpl="' + initIdx + '">' + buildSentencePrompt(initIdx, en, zh) + '</div>' +
       '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
     '</div>' +
-    '<textarea name="sentence-input" rows="5" placeholder="把上面的中文译成英文…" spellcheck="false" style="font-size:14px;line-height:1.5;min-height:90px;"></textarea>' +
+    '<textarea name="sentence-input" rows="8" placeholder="把上面的中文译成英文…" spellcheck="false" style="font-size:15px;line-height:1.6;min-height:170px;resize:vertical;"></textarea>' +
     '<div class="sentence-feedback" data-role="sentence-feedback" style="display:none;"></div>' +
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
       '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
-      '<button type="button" class="sentence-ai" data-action="ai-grade" title="AI Agent 评分(尚未接通)">🤖 AI 评分</button>' +
+      '<button type="button" class="sentence-ai" data-action="ai-grade" title="Gemini Flash 真 AI 评分">🤖 AI 评分</button>' +
+      '<button type="button" class="sentence-sample" data-action="show-sample" title="把参考答案填进答题框">👀 看示例</button>' +
       (sentences.length > 0 ?
         '<button type="button" class="sentence-clear" data-action="clear-sentences" title="清空该词所有造句">🗑 清空 ' + sentences.length + ' 句</button>' :
         '') +
@@ -1864,6 +1876,17 @@ main.addEventListener('click', e => {
     if (!s) return;
     const text = (typeof s === 'string') ? s : (s.text || '');
     if (text) speakTerm(text, btn);
+    return;
+  }
+
+  // 看示例:把参考答案填进答题框
+  if (action === 'show-sample') {
+    const promptEl = container.querySelector('.sentence-prompt');
+    const tplIdx = promptEl ? (parseInt(promptEl.dataset.tpl, 10) || 0) : 0;
+    const reference = getReferenceAnswer(tplIdx, en);
+    if (!reference) { alert('该模板暂无参考答案'); return; }
+    const ta = container.querySelector('[name=sentence-input]');
+    if (ta) { ta.value = reference; ta.focus(); }
     return;
   }
 
