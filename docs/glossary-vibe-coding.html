@@ -276,6 +276,57 @@ section h2 .count {
   padding: 0 4px; line-height: 1;
 }
 .past-sentence .del-sentence:hover { color: #ef4444; }
+.past-sentence { gap: 8px !important; }
+.cn-hint {
+  cursor: pointer;
+  border-bottom: 1px dotted var(--accent);
+}
+.cn-hint:hover { color: var(--accent); }
+.cn-hint .cn-tip {
+  color: var(--accent);
+  font-size: 11px;
+  font-style: italic;
+  background: var(--accent-soft);
+  padding: 1px 5px;
+  border-radius: 3px;
+  margin-left: 3px;
+}
+.sentence-feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  font-size: 12px;
+}
+.sentence-rank, .past-rank {
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; font-family: -apple-system, sans-serif;
+  width: 24px; height: 24px;
+  border-radius: 50%; color: #fff;
+  flex-shrink: 0;
+}
+.past-rank { width: 20px; height: 20px; font-size: 11px; }
+.sentence-rank { font-size: 13px; }
+.r-s { background: #f59e0b; }
+.r-a { background: var(--accent); }
+.r-b { background: #10b981; }
+.r-c { background: #8888aa; }
+.r-d { background: #ef4444; }
+.sentence-score { color: var(--text-dim); font-weight: 600; }
+.sentence-reasons {
+  list-style: none; padding: 0; margin: 4px 0 0;
+  display: flex; gap: 6px; flex-wrap: wrap;
+  width: 100%;
+}
+.sentence-reasons li {
+  font-size: 11px; padding: 2px 7px;
+  border-radius: 4px;
+}
+.sentence-reasons li.r-pos { color: var(--accent); background: var(--accent-soft); }
+.sentence-reasons li.r-neg { color: #b91c1c; background: rgba(239,68,68,0.08); }
+.sentence-reasons li.r-tip { color: #b45309; background: rgba(245,158,11,0.1); }
 .add-term-btn {
   background: rgba(29,158,117,0.06);
   border: 1px dashed var(--accent);
@@ -862,14 +913,119 @@ const SENTENCE_BANK = [
   '没人不知道 {zh}。',
   '我把 {zh} 教给了我朋友。'
 ];
+/* 中文 → 英文 提示词典:模板里出现的常用词点击可显示英文 */
+const CN_HINTS = {
+  '听说过':'have heard of','知道':'know','什么':'what','解释':'explain','怎么用':'how to use',
+  '用过':'have used','意思':'meaning','教':'teach','教我':'teach me','学':'learn',
+  '学了':'learned','学会':'master','学好':'master well','难':'difficult','简单':'easy / simple',
+  '哪里':'where','多久':'how long','谁':'who','发明':'invent','为什么':'why',
+  '大家':'everyone','讨论':'discuss','感兴趣':'interested','出现':'appear','时候':'time / when',
+  '下次':'next time','还会':'still / again','没有':'without','以前':'before','版本':'version',
+  '不同':'different','好处':'benefit','缺点':'drawback','觉得':'think / feel','怎么样':'how about',
+  '适合':'suitable for','初学者':'beginner','项目':'project','免费':'free','应该':'should',
+  '先':'first','别的':'other','用法':'usage','测试':'test','调试':'debug',
+  '英文':'English','念':'pronounce','一句话':'one sentence','场景':'scenario','解决':'solve',
+  '问题':'problem','工具':'tool','过时':'outdated','公司':'company','老师':'teacher',
+  '讲':'explain','例子':'example','今天':'today','每天':'every day','常用':'commonly used',
+  '概念':'concept','喜欢':'like','刚开始':'just started','已经':'already','想':'think',
+  '评估':'evaluate','团队':'team','决定':'decide','上次':'last time','会议':'meeting',
+  '重点':'key point','这本书':'this book','一章':'one chapter','关于':'about','加到':'add to',
+  '简历':'résumé','没办法':'no way to','一切':'everything','改变':'change','工作方式':'way of working',
+  '推荐':'recommend','朋友':'friend','不用':"don't use",'大型':'large','小型':'small',
+  '第一次':'first time','接触':'encounter','面试':'interview','常考':'often tested','文档':'documentation',
+  '详细':'detailed','昨天':'yesterday','开源':'open source','社区':'community','活跃':'active',
+  '打算':'plan to','下个月':'next month','深入':'in-depth','预期':'expected','稳定':'stable',
+  '还有':'still has','很多':'many','领域':'field','标准':'standard','习惯':'get used to',
+  '同事':'colleague','视频':'video','教程':'tutorial','看到':'see','代码':'code',
+  '整洁':'clean','效率':'efficiency','翻倍':'double','真正':'real','需要':'need',
+  '练习':'practice','才能':'in order to','掌握':'master','刚才':'just now','信心':'confidence',
+  '这次':'this time','问到':'asked','基础':'foundation','高级':'advanced','忘记':'forget',
+  '经常':'often','不一样':'different','例句':'example sentence','说明':'illustrate','每个':'every',
+  '不一定':'not necessarily','所有':'all','总有一天':'someday','收藏':'save / bookmark','最近':'recently',
+  '最':'most','有用':'useful','东西':'thing','让':'let / make','编程':'programming',
+  '理解':'understanding','刚好':'happen to','不熟':'not familiar','实用':'practical','没人':'no one'
+};
+
+function annotateChinese(text) {
+  // Wrap known Chinese words with clickable hint spans (longest match first)
+  const words = Object.keys(CN_HINTS).sort((a, b) => b.length - a.length);
+  // Use a placeholder strategy to avoid double-wrapping
+  let out = text;
+  const placeholders = [];
+  words.forEach(w => {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(escaped, 'g');
+    out = out.replace(re, () => {
+      const idx = placeholders.length;
+      placeholders.push('<span class="cn-hint" data-en="' + escapeHtml(CN_HINTS[w]) + '" title="' + escapeHtml(CN_HINTS[w]) + '">' + w + '</span>');
+      return ' ' + idx + ' ';
+    });
+  });
+  // restore placeholders
+  return out.replace(/ (\d+) /g, (_, i) => placeholders[+i]);
+}
+
 function buildSentencePrompt(idx, en, zh) {
   const tpl = SENTENCE_BANK[idx % SENTENCE_BANK.length];
   const term = zh || en;
-  const s = tpl.replace(/\{zh\}/g, '<b>' + escapeHtml(term) + '</b>');
+  // annotate Chinese hints first, THEN substitute the {zh} placeholder (so {zh} content itself isn't re-annotated)
+  const annotated = annotateChinese(tpl);
+  const s = annotated.replace(/\{zh\}/g, '<b>' + escapeHtml(term) + '</b>');
   return s + ' <span style="color:var(--text-dim);font-size:11px;">(译成英文,需含 ' + escapeHtml(en) + ')</span>';
 }
+
+/* 启发式打分 — 不依赖 AI,本地检查 */
+function gradeTranslation(translation, targetEn) {
+  const raw = String(translation || '').trim();
+  if (!raw) return null;
+  const t = raw.toLowerCase();
+  let score = 0;
+  const reasons = [];
+  // ① 含目标词 40pts
+  const targetLower = targetEn.toLowerCase();
+  const escaped = targetLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const targetRe = new RegExp('\\b' + escaped + '(s|es|ed|ing|ies|ment)?\\b', 'i');
+  if (targetRe.test(t) || t.includes(targetLower)) { score += 40; reasons.push(['✓ 含目标词', 'pos']); }
+  else reasons.push(['✗ 缺目标词 "' + targetEn + '"', 'neg']);
+  // ② 句子完整 ≥3 词 15pts
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length >= 3) { score += 15; reasons.push(['✓ 句子完整 (' + words.length + ' 词)', 'pos']); }
+  else reasons.push(['✗ 句子太短 (' + words.length + ' 词)', 'neg']);
+  // ③ 全英文(无残留中文) 15pts
+  if (!/[一-龥]/.test(raw)) { score += 15; reasons.push(['✓ 全英文', 'pos']); }
+  else reasons.push(['✗ 残留中文字符', 'neg']);
+  // ④ 标点 10pts
+  if (/[.?!]\s*$/.test(raw)) { score += 10; reasons.push(['✓ 标点完整', 'pos']); }
+  else reasons.push(['提示: 句末加 .?!', 'tip']);
+  // ⑤ 首字母大写 10pts
+  if (/^[A-Z]/.test(raw)) { score += 10; reasons.push(['✓ 首字母大写', 'pos']); }
+  else reasons.push(['提示: 首字母大写', 'tip']);
+  // ⑥ 有常见动词 10pts
+  if (/\b(is|are|was|were|be|been|have|has|had|do|does|did|can|could|will|would|should|may|might|use|used|learn|learned|know|knew|think|thought|see|saw|make|made|get|got|go|went|come|came)\b/i.test(t)) {
+    score += 10; reasons.push(['✓ 句子有动词', 'pos']);
+  } else reasons.push(['提示: 缺常见动词', 'tip']);
+  let rank = 'D';
+  if (score >= 90) rank = 'S';
+  else if (score >= 75) rank = 'A';
+  else if (score >= 60) rank = 'B';
+  else if (score >= 40) rank = 'C';
+  return { score, rank, reasons };
+}
+
 // 旧名兼容(防外部引用)
 const SENTENCE_PROMPTS = SENTENCE_BANK;
+
+/* 渲染一条过往造句 — 兼容旧的纯 string 和新的 {text, score, rank} 对象 */
+function renderPastSentenceHtml(s, i) {
+  const text = (typeof s === 'string') ? s : (s.text || '');
+  const rank = (typeof s === 'object' && s.rank) ? s.rank : '';
+  const score = (typeof s === 'object' && typeof s.score === 'number') ? s.score : null;
+  const badge = rank ? '<span class="past-rank r-' + rank.toLowerCase() + '" title="' + score + ' 分">' + rank + '</span>' : '';
+  return '<div class="past-sentence">' + badge +
+    '<span class="text">' + escapeHtml(text) + '</span>' +
+    '<button class="del-sentence" data-action="del-sentence" data-i="' + i + '" title="删除">×</button>' +
+    '</div>';
+}
 
 function searchKey(d) {
   return [d.en, d.zh, d.hint, d.phonetic, d.note].join(' ').toLowerCase();
@@ -926,12 +1082,10 @@ function renderEditForm(card) {
           '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
         '</div>' +
         '<textarea name="sentence-input" rows="2" placeholder="把上面的中文译成英文…" spellcheck="false"></textarea>' +
-        '<button type="button" class="sentence-save" data-action="save-sentence">✓ 记下这句</button>' +
+        '<div class="sentence-feedback" data-role="sentence-feedback" style="display:none;"></div>' +
+        '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
         '<div class="past-sentences" data-role="past-sentences">' +
-          d.sentences.map((s, i) =>
-            '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
-            '<button class="del-sentence" data-action="del-sentence" data-i="' + i + '" title="删除">×</button></div>'
-          ).join('') +
+          d.sentences.map((s, i) => renderPastSentenceHtml(s, i)).join('') +
         '</div>' +
       '</div>' +
       '<div class="edit-actions">' +
@@ -1488,6 +1642,27 @@ function resetPractice() {
   renderPracticePreview();
 }
 
+// Chinese hint click — show English equivalent inline (mobile-friendly tooltip)
+main.addEventListener('click', e => {
+  const hint = e.target.closest('.cn-hint');
+  if (hint && !e.target.closest('button')) {
+    e.stopPropagation();
+    const en = hint.dataset.en;
+    if (en) {
+      const old = hint.querySelector('.cn-tip');
+      if (old) { old.remove(); return; }
+      // Clear any other tips first
+      document.querySelectorAll('.cn-tip').forEach(t => t.remove());
+      const tip = document.createElement('span');
+      tip.className = 'cn-tip';
+      tip.textContent = en;
+      hint.appendChild(tip);
+      setTimeout(() => { if (tip.parentNode) tip.remove(); }, 3500);
+    }
+    return;
+  }
+});
+
 main.addEventListener('click', e => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
@@ -1578,26 +1753,34 @@ main.addEventListener('click', e => {
     return;
   }
 
-  // 造句 — 记下一句
+  // 造句 — 检查并记下
   if (action === 'save-sentence') {
     const ta = card.querySelector('[name=sentence-input]');
     if (!ta) return;
     const sentence = ta.value.trim();
     if (!sentence) { ta.focus(); return; }
+    // 启发式打分
+    const grade = gradeTranslation(sentence, en);
+    const entry = { text: sentence, score: grade.score, rank: grade.rank, time: Date.now() };
     const existing = state.edits[id] || {};
     const sentences = Array.isArray(existing.sentences) ? existing.sentences.slice() : [];
-    sentences.unshift(sentence);  // newest first
+    sentences.unshift(entry);  // newest first
     state.edits[id] = Object.assign({}, existing, { sentences });
     save();
-    ta.value = '';
-    // re-render past sentences list in place
-    const past = card.querySelector('[data-role="past-sentences"]');
-    if (past) {
-      past.innerHTML = sentences.map((s, i) =>
-        '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
-        '<button class="del-sentence" data-action="del-sentence" data-i="' + i + '" title="删除">×</button></div>'
-      ).join('');
+    // 反馈框显示评分 + 原因
+    const feedbackEl = card.querySelector('[data-role="sentence-feedback"]');
+    if (feedbackEl) {
+      feedbackEl.innerHTML =
+        '<span class="sentence-rank r-' + grade.rank.toLowerCase() + '">' + grade.rank + '</span>' +
+        '<span class="sentence-score">' + grade.score + ' 分</span>' +
+        '<ul class="sentence-reasons">' +
+          grade.reasons.map(([txt, cls]) => '<li class="r-' + cls + '">' + escapeHtml(txt) + '</li>').join('') +
+        '</ul>';
+      feedbackEl.style.display = 'flex';
     }
+    ta.value = '';
+    const past = card.querySelector('[data-role="past-sentences"]');
+    if (past) past.innerHTML = sentences.map((s, i) => renderPastSentenceHtml(s, i)).join('');
     return;
   }
 
@@ -1617,12 +1800,7 @@ main.addEventListener('click', e => {
     }
     save();
     const past = card.querySelector('[data-role="past-sentences"]');
-    if (past) {
-      past.innerHTML = sentences.map((s, idx) =>
-        '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
-        '<button class="del-sentence" data-action="del-sentence" data-i="' + idx + '" title="删除">×</button></div>'
-      ).join('');
-    }
+    if (past) past.innerHTML = sentences.map((s, idx) => renderPastSentenceHtml(s, idx)).join('');
     return;
   }
 
