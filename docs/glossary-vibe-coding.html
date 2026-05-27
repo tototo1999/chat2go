@@ -255,6 +255,17 @@ section h2 .count {
   margin-top: 4px; align-self: flex-start;
 }
 .sentence-save:hover { opacity: 0.88; }
+.sentence-clear {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.sentence-clear:hover { color: #ef4444; border-color: #ef4444; }
 .past-sentences {
   display: flex; flex-direction: column; gap: 5px;
   margin-top: 10px;
@@ -801,7 +812,7 @@ function getTermData(catId, en) {
     hint: edit.hint !== undefined ? edit.hint : (orig[2] || ''),
     phonetic: edit.phonetic !== undefined ? edit.phonetic : dictRomaji,
     note: edit.note || '',
-    sentences: Array.isArray(edit.sentences) ? edit.sentences : [],
+    sentences: Array.isArray(edit.sentences) ? edit.sentences.slice() : [],
     edited: Object.keys(edit).length > 0,
     dictRomaji
   };
@@ -1083,7 +1094,12 @@ function renderEditForm(card) {
         '</div>' +
         '<textarea name="sentence-input" rows="2" placeholder="把上面的中文译成英文…" spellcheck="false"></textarea>' +
         '<div class="sentence-feedback" data-role="sentence-feedback" style="display:none;"></div>' +
-        '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
+          '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
+          (d.sentences.length > 0 ?
+            '<button type="button" class="sentence-clear" data-action="clear-sentences" title="清空该词所有造句">🗑 清空 ' + d.sentences.length + ' 句</button>' :
+            '') +
+        '</div>' +
         '<div class="past-sentences" data-role="past-sentences">' +
           d.sentences.map((s, i) => renderPastSentenceHtml(s, i)).join('') +
         '</div>' +
@@ -1765,6 +1781,19 @@ main.addEventListener('click', e => {
     const entry = { text: sentence, score: grade.score, rank: grade.rank, time: Date.now() };
     const existing = state.edits[id] || {};
     const sentences = Array.isArray(existing.sentences) ? existing.sentences.slice() : [];
+    // 防双击 / 防 Enter+点击重复:跟最近一条相同就跳过
+    const recent = sentences[0];
+    const recentText = typeof recent === 'string' ? recent : ((recent && recent.text) || '');
+    if (recentText === sentence) {
+      // 仍然显示反馈,但不入库
+      const fb = card.querySelector('[data-role="sentence-feedback"]');
+      if (fb) {
+        fb.innerHTML = '<span class="sentence-rank r-' + grade.rank.toLowerCase() + '">' + grade.rank + '</span>' +
+          '<span class="sentence-score">' + grade.score + ' 分 · 已记过这句,跳过</span>';
+        fb.style.display = 'flex';
+      }
+      return;
+    }
     sentences.unshift(entry);  // newest first
     state.edits[id] = Object.assign({}, existing, { sentences });
     save();
@@ -1782,6 +1811,22 @@ main.addEventListener('click', e => {
     ta.value = '';
     const past = card.querySelector('[data-role="past-sentences"]');
     if (past) past.innerHTML = sentences.map((s, i) => renderPastSentenceHtml(s, i)).join('');
+    return;
+  }
+
+  // 造句 — 清空该词所有造句
+  if (action === 'clear-sentences') {
+    const existing = state.edits[id] || {};
+    const n = (existing.sentences && existing.sentences.length) || 0;
+    if (n === 0) return;
+    if (!confirm('清空 "' + en + '" 的 ' + n + ' 句造句历史?')) return;
+    const copy = Object.assign({}, existing);
+    delete copy.sentences;
+    if (Object.keys(copy).length === 0) delete state.edits[id];
+    else state.edits[id] = copy;
+    save();
+    // re-render the whole edit form to refresh the clear button + list
+    renderEditForm(card);
     return;
   }
 
