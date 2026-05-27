@@ -1144,7 +1144,7 @@ function buildSentenceSectionHtml(en, zh, sentences) {
       '<div class="sentence-prompt" data-tpl="' + initIdx + '">' + buildSentencePrompt(initIdx, en, zh) + '</div>' +
       '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
     '</div>' +
-    '<textarea name="sentence-input" rows="8" placeholder="把上面的中文译成英文…" spellcheck="false" style="font-size:15px;line-height:1.6;min-height:170px;resize:vertical;"></textarea>' +
+    '<textarea name="sentence-input" rows="8" placeholder="把上面的中文译成英文…" spellcheck="false" style="display:block;width:100%;box-sizing:border-box;font-size:15px;line-height:1.6;min-height:180px;resize:vertical;padding:10px 12px;font-family:-apple-system,sans-serif;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;"></textarea>' +
     '<div class="sentence-feedback" data-role="sentence-feedback" style="display:none;"></div>' +
     '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' +
       '<button type="button" class="sentence-save" data-action="save-sentence">✓ 检查并记下</button>' +
@@ -2175,6 +2175,45 @@ search.addEventListener('input', e => {
 });
 
 rebuildFavorites();
+
+// URL ?import=<base64-json-array> 一键导入 — speak2go-worker push 进来,直接落到 NYC Global Center
+(function autoImportFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('import');
+  if (!raw) return;
+  try {
+    const arr = JSON.parse(atob(decodeURIComponent(raw)));
+    if (!Array.isArray(arr) || arr.length === 0) return;
+    const catId = 'nyc-global-center';
+    if (!state.userTerms[catId]) state.userTerms[catId] = [];
+    const seen = new Set(state.userTerms[catId].map(t => (t.en || '').toLowerCase()));
+    const added = [];
+    arr.forEach(t => {
+      const en = (t.en || (Array.isArray(t) ? t[0] : '') || '').trim();
+      if (!en || seen.has(en.toLowerCase())) return;
+      state.userTerms[catId].push({
+        en,
+        zh: t.zh || (Array.isArray(t) ? t[1] : '') || '',
+        hint: t.hint || (Array.isArray(t) ? t[2] : '') || '',
+      });
+      added.push(en);
+      seen.add(en.toLowerCase());
+    });
+    save();
+    // 自动切到 NYC Global Center tab
+    localStorage.setItem('glossary-active-cat', catId);
+    // 清 URL 防止刷新重复导入
+    history.replaceState({}, '', location.pathname);
+    // 简易 toast(用 alert;v2 可换 in-page toast)
+    if (added.length > 0) {
+      setTimeout(() => alert('✅ 已导入 ' + added.length + ' 个新词到 NYC Global Center\n(' + arr.length + ' 词中,' + (arr.length - added.length) + ' 个已存在)'), 200);
+    } else {
+      setTimeout(() => alert('🎉 这 ' + arr.length + ' 个词都已经在词表里了'), 200);
+    }
+  } catch (e) {
+    console.error('[glossary import] failed:', e);
+  }
+})();
 
 // Set initial active group (restore from localStorage, default Vibe Coding)
 setActiveCat(localStorage.getItem('glossary-active-cat') || 'vibe-coding');
