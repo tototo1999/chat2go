@@ -1047,13 +1047,17 @@ function getTermData(catId, en) {
   }
   if (!orig) return null;
   const edit = state.edits[catId + '::' + en] || {};
+  // 字典里有该词 → 默认填罗马注音; 用户编辑了则用用户的
+  const dictEntry = (typeof lookupDict === 'function') ? lookupDict(en) : null;
+  const dictRomaji = dictEntry ? dictEntry.romaji.join('·') : '';
   return {
     en: orig[0],
     zh: edit.zh !== undefined ? edit.zh : orig[1],
     hint: edit.hint !== undefined ? edit.hint : (orig[2] || ''),
-    phonetic: edit.phonetic || '',
+    phonetic: edit.phonetic !== undefined ? edit.phonetic : dictRomaji,
     note: edit.note || '',
-    edited: Object.keys(edit).length > 0
+    edited: Object.keys(edit).length > 0,
+    dictRomaji
   };
 }
 
@@ -1082,7 +1086,7 @@ function renderCardContent(card) {
         '<button class="speak" data-action="speak" title="朗读" aria-label="朗读">🔊</button>' +
         '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">▶</button>' +
         '<button class="fav' + (isFav ? ' is-on' : '') + '" data-action="fav" title="' + (isFav ? '取消收藏' : '收藏置顶') + '" aria-label="收藏">★</button>' +
-        '<button class="edit" data-action="edit" title="编辑/加自然拼读笔记" aria-label="编辑">✎</button>' +
+        '<button class="edit" data-action="edit" title="编辑/加罗马注音笔记" aria-label="编辑">✎</button>' +
         '<button class="del' + (isDel ? ' is-undo' : '') + '" data-action="del" title="' + (isDel ? '恢复' : '删除') + '" aria-label="删除">' + (isDel ? '↺' : '✕') + '</button>' +
       '</div>' +
     '</div>' +
@@ -1099,7 +1103,7 @@ function renderEditForm(card) {
   card.innerHTML =
     '<form class="edit-form" onsubmit="return false">' +
       '<div class="edit-row"><label>英文 (不可改)</label><input type="text" name="en" value="' + escapeHtml(d.en) + '" readonly></div>' +
-      '<div class="edit-row"><label>自然拼读 (重音音节用大写)</label><input type="text" name="phonetic" value="' + escapeHtml(d.phonetic) + '" placeholder="kem·PO·nent" autocomplete="off" spellcheck="false"></div>' +
+      '<div class="edit-row"><label>罗马注音 (重音音节用大写)</label><input type="text" name="phonetic" value="' + escapeHtml(d.phonetic) + '" placeholder="kem·PO·nent" autocomplete="off" spellcheck="false"></div>' +
       '<div class="edit-row"><label>中文</label><input type="text" name="zh" value="' + escapeHtml(d.zh) + '"></div>' +
       '<div class="edit-row"><label>解释</label><textarea name="hint" rows="2">' + escapeHtml(d.hint) + '</textarea></div>' +
       '<div class="edit-row"><label>个人笔记</label><textarea name="note" rows="3" placeholder="例句 / 关联词 / 记忆方法…">' + escapeHtml(d.note) + '</textarea></div>' +
@@ -1417,7 +1421,7 @@ function parseStressFromIPA(ipa, maxIdx) {
   return Math.min(idx, maxIdx);
 }
 
-/* Romaji 自然拼读 → stress index: 找全大写音节 */
+/* Romaji 罗马注音 → stress index: 找全大写音节 */
 function parseStressFromRomaji(romaji, maxIdx) {
   if (!romaji) return null;
   const parts = String(romaji).split(/[·\-\s\/]+/).filter(Boolean);
@@ -1635,7 +1639,7 @@ function submitPractice() {
     return '<div class="p-rc-slot"><div class="' + cls.join(' ') + '">' + escapeHtml(s) + '</div><div class="p-rc-romaji answer">' + escapeHtml(ps.answerRomaji[i]) + '</div></div>';
   }).join('');
   const sourceLabel = ps.answerSource === 'dict'   ? '字典' :
-                      ps.answerSource === 'romaji' ? '依据你填的拼读' :
+                      ps.answerSource === 'romaji' ? '依据你填的注音' :
                       ps.answerSource === 'ipa'    ? '依据你填的 IPA' :
                                                      '启发式估算';
   const rows = [];
@@ -1772,7 +1776,7 @@ main.addEventListener('click', e => {
   }
 
   if (action === 'reset') {
-    if (!confirm('清除该词的所有自定义内容(自然拼读 / 笔记 / 中文 / 解释)?')) return;
+    if (!confirm('清除该词的所有自定义内容(罗马注音 / 笔记 / 中文 / 解释)?')) return;
     delete state.edits[id];
     save();
     syncCardsById(id);
@@ -1797,7 +1801,10 @@ main.addEventListener('click', e => {
     const hint = get('hint');
     const note = get('note');
     const edit = {};
-    if (phonetic) edit.phonetic = phonetic;
+    // 跟字典默认相同的话不存,省 localStorage
+    const dictEntry = lookupDict(en);
+    const dictRomaji = dictEntry ? dictEntry.romaji.join('·') : '';
+    if (phonetic && phonetic !== dictRomaji) edit.phonetic = phonetic;
     if (zh && zh !== orig[1]) edit.zh = zh;
     if (hint !== (orig[2] || '')) edit.hint = hint;
     if (note) edit.note = note;
