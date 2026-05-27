@@ -96,18 +96,11 @@ nav.cats a.group-link.inactive {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* Tab 切换 — 主目录互斥显示 */
-.group-header, nav.sub-cats, section[data-cat] { display: none; }
-body[data-active-group="vibe-coding"] .group-header[data-group="vibe-coding"],
-body[data-active-group="vibe-coding"] nav.sub-cats[data-group="vibe-coding"],
-body[data-active-group="vibe-coding"] section[data-group="vibe-coding"] { display: block; }
-body[data-active-group="nyc-global-center"] .group-header[data-group="nyc-global-center"],
-body[data-active-group="nyc-global-center"] nav.sub-cats[data-group="nyc-global-center"],
-body[data-active-group="nyc-global-center"] section[data-group="nyc-global-center"] { display: block; }
-body[data-active-group="vibe-coding"] section[data-group="vibe-coding"] .terms,
-body[data-active-group="nyc-global-center"] section[data-group="nyc-global-center"] .terms { display: grid; }
+/* Tab 切换 — 顶层 tab 互斥显示 */
+section[data-cat] { display: none; }
+body[data-active-cat="vibe-coding"] section[data-cat="vibe-coding"],
+body[data-active-cat="nyc-global-center"] section[data-cat="nyc-global-center"] { display: block; }
 section[data-cat].empty { display: none !important; }
-.group-header { margin-top: 8px; }
 
 .group-header {
   font-size: 22px; font-weight: 700;
@@ -641,429 +634,57 @@ footer {
 <script>
 const DATA = [
   {
-    id: 'frontend', title: '前端基础', terms: [
+    id: 'vibe-coding', title: 'Vibe Coding', terms: [
       ['Framework', '框架', '提供完整结构和约定的库,如 React/Vue/Angular'],
       ['Library', '库', '提供具体功能的代码包,你主动调它'],
       ['Component', '组件', 'UI 的可复用单元,React/Vue 的核心概念'],
-      ['Props', '属性/参数', '父组件传给子组件的只读数据'],
       ['State', '状态', '组件内部可变数据,变了就重渲'],
       ['Hook', '钩子', 'React 函数组件里复用状态/副作用的函数'],
-      ['Effect', '副作用', '渲染之外的操作:网络/订阅/DOM 改动'],
       ['Render', '渲染', '把数据变成页面元素的过程'],
-      ['Mount', '挂载', '组件第一次插入 DOM'],
-      ['Unmount', '卸载', '组件从 DOM 移除'],
-      ['Lifecycle', '生命周期', '组件从创建到销毁的各阶段'],
       ['DOM', '文档对象模型', '浏览器把 HTML 解析成的树形结构'],
-      ['Virtual DOM', '虚拟 DOM', 'JS 对象表示的 DOM,diff 后再写真 DOM'],
-      ['SPA', '单页应用', '一次加载,路由切换不刷新页面'],
-      ['SSR', '服务端渲染', '在服务器先渲染 HTML 再发给浏览器'],
-      ['CSR', '客户端渲染', '浏览器拿到空壳后用 JS 填充'],
-      ['SSG', '静态站点生成', 'build 时预渲所有页面成 HTML'],
-      ['ISR', '增量静态再生', 'SSG + 后台按需更新页面'],
       ['Hydration', '注水/激活', '服务端 HTML 在客户端被 JS 接管'],
-      ['Slot', '插槽', '组件预留的位置,让外部塞内容'],
-      ['Ref', '引用', '直接拿到 DOM 节点或组件实例'],
-      ['Portal', '传送门', '把子节点渲染到 DOM 树外'],
-      ['Fragment', '片段', '不引入额外节点的多元素分组'],
-    ]
-  },
-  {
-    id: 'css', title: 'CSS 与样式', terms: [
-      ['Selector', '选择器', '指定要应用样式的元素'],
-      ['Specificity', '优先级', '决定多条规则冲突时谁赢'],
-      ['Cascade', '层叠', 'CSS 同层规则的覆盖顺序'],
-      ['Inheritance', '继承', '子元素自动继承父元素某些样式'],
-      ['Pseudo-class', '伪类', ':hover :focus 等元素状态选择器'],
-      ['Pseudo-element', '伪元素', '::before ::after 虚拟元素'],
-      ['Flexbox', '弹性盒布局', '一维(行/列)灵活布局'],
-      ['Grid', '网格布局', '二维行列同时控制的布局'],
-      ['Box model', '盒模型', 'content + padding + border + margin'],
-      ['Viewport', '视口', '浏览器可见区域'],
+      ['SPA', '单页应用', '一次加载,路由切换不刷新页面'],
+      ['Selector', '选择器', 'CSS 指定元素 / 状态管理取数据'],
       ['Responsive', '响应式', '根据屏幕宽度自适应布局'],
-      ['Breakpoint', '断点', '响应式切换布局的屏幕宽度阈值'],
-      ['Media query', '媒体查询', '@media 根据设备特性应用不同样式'],
-      ['Utility-first', '工具优先', 'Tailwind 风格,组合原子类'],
-      ['CSS-in-JS', 'CSS 写在 JS 里', 'styled-components / emotion 等方案'],
-      ['Animation', '动画', '@keyframes 定义的随时间变化'],
-      ['Transition', '过渡', '属性变化时的平滑插值'],
-      ['Z-index', '堆叠层级', '元素谁盖谁的顺序'],
-      ['Position', '定位', 'static / relative / absolute / fixed / sticky'],
-      ['Cursor', '光标', 'CSS cursor 属性控制鼠标样式'],
-    ]
-  },
-  {
-    id: 'build', title: '构建与打包', terms: [
       ['Bundle', '打包产物', '所有依赖合并后的 JS 文件'],
-      ['Bundler', '打包器', 'Webpack/Vite/Rollup/esbuild 等'],
       ['Build', '构建', '把源码转成可部署产物的过程'],
-      ['Compile', '编译', '源码 → 目标语言或字节码'],
-      ['Transpile', '转译', '源码 → 同级别另一种语言(TS→JS)'],
-      ['Minify', '压缩', '去空白/重命名变量缩短代码'],
-      ['Uglify', '混淆', '让代码难读,同时压缩'],
-      ['Tree shaking', '摇树优化', '删除未使用的代码'],
-      ['Code splitting', '代码分割', '按路由/组件拆成多个 chunk'],
-      ['Lazy load', '懒加载', '用到时才加载'],
-      ['Dynamic import', '动态导入', 'import() 异步加载模块'],
-      ['HMR', '热模块替换', '改代码不刷页面,只换变动的模块'],
-      ['Dev server', '开发服务器', '本地开发用的临时 HTTP server'],
-      ['Sourcemap', '源码映射', '压缩后代码 → 原始源码的对照表'],
-      ['Polyfill', '兼容垫片', '给老浏览器补缺失的新 API'],
       ['Module', '模块', '一个文件 = 一个模块,ESM/CommonJS'],
-      ['Import / Export', '导入/导出', 'ES 模块的引入与暴露'],
       ['Package', '包', '一个项目的可分发单元(npm/pip 等)'],
       ['Dependency', '依赖', '项目用到的外部库'],
-      ['Lockfile', '锁文件', 'package-lock.json 等固定版本'],
-      ['Monorepo', '单仓多包', '多个包同一个 git 仓'],
-      ['Workspace', '工作区', 'monorepo 里的子包'],
-    ]
-  },
-  {
-    id: 'lang', title: 'JS / TS 语言', terms: [
       ['Closure', '闭包', '函数携带其定义时的作用域'],
       ['Scope', '作用域', '变量可访问的范围'],
-      ['Hoisting', '变量提升', 'var/function 声明被提到作用域顶'],
-      ['Prototype', '原型', 'JS 对象继承的机制'],
-      ['this', 'this 指向', '函数调用上下文,取决于怎么调'],
       ['Promise', '承诺', '异步操作的最终结果占位'],
-      ['Async / Await', '异步/等待', 'Promise 的语法糖,写起来像同步'],
+      ['Async', '异步', '不阻塞地执行任务,Async/Await 是 Promise 语法糖'],
       ['Callback', '回调', '传给别人,完成后被调的函数'],
-      ['Generator', '生成器', '可暂停恢复的函数,function*'],
-      ['Iterator', '迭代器', '有 next() 的对象'],
-      ['Spread', '展开', '... 把数组/对象铺开'],
-      ['Rest', '剩余参数', '... 把多个参数收集成数组'],
-      ['Destructuring', '解构', '从数组/对象提取值到变量'],
-      ['Optional chaining', '可选链', 'a?.b?.c 防止 undefined 报错'],
-      ['Nullish coalescing', '空值合并', 'a ?? b 只在 null/undefined 时取 b'],
-      ['Type guard', '类型守卫', 'TS 缩小类型范围的判断'],
-      ['Generic', '泛型', '<T> 占位类型,延迟到使用时指定'],
-      ['Union type', '联合类型', 'A | B 多种可能之一'],
-      ['Intersection type', '交叉类型', 'A & B 同时满足'],
-      ['Enum', '枚举', '一组命名常量'],
       ['Interface', '接口', '定义对象形状的契约'],
-      ['Decorator', '装饰器', '@注解 给类/方法加功能'],
-    ]
-  },
-  {
-    id: 'backend', title: '后端与服务', terms: [
       ['Server', '服务器', '提供服务的程序/机器'],
       ['Client', '客户端', '发请求的一方,浏览器/App'],
       ['Endpoint', '接口端点', '一个 URL + 方法的具体入口'],
       ['Route', '路由', 'URL → 处理函数的映射'],
       ['Middleware', '中间件', '请求处理链上的拦截层'],
-      ['Controller', '控制器', '处理请求、调用业务、返响应'],
-      ['Service', '服务层', '业务逻辑的封装'],
-      ['Repository', '仓储层', '数据访问的抽象'],
-      ['DAO', '数据访问对象', 'Repository 的别名'],
-      ['DTO', '数据传输对象', '跨层传输用的纯数据结构'],
       ['REST', 'REST 风格', '资源 + HTTP 动词的 API 设计'],
-      ['GraphQL', 'GraphQL', '客户端指定字段的查询语言'],
-      ['gRPC', 'gRPC', 'Google 的高性能 RPC 框架'],
-      ['WebSocket', 'Web 套接字', '全双工长连接'],
-      ['SSE', '服务器推送事件', '服务器单向流式推送到客户端'],
       ['Webhook', 'Web 钩子', '事件发生时回调你提供的 URL'],
-      ['Rate limit', '限流', '限制单位时间请求数'],
       ['Throttle', '节流', 'N 毫秒最多触发一次'],
       ['Debounce', '防抖', '停止操作 N 毫秒后才执行'],
-      ['Idempotent', '幂等', '执行多次结果相同(PUT/DELETE)'],
-      ['Stateless', '无状态', '请求间不保留服务端状态'],
-      ['Stateful', '有状态', '服务端记得上次的事'],
-    ]
-  },
-  {
-    id: 'db', title: '数据库', terms: [
       ['Schema', '模式/架构', '数据库结构定义'],
-      ['Table', '表', '关系型数据库的二维结构'],
-      ['Row / Record', '行/记录', '表里的一条数据'],
-      ['Column / Field', '列/字段', '表的一个属性'],
-      ['Primary key', '主键', '唯一标识一行的字段'],
-      ['Foreign key', '外键', '引用另一表主键的字段'],
-      ['Index', '索引', '加速查询的数据结构'],
       ['Query', '查询', 'SELECT 类只读操作'],
-      ['Mutation', '变更', '改数据的操作(GraphQL 术语)'],
       ['Migration', '迁移', '版本化的 schema 变更脚本'],
-      ['Seed', '种子数据', '初始化数据库的初始数据'],
-      ['ORM', '对象关系映射', '代码对象 ↔ 数据库表的转换层'],
-      ['Transaction', '事务', '一组要么全成功要么全回滚的操作'],
-      ['ACID', 'ACID 特性', '原子性/一致性/隔离性/持久性'],
-      ['CRUD', '增删改查', 'Create/Read/Update/Delete'],
-      ['Join', '连接', '把多张表按关系拼起来查'],
-      ['Aggregate', '聚合', 'COUNT/SUM/AVG 等汇总查询'],
-      ['View', '视图', '虚拟表,基于查询定义'],
-      ['Stored procedure', '存储过程', '存在数据库里的可调函数'],
-      ['Trigger', '触发器', '某操作发生时自动执行的函数'],
-      ['Connection pool', '连接池', '复用数据库连接的缓冲池'],
-      ['Replica', '副本', '主库的只读拷贝'],
-      ['Sharding', '分片', '按规则把数据切到多台机器'],
-      ['NoSQL', '非关系型', 'MongoDB / Redis 等键值/文档库'],
-      ['RLS', '行级安全', 'Postgres 按行控制访问权限'],
-    ]
-  },
-  {
-    id: 'auth', title: '身份与安全', terms: [
+      ['Index', '索引', '加速查询的数据结构'],
       ['Authentication', '认证', '你是谁(登录)'],
-      ['Authorization', '授权', '你能做什么(权限)'],
-      ['Auth', '认证授权', 'Authentication+Authorization 简称'],
-      ['SSO', '单点登录', '一次登录访问多个系统'],
-      ['OAuth', '开放授权', '第三方代为授权的协议'],
-      ['OIDC', 'OpenID Connect', '基于 OAuth 2.0 的身份层'],
-      ['JWT', 'JSON Web Token', '可签名验证的紧凑 token'],
       ['Token', '令牌', '代表身份/权限的字符串'],
-      ['Refresh token', '刷新令牌', '用来换新 access token'],
-      ['Access token', '访问令牌', '调 API 时带的短期凭证'],
-      ['Session', '会话', '服务端保存的登录状态'],
-      ['Cookie', 'Cookie', '浏览器存的小段服务器数据'],
-      ['CSRF', '跨站请求伪造', '别人借你浏览器发请求'],
-      ['XSS', '跨站脚本攻击', '注入恶意 JS 到页面'],
-      ['CORS', '跨域资源共享', '跨域请求的浏览器规则'],
-      ['CSP', '内容安全策略', '限制页面能加载/执行什么'],
-      ['HTTPS', '安全 HTTP', 'TLS 加密的 HTTP'],
-      ['TLS / SSL', '传输层安全', '加密通道协议'],
+      ['JWT', 'JSON Web Token', '可签名验证的紧凑 token'],
       ['Hash', '哈希', '不可逆的固定长度摘要'],
-      ['Salt', '盐', '加在密码哈希前的随机串'],
-      ['Encryption', '加密', '可逆的内容保护'],
-      ['Public / Private key', '公钥/私钥', '非对称加密的密钥对'],
-      ['RBAC', '基于角色的访问控制', '按角色发权限'],
-      ['ABAC', '基于属性的访问控制', '按属性动态判权'],
-      ['Bearer token', 'Bearer 令牌', 'HTTP Authorization 头的常见形式'],
-    ]
-  },
-  {
-    id: 'devops', title: '部署与运维', terms: [
+      ['CORS', '跨域资源共享', '跨域请求的浏览器规则'],
       ['Deploy', '部署', '把代码放到运行环境上线'],
-      ['Pipeline', '流水线', '自动化的构建/测试/部署链'],
-      ['CI', '持续集成', '代码合并后自动跑测试构建'],
-      ['CD', '持续部署/交付', '通过测试后自动上线'],
       ['Container', '容器', '隔离的应用运行环境(Docker)'],
-      ['Image', '镜像', '容器的只读模板'],
-      ['Registry', '镜像仓库', '存放镜像的服务(Docker Hub)'],
-      ['Orchestration', '编排', 'K8s 调度容器'],
-      ['Cluster', '集群', '一组协同工作的机器'],
-      ['Node', '节点', '集群里的一台机器'],
-      ['Pod', 'Pod', 'K8s 里最小的部署单元'],
-      ['Namespace', '命名空间', '资源隔离的逻辑分组'],
-      ['Ingress', '入口', '集群外部流量进入的规则'],
-      ['Service mesh', '服务网格', '微服务间通信的基础设施层'],
-      ['Load balancer', '负载均衡器', '把流量分到多台后端'],
-      ['Reverse proxy', '反向代理', '客户端 → 代理 → 真服务器'],
-      ['Blue-green', '蓝绿部署', '两套环境瞬切流量'],
-      ['Canary', '金丝雀发布', '小流量先放,稳了再全量'],
-      ['Rollback', '回滚', '退回上个版本'],
-      ['Observability', '可观测性', '日志+指标+追踪'],
-      ['Logging', '日志', '事件记录'],
-      ['Metrics', '指标', '数值化的监控数据'],
-      ['Tracing', '追踪', '请求穿过多服务的链路记录'],
-      ['Alert', '告警', '超过阈值发通知'],
-      ['SLA / SLO / SLI', '服务级别协议/目标/指标', '可用性承诺与度量'],
-      ['IaC', '基础设施即代码', 'Terraform 等用代码管基础设施'],
-    ]
-  },
-  {
-    id: 'cloud', title: '云与 Serverless', terms: [
+      ['Pipeline', '流水线', '自动化的构建/测试/部署链'],
       ['Serverless', '无服务器', '不管服务器,按调用付费'],
-      ['Lambda / Function', 'Lambda 函数', '事件触发的短生命函数'],
-      ['Edge function', '边缘函数', '部署在 CDN 边缘节点的函数'],
-      ['Cold start', '冷启动', '函数首次/久无调用后的启动延迟'],
-      ['Warm', '热实例', '已就绪可立刻处理请求的实例'],
-      ['Region', '区域', '云厂商的一个地理区域'],
-      ['Availability zone', '可用区', '区域内独立故障域'],
       ['CDN', '内容分发网络', '边缘缓存静态资源'],
-      ['Object storage', '对象存储', 'S3/R2 等大文件 KV 存储'],
-      ['Bucket', '存储桶', '对象存储的容器'],
-      ['Presigned URL', '预签名 URL', '带时效的临时上传/下载链接'],
-      ['Egress', '出站流量', '从云出去的流量,常计费'],
-      ['Ingress', '入站流量', '进入云的流量'],
-      ['BaaS', '后端即服务', 'Supabase/Firebase 等'],
-      ['PaaS', '平台即服务', 'Vercel/Heroku 等'],
-      ['IaaS', '基础设施即服务', 'EC2/裸虚机'],
-      ['Quota', '配额', '资源使用上限'],
-      ['Multi-tenant', '多租户', '一套系统服务多个客户'],
-    ]
-  },
-  {
-    id: 'ai', title: 'AI / LLM', terms: [
-      ['LLM', '大语言模型', 'Large Language Model'],
       ['Prompt', '提示词', '给模型的输入指令'],
-      ['System prompt', '系统提示词', '设定模型角色/约束的前置 prompt'],
-      ['Token', '词元', '模型处理的最小单位(≈词或子词)'],
-      ['Context window', '上下文窗口', '模型一次能看的最大 token 数'],
-      ['Temperature', '温度', '采样随机性,0 最确定'],
-      ['Top-p / Top-k', 'Top-p / Top-k', '采样时考虑的候选范围'],
-      ['Streaming', '流式输出', '生成时逐字返回,不等完整结果'],
-      ['Embedding', '向量嵌入', '把文本变成数值向量'],
-      ['Vector database', '向量数据库', '存向量并按相似度查的库'],
-      ['Similarity search', '相似度检索', '按向量距离找最近的'],
+      ['LLM', '大语言模型', 'Large Language Model'],
       ['RAG', '检索增强生成', '先检索再让 LLM 基于结果回答'],
-      ['Fine-tune', '微调', '在新数据上继续训练改模型行为'],
-      ['Inference', '推理', '模型对输入产出输出的过程'],
-      ['Hallucination', '幻觉', '模型一本正经编造不存在的事'],
       ['Agent', '智能体', '能用工具、做规划、自主行动的 LLM'],
-      ['Tool use', '工具调用', '模型调用外部函数/API'],
-      ['Function calling', '函数调用', '同上,模型按 schema 返调用参数'],
-      ['MCP', '模型上下文协议', 'Model Context Protocol,统一工具接入'],
-      ['Multimodal', '多模态', '同时处理文本/图/音/视频'],
-      ['Vision', '视觉', '模型看图理解'],
-      ['ASR', '自动语音识别', 'Automatic Speech Recognition'],
-      ['TTS', '语音合成', 'Text to Speech'],
-      ['Diarization', '说话人分离', '区分谁在说话'],
-      ['WER', '词错率', 'Word Error Rate,转写准确度'],
-      ['Prompt caching', '提示缓存', '复用前缀降低 token 费用'],
-      ['Thinking tokens', '思考 token', '模型推理时的内部草稿'],
-      ['Chain of thought', '思维链', '让模型一步步推理'],
-    ]
-  },
-  {
-    id: 'state', title: '状态、数据流、异步', terms: [
-      ['State management', '状态管理', 'Redux/Zustand/Pinia 等方案'],
-      ['Store', '存储/仓库', '集中存状态的对象'],
-      ['Reducer', '归约器', 'state + action → new state'],
-      ['Action', '动作', '描述发生了什么的对象'],
-      ['Dispatch', '派发', '发送 action 到 store'],
-      ['Selector', '选择器', '从 store 取衍生数据'],
-      ['Reactive', '响应式', '数据变,依赖自动更新'],
-      ['Observable', '可观察对象', 'RxJS 的事件流'],
-      ['Subscribe', '订阅', '监听数据流'],
-      ['Publish', '发布', '推送新值到订阅者'],
-      ['Event loop', '事件循环', 'JS 处理异步任务的机制'],
-      ['Microtask', '微任务', 'Promise.then 等高优先队列'],
-      ['Macrotask', '宏任务', 'setTimeout/IO 等普通队列'],
-      ['Race condition', '竞态条件', '并发顺序不确定导致的 bug'],
-      ['Memoization', '记忆化', '缓存函数结果避免重算'],
-      ['Idempotent', '幂等', '调多次结果一样'],
-      ['Optimistic update', '乐观更新', '先改 UI 再等服务器确认'],
-      ['Pessimistic update', '悲观更新', '等服务器确认再改 UI'],
-      ['Eventual consistency', '最终一致性', '一段时间后各节点会一致'],
-    ]
-  },
-  {
-    id: 'test', title: '测试与质量', terms: [
-      ['Unit test', '单元测试', '测一个函数/组件的最小单元'],
-      ['Integration test', '集成测试', '测多个单元一起工作'],
-      ['E2E test', '端到端测试', '模拟用户从头到尾走流程'],
-      ['Snapshot test', '快照测试', '比对输出与上次保存的快照'],
-      ['Mock', '模拟对象', '假的依赖,返回预设值'],
-      ['Stub', '桩', '替换真实实现的占位函数'],
-      ['Spy', '间谍', '记录函数被怎么调用的'],
-      ['Fixture', '夹具', '测试用的预设数据'],
-      ['Coverage', '覆盖率', '测试覆盖了多少代码'],
-      ['Regression', '回归', '改 A 把 B 弄坏了'],
-      ['Smoke test', '冒烟测试', '快速验证核心路径不挂'],
-      ['Linter', '代码检查器', 'ESLint 等找代码问题'],
-      ['Formatter', '格式化器', 'Prettier 等统一代码风格'],
-      ['Type check', '类型检查', 'tsc 等静态检查类型'],
-      ['Static analysis', '静态分析', '不运行就检查代码'],
-      ['Hotfix', '紧急修复', '直接打线上的紧急补丁'],
-      ['Patch', '补丁', '小范围修复改动'],
-      ['Refactor', '重构', '不改行为只改结构'],
-      ['Tech debt', '技术债', '为快赶进度欠下的代码债'],
-    ]
-  },
-  {
-    id: 'git', title: 'Git 与协作', terms: [
-      ['Repository / Repo', '仓库', 'Git 项目本身'],
       ['Commit', '提交', '一次代码快照'],
-      ['Branch', '分支', '独立的开发线'],
-      ['Main / Master', '主分支', '默认的主线分支'],
-      ['Merge', '合并', '把一个分支并入另一个'],
-      ['Rebase', '变基', '把提交基于另一个分支重写'],
-      ['Cherry-pick', '挑选提交', '把单个 commit 摘到当前分支'],
-      ['Stash', '暂存', '把未提交改动塞进抽屉'],
-      ['Pull', '拉取', 'fetch + merge,把远端同步下来'],
-      ['Fetch', '抓取', '只下载远端,不动本地分支'],
-      ['Push', '推送', '把本地提交上传到远端'],
-      ['Clone', '克隆', '把远端仓完整拷一份到本地'],
-      ['Fork', '派生', '在自己账号下复制别人的仓'],
-      ['PR / MR', '合并请求', 'Pull Request / Merge Request'],
-      ['Diff', '差异', '两个版本的区别'],
-      ['Conflict', '冲突', '同段代码两边都改了,Git 不知道选谁'],
-      ['Tag', '标签', '给某个 commit 起的固定名(常用于版本号)'],
-      ['HEAD', 'HEAD 指针', '当前所在 commit'],
-      ['Detached HEAD', '游离 HEAD', '不在任何分支上的状态'],
-      ['Squash', '压缩', '把多个 commit 合成一个'],
-      ['Amend', '修补', '改最后一个 commit'],
-      ['Blame', '追溯', '查每行最后是谁/哪个 commit 改的'],
-      ['Hook', '钩子', 'commit/push 等事件的脚本'],
-      ['Submodule', '子模块', '一个仓嵌套另一个仓'],
-      ['Worktree', '工作树', '同仓多个工作目录'],
-    ]
-  },
-  {
-    id: 'http', title: 'HTTP 与浏览器', terms: [
-      ['GET / POST / PUT / DELETE', 'HTTP 方法', '动词:取/建/改/删'],
-      ['Status code', '状态码', '2xx 成功 / 3xx 跳转 / 4xx 客户端错 / 5xx 服务端错'],
-      ['Header', '请求/响应头', '元数据键值对'],
-      ['Body', '请求体', '请求/响应主体内容'],
-      ['Payload', '负载', 'body 里的实际数据'],
-      ['URL', '统一资源定位符', '资源地址'],
-      ['URI', '统一资源标识符', 'URL 的超集'],
-      ['Query string', '查询串', 'URL ? 后的参数'],
-      ['Path parameter', '路径参数', '/users/:id 的 :id'],
-      ['Content-Type', '内容类型', 'application/json 等'],
-      ['MIME type', 'MIME 类型', '描述文件格式的标识'],
-      ['Cache-Control', '缓存控制', '响应能缓存多久的指令'],
-      ['ETag', '实体标签', '资源版本指纹,用于条件请求'],
-      ['Origin', '源', '协议+域名+端口'],
-      ['Same-origin', '同源', '三者都一样'],
-      ['User agent', '用户代理', '浏览器自我标识'],
-      ['Local storage', '本地存储', '浏览器持久 KV 存储'],
-      ['Session storage', '会话存储', '关页面就清的 KV'],
-      ['IndexedDB', '索引数据库', '浏览器里的结构化数据库'],
-      ['Service worker', '服务工人', '后台代理脚本,做缓存/推送'],
-      ['Web worker', 'Web 工人', '后台线程跑 JS,不卡 UI'],
-      ['PWA', '渐进式 Web 应用', '可装可离线的网页'],
-      ['Manifest', '清单', 'PWA 的元数据 JSON'],
-    ]
-  },
-  {
-    id: 'patterns', title: '模式与设计', terms: [
-      ['Singleton', '单例', '全局只有一个实例'],
-      ['Factory', '工厂', '专门负责造对象的函数/类'],
-      ['Observer', '观察者', '一对多通知机制'],
-      ['Pub/Sub', '发布订阅', '通过事件总线解耦'],
-      ['Adapter', '适配器', '让不兼容的接口能配合'],
-      ['Facade', '门面', '简化复杂子系统的统一接口'],
-      ['Strategy', '策略', '可替换的算法族'],
-      ['Decorator', '装饰器', '不改原对象给它加功能'],
-      ['Proxy', '代理', '替身控制对真对象的访问'],
-      ['DI', '依赖注入', '把依赖从外面传进来而非自己 new'],
-      ['IoC', '控制反转', '由框架决定调你的代码,而非反过来'],
-      ['Composition', '组合', '用小对象拼大对象,优于继承'],
-      ['Inheritance', '继承', '子类继承父类'],
-      ['MVC', '模型-视图-控制器', '经典三层分离'],
-      ['MVVM', '模型-视图-视图模型', '数据双向绑定的变体'],
-      ['DDD', '领域驱动设计', '围绕业务领域建模'],
-      ['CQRS', '命令查询职责分离', '读写分两套模型'],
-      ['Event sourcing', '事件溯源', '存事件流而非当前状态'],
-      ['SOLID', 'SOLID 原则', '5 条 OO 设计原则'],
-      ['DRY', '不要重复', "Don't Repeat Yourself"],
-      ['KISS', '保持简单', 'Keep It Simple, Stupid'],
-      ['YAGNI', '不会用就别加', "You Aren't Gonna Need It"],
-    ]
-  },
-  {
-    id: 'workflow', title: '工程与流程', terms: [
-      ['MVP', '最小可行产品', 'Minimum Viable Product'],
-      ['POC', '概念验证', 'Proof of Concept'],
-      ['Spike', '探针/技术预研', '快速试错验证可行性'],
-      ['Backlog', '待办积压', '未做的需求/任务列表'],
-      ['Sprint', '冲刺', 'Scrum 的一轮迭代'],
-      ['Standup', '站会', '每日短同步'],
-      ['Retro', '回顾会', 'Retrospective,迭代结束复盘'],
-      ['Kanban', '看板', '可视化任务流的方法'],
-      ['Feature flag', '功能开关', '运行时切换功能开关'],
-      ['A/B test', 'AB 测试', '两版本对比看哪个数据好'],
-      ['Code review', '代码评审', '同事过你的 PR'],
-      ['Pair programming', '结对编程', '两人共写一份代码'],
-      ['On-call', '值班', '轮值处理线上问题'],
-      ['Incident', '故障', '线上出问题的事件'],
-      ['Postmortem', '事后复盘', '故障后写的根因分析报告'],
-      ['Root cause', '根因', '问题的根本原因'],
-      ['Triage', '分诊', '按优先级筛 bug/工单'],
-      ['Spec', '规格说明', 'Specification,功能/接口设计文档'],
-      ['RFC', '征求意见稿', '提案文档,大家讨论后再做'],
-      ['Changelog', '变更日志', '版本变化记录'],
-      ['Semver', '语义化版本', 'MAJOR.MINOR.PATCH'],
-      ['Release', '发布', '正式对外的一个版本'],
-      ['Hotfix', '紧急修复', '直接打线上的补丁'],
     ]
   },
   {
@@ -1285,21 +906,6 @@ let total = 0;
 DATA.forEach(cat => { total += cat.terms.length; });
 totalCountEl.textContent = total;
 
-const GROUPS = [
-  { id: 'vibe-coding',         title: 'Vibe Coding' },
-  { id: 'nyc-global-center',  title: 'NYC Global Center' }
-];
-
-// auto-assign each cat to a group
-DATA.forEach(c => {
-  if (!c.group) c.group = (c.id === 'nyc-global-center') ? 'nyc-global-center' : 'vibe-coding';
-});
-
-function getGroupTermCount(groupId) {
-  return DATA.filter(c => c.group === groupId)
-    .reduce((sum, c) => sum + getMergedTerms(c).length, 0);
-}
-
 function renderCategorySection(cat) {
   const existing = document.getElementById('cat-' + cat.id);
   if (existing) existing.remove();
@@ -1307,10 +913,6 @@ function renderCategorySection(cat) {
   const section = document.createElement('section');
   section.id = 'cat-' + cat.id;
   section.dataset.cat = cat.id;
-  section.dataset.group = cat.group || 'vibe-coding';
-  const h2 = document.createElement('h2');
-  h2.innerHTML = '<span>' + cat.title + '</span><span class="count">' + merged.length + ' 个</span>';
-  section.appendChild(h2);
   const grid = document.createElement('div');
   grid.className = 'terms';
   merged.forEach(([en, zh, hint]) => {
@@ -1327,69 +929,31 @@ function renderCategorySection(cat) {
   return section;
 }
 
-// top nav: main groups only — click to switch tab
-function setActiveGroup(groupId) {
-  document.body.dataset.activeGroup = groupId;
+// Top nav: each DATA entry = a top-level tab. Click → switch active cat.
+function setActiveCat(catId) {
+  document.body.dataset.activeCat = catId;
   document.querySelectorAll('nav.cats a.group-link').forEach(a => {
-    a.classList.toggle('inactive', a.dataset.group !== groupId);
+    a.classList.toggle('inactive', a.dataset.cat !== catId);
   });
-  try { localStorage.setItem('glossary-active-group', groupId); } catch (e) {}
+  try { localStorage.setItem('glossary-active-cat', catId); } catch (e) {}
 }
 
-GROUPS.forEach(group => {
+DATA.forEach(cat => {
   const a = document.createElement('a');
   a.href = '#';
   a.className = 'group-link';
-  a.textContent = group.title + ' (' + getGroupTermCount(group.id) + ')';
-  a.dataset.group = group.id;
-  a.onclick = (e) => { e.preventDefault(); setActiveGroup(group.id); };
+  a.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
+  a.dataset.cat = cat.id;
+  a.onclick = (e) => { e.preventDefault(); setActiveCat(cat.id); };
   catsNav.appendChild(a);
-});
-
-// render each group: header + sub-cat chip nav + each subcategory
-GROUPS.forEach(group => {
-  const header = document.createElement('h2');
-  header.className = 'group-header';
-  header.id = 'group-' + group.id;
-  header.dataset.group = group.id;
-  header.innerHTML = '<span>' + group.title + '</span><span class="count">' + getGroupTermCount(group.id) + ' 个词 / ' +
-                     DATA.filter(c => c.group === group.id).length + ' 子类</span>';
-  main.insertBefore(header, noResults);
-
-  const subNav = document.createElement('nav');
-  subNav.className = 'sub-cats';
-  subNav.dataset.group = group.id;
-  DATA.filter(c => c.group === group.id).forEach(cat => {
-    const a = document.createElement('a');
-    a.href = '#cat-' + cat.id;
-    a.dataset.cat = cat.id;
-    a.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
-    subNav.appendChild(a);
-  });
-  main.insertBefore(subNav, noResults);
-
-  DATA.filter(c => c.group === group.id).forEach(cat => {
-    main.insertBefore(renderCategorySection(cat), noResults);
-  });
+  main.insertBefore(renderCategorySection(cat), noResults);
 });
 
 function updateCatNavCount(catId) {
   const cat = DATA.find(c => c.id === catId);
   if (!cat) return;
-  // update sub-cat link
-  const link = document.querySelector('nav.sub-cats a[data-cat="' + catId + '"]');
-  if (link) link.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
-  // update top-level group count
-  const group = GROUPS.find(g => g.id === cat.group);
-  if (group) {
-    const topLink = catsNav.querySelector('a[data-group="' + group.id + '"]');
-    if (topLink) topLink.textContent = group.title + ' (' + getGroupTermCount(group.id) + ')';
-    const groupHeader = document.getElementById('group-' + group.id);
-    if (groupHeader) {
-      const c = groupHeader.querySelector('.count');
-      if (c) c.textContent = getGroupTermCount(group.id) + ' 个词 / ' + DATA.filter(c => c.group === group.id).length + ' 子类';
-    }
-  }
+  const topLink = catsNav.querySelector('a[data-cat="' + catId + '"]');
+  if (topLink) topLink.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
 }
 
 function openAddTermForm(catId, btn) {
@@ -2034,7 +1598,7 @@ rebuildFavorites();
 updateDelToggle();
 
 // Set initial active group (restore from localStorage, default Vibe Coding)
-setActiveGroup(localStorage.getItem('glossary-active-group') || 'vibe-coding');
+setActiveCat(localStorage.getItem('glossary-active-cat') || 'vibe-coding');
 
 /* ============================================================
    跨标签 / iframe 同步 — 另一个 tab 改了 localStorage,这边自动跟上
