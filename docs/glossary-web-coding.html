@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Web Coding 名词表 · 中英对照</title>
+<title>Vibe Coding 名词表 · 中英对照</title>
 <style>
 :root {
   --accent: #1D9E75;
@@ -334,7 +334,7 @@ footer {
 <header>
   <div class="header-inner">
     <div class="title-row">
-      <h1>Web Coding <span class="accent">名词表</span> · 中英对照</h1>
+      <h1>Vibe Coding <span class="accent">名词表</span> · 中英对照</h1>
       <div style="display:flex;gap:6px;">
         <button class="deleted-toggle" id="delToggle">回收站 0</button>
         <button class="theme-toggle" id="themeBtn">🌙 暗色</button>
@@ -966,13 +966,13 @@ DATA.forEach(cat => { total += cat.terms.length; });
 totalCountEl.textContent = total;
 
 const GROUPS = [
-  { id: 'web-coding',         title: 'Web Coding' },
+  { id: 'vibe-coding',         title: 'Vibe Coding' },
   { id: 'nyc-global-center',  title: 'NYC Global Center' }
 ];
 
 // auto-assign each cat to a group
 DATA.forEach(c => {
-  if (!c.group) c.group = (c.id === 'nyc-global-center') ? 'nyc-global-center' : 'web-coding';
+  if (!c.group) c.group = (c.id === 'nyc-global-center') ? 'nyc-global-center' : 'vibe-coding';
 });
 
 function getGroupTermCount(groupId) {
