@@ -393,6 +393,24 @@ section h2 .count {
   cursor: pointer; font-family: inherit; letter-spacing: 1px;
 }
 .sentence-ai:hover { opacity: 0.88; }
+.sentence-ai:disabled { opacity: 0.5; cursor: wait; }
+.ai-comment {
+  background: linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(99,102,241,0.08) 100%);
+  border-left: 3px solid #a855f7;
+  padding: 6px 10px;
+  border-radius: 0 4px 4px 0;
+  color: #6b21a8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ab-label.ai {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  color: #fff;
+}
+.ab-text.ai-ref {
+  color: #6b21a8;
+  font-weight: 500;
+}
 .add-term-btn {
   background: rgba(29,158,117,0.06);
   border: 1px dashed var(--accent);
@@ -1856,9 +1874,88 @@ main.addEventListener('click', e => {
     return;
   }
 
-  // AI Agent 评分(占位 — 等 Edge Function 接通)
+  // AI Agent 评分 — Supabase Edge Function (Gemini 2.5 Flash)
   if (action === 'ai-grade') {
-    alert('🤖 AI Agent 评分功能开发中\n\n规划:Supabase Edge Function + Gemini Flash\n输入:你的翻译 + 目标词 + 模板\n输出:AI 评分 + 修正建议 + 语法点评\n\n暂用启发式评分(✓ 检查并记下),AI 评分待接通后立即上线');
+    const ta = container.querySelector('[name=sentence-input]');
+    if (!ta) return;
+    const sentence = ta.value.trim();
+    if (!sentence) { alert('先写一句翻译再让 AI 评分'); ta.focus(); return; }
+    const promptEl = container.querySelector('.sentence-prompt');
+    const tplIdx = promptEl ? (parseInt(promptEl.dataset.tpl, 10) || 0) : 0;
+    const d = getTermData(catId, en);
+    const pair = SENTENCE_BANK[tplIdx];
+    const tpl = Array.isArray(pair) ? pair[0] : pair;
+    const promptText = tpl.replace(/\{zh\}/g, d.zh || en);
+    const reference = getReferenceAnswer(tplIdx, en);
+
+    const SUPABASE_URL = 'https://qjnagbzqhoansixqharb.supabase.co';
+    const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqbmFnYnpxaG9hbnNpeHFoYXJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDIxODIsImV4cCI6MjA5MzkxODE4Mn0.GpMUVTk6JvqeciXagXQiJunc8TLFMHg3_b9reIjJ2Y8';
+
+    const origText = btn.textContent;
+    btn.textContent = '🤖 评分中…';
+    btn.disabled = true;
+    const feedbackEl = container.querySelector('[data-role="sentence-feedback"]');
+    if (feedbackEl) { feedbackEl.style.display = 'flex'; feedbackEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;">🤖 AI 正在评分,5-10s…</div>'; }
+
+    fetch(SUPABASE_URL + '/functions/v1/glossary-grade', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': 'Bearer ' + ANON_KEY,
+        'apikey': ANON_KEY,
+      },
+      body: JSON.stringify({
+        sentence: sentence,
+        target_en: en,
+        target_zh: d.zh || '',
+        prompt: promptText,
+        reference: reference,
+      }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      btn.textContent = origText;
+      btn.disabled = false;
+      if (!data || data.error) {
+        if (feedbackEl) feedbackEl.innerHTML = '<div style="color:#ef4444;font-size:12px;">AI 评分失败: ' + escapeHtml((data && data.error) || '未知错误') + '</div>';
+        return;
+      }
+      // 把 AI 结果存到 sentences 历史(便于后续查看)
+      const existing = state.edits[id] || {};
+      const sentences = Array.isArray(existing.sentences) ? existing.sentences.slice() : [];
+      const recent = sentences[0];
+      const recentText = typeof recent === 'string' ? recent : ((recent && recent.text) || '');
+      if (recentText !== sentence) {
+        sentences.unshift({ text: sentence, score: data.score, rank: data.rank, ai: true, corrected: data.corrected, feedback: data.feedback, time: Date.now() });
+        state.edits[id] = Object.assign({}, existing, { sentences });
+        save();
+        const past = container.querySelector('[data-role="past-sentences"]');
+        if (past) past.innerHTML = sentences.map((s, i) => renderPastSentenceHtml(s, i)).join('');
+      }
+      // Render AI feedback
+      if (feedbackEl) {
+        const notes = (data.grammar_notes || []).map(n =>
+          '<li class="r-tip">' + escapeHtml(n) + '</li>'
+        ).join('');
+        feedbackEl.innerHTML =
+          '<div class="fb-row">' +
+            '<span class="sentence-rank r-' + String(data.rank).toLowerCase() + '">' + escapeHtml(data.rank) + '</span>' +
+            '<span class="sentence-score">🤖 ' + data.score + ' 分 · AI 评分</span>' +
+          '</div>' +
+          (data.feedback ? '<div class="ai-comment">' + escapeHtml(data.feedback) + '</div>' : '') +
+          (notes ? '<ul class="sentence-reasons">' + notes + '</ul>' : '') +
+          '<div class="ab-compare">' +
+            '<div class="ab-row"><span class="ab-label">你的</span><span class="ab-text">' + escapeHtml(sentence) + '</span></div>' +
+            (data.corrected ? '<div class="ab-row"><span class="ab-label ai">AI 修正</span><span class="ab-text ai-ref">' + escapeHtml(data.corrected) + '</span><button class="speak-sentence ab-speak" data-action="speak-ref" title="朗读修正版">🔊</button></div>' : '') +
+            (reference ? '<div class="ab-row"><span class="ab-label ref">模板答案</span><span class="ab-text ref">' + escapeHtml(reference) + '</span><button class="speak-sentence ab-speak" data-action="speak-ref" title="朗读模板答案">🔊</button></div>' : '') +
+          '</div>';
+      }
+    })
+    .catch(e => {
+      btn.textContent = origText;
+      btn.disabled = false;
+      if (feedbackEl) feedbackEl.innerHTML = '<div style="color:#ef4444;font-size:12px;">AI 评分失败: ' + escapeHtml(String(e.message || e)) + '</div>';
+    });
     return;
   }
 
