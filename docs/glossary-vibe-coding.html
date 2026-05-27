@@ -56,7 +56,7 @@ h1 {
   white-space: nowrap;
 }
 h1 .accent { color: var(--accent); }
-.theme-toggle, .deleted-toggle {
+.theme-toggle {
   background: none; border: 1px solid var(--border);
   color: var(--text); padding: 3px 8px;
   border-radius: 5px; cursor: pointer;
@@ -96,10 +96,9 @@ nav.cats a.group-link.inactive {
   color: var(--accent);
   border-color: var(--accent);
 }
-/* Tab 切换 — 顶层 tab 互斥显示 */
+/* Tab 切换 — 顶层 tab 互斥显示 (通用,新增 DATA 条目无需改 CSS) */
 section[data-cat] { display: none; }
-body[data-active-cat="vibe-coding"] section[data-cat="vibe-coding"],
-body[data-active-cat="nyc-global-center"] section[data-cat="nyc-global-center"] { display: block; }
+section[data-cat].active-cat { display: block; }
 section[data-cat].empty { display: none !important; }
 
 main {
@@ -541,27 +540,10 @@ section h2 .count {
 }
 .term.hidden-search { display: none; }
 .term.is-deleted { display: none; }
-body.show-deleted .term.is-deleted:not(.hidden-search) {
-  display: block; opacity: 0.5; background: var(--bg);
-}
-body.show-deleted .term.is-deleted::after {
-  content: '已删除'; position: absolute; top: 8px; right: 60px;
-  font-size: 10px; color: var(--text-dim);
-  background: var(--border); padding: 2px 6px; border-radius: 3px;
-}
 section.empty { display: none; }
 section#favorites { display: none; }
 section#favorites.show { display: block; }
 section#favorites h2 { color: #d97706; border-bottom-color: #f59e0b66; }
-.deleted-toggle {
-  display: none;
-  background: none; border: 1px dashed var(--border);
-  color: var(--text-dim); padding: 4px 10px;
-  border-radius: 6px; cursor: pointer;
-  font-size: 12px; font-family: inherit;
-}
-.deleted-toggle.show { display: inline-block; }
-.deleted-toggle.is-on { background: var(--accent-soft); border-style: solid; border-color: var(--accent); color: var(--accent); }
 .no-results {
   text-align: center; padding: 40px 20px;
   color: var(--text-dim); font-size: 14px;
@@ -575,7 +557,7 @@ footer {
 }
 @media print {
   header { position: static; }
-  .search, nav.cats, .theme-toggle, .deleted-toggle, .term .actions { display: none; }
+  .search, nav.cats, .theme-toggle, .term .actions { display: none; }
   .term { break-inside: avoid; box-shadow: none; }
   .term.is-deleted { display: none !important; }
   section { break-inside: avoid-page; }
@@ -589,7 +571,6 @@ footer {
     <div class="title-row">
       <h1>Vibe Coding <span class="accent">名词表</span> · 中英对照</h1>
       <div style="display:flex;gap:6px;">
-        <button class="deleted-toggle" id="delToggle">回收站 0</button>
         <button class="theme-toggle" id="themeBtn">🌙 暗色</button>
       </div>
     </div>
@@ -668,6 +649,20 @@ const DATA = [
     ]
   },
   {
+    id: 'claude-code', title: 'Claude Code', terms: [
+      ['Plan mode', '计划模式', 'Read-only 规划阶段 — Claude 探索代码、写 plan 文件,需用户批准后才能改文件'],
+      ['/init', '初始化', '让 Claude 扫描项目生成 CLAUDE.md(项目级持久指令)'],
+      ['/compact', '压缩上下文', '对话太长 token 紧张时,把历史摘要压缩成短上下文继续跑'],
+      ['/resume', '继续会话', '恢复上次中断的 Claude Code 会话,带原 context'],
+      ['/clear', '清屏', '清掉当前 context 重新开始一段对话'],
+      ['CLAUDE.md', 'Claude 指令文件', '放项目根目录的持久指令,Claude 每次启动自动读取'],
+      ['MCP', 'Model Context Protocol', 'Claude/Cursor 共用的扩展工具协议 — 接外部 API/数据库/服务'],
+      ['Subagent', '子 agent', '把独立任务委派给隔离的 sub-Claude 跑,主对话不被污染'],
+      ['Hook', '钩子', '工具调用前后自动跑的命令(PreToolUse/PostToolUse/Stop 等)'],
+      ['Worktree', '隔离工作树', 'Git worktree 让 agent 在独立分支上跑,不污染主分支'],
+    ]
+  },
+  {
     id: 'nyc-global-center', title: 'NYC Global Center', terms: [
       // 你在英文课里常用的单词加到这里 — 也可以直接在页面上点 "+ 加词" 按钮加,会存在浏览器本地
     ]
@@ -682,14 +677,11 @@ const totalCountEl = document.getElementById('totalCount');
 const favSection = document.getElementById('favorites');
 const favGrid = document.getElementById('favoritesGrid');
 const favCountEl = document.getElementById('favCount');
-const delToggle = document.getElementById('delToggle');
-
 const state = {
   favorites: new Set(JSON.parse(localStorage.getItem('glossary-favorites') || '[]')),
   deleted: new Set(JSON.parse(localStorage.getItem('glossary-deleted') || '[]')),
   edits: JSON.parse(localStorage.getItem('glossary-edits') || '{}'),
   userTerms: JSON.parse(localStorage.getItem('glossary-user-terms') || '{}'),
-  showDeleted: localStorage.getItem('glossary-show-deleted') === '1',
   query: ''
 };
 
@@ -698,7 +690,6 @@ function save() {
   localStorage.setItem('glossary-deleted', JSON.stringify([...state.deleted]));
   localStorage.setItem('glossary-edits', JSON.stringify(state.edits));
   localStorage.setItem('glossary-user-terms', JSON.stringify(state.userTerms));
-  localStorage.setItem('glossary-show-deleted', state.showDeleted ? '1' : '0');
 }
 
 function getMergedTerms(cat) {
@@ -775,7 +766,6 @@ function renderCardContent(card) {
   card.classList.toggle('is-edited', d.edited);
   card.classList.toggle('is-user', isUserTerm(catId, en));
   const isFav = state.favorites.has(id);
-  const isDel = state.deleted.has(id);
   card.innerHTML =
     '<div class="head">' +
       '<code class="en">' + escapeHtml(d.en) + '</code>' +
@@ -786,7 +776,7 @@ function renderCardContent(card) {
         '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">▶</button>' +
         '<button class="fav' + (isFav ? ' is-on' : '') + '" data-action="fav" title="' + (isFav ? '取消收藏' : '收藏置顶') + '" aria-label="收藏">★</button>' +
         '<button class="edit" data-action="edit" title="编辑/加罗马注音笔记" aria-label="编辑">✎</button>' +
-        '<button class="del' + (isDel ? ' is-undo' : '') + '" data-action="del" title="' + (isDel ? '恢复' : '删除') + '" aria-label="删除">' + (isDel ? '↺' : '✕') + '</button>' +
+        '<button class="del" data-action="del" title="删除" aria-label="删除">✕</button>' +
       '</div>' +
     '</div>' +
     (d.hint ? '<div class="hint">' + escapeHtml(d.hint) + '</div>' : '') +
@@ -912,6 +902,9 @@ function renderCategorySection(cat) {
 // Top nav: each DATA entry = a top-level tab. Click → switch active cat.
 function setActiveCat(catId) {
   document.body.dataset.activeCat = catId;
+  document.querySelectorAll('section[data-cat]').forEach(s => {
+    s.classList.toggle('active-cat', s.dataset.cat === catId);
+  });
   document.querySelectorAll('nav.cats a.group-link').forEach(a => {
     a.classList.toggle('inactive', a.dataset.cat !== catId);
   });
@@ -992,14 +985,14 @@ function applySearch() {
   document.querySelectorAll('section[data-cat]').forEach(sec => {
     const any = [...sec.querySelectorAll('.term')].some(t =>
       !t.classList.contains('hidden-search') &&
-      (!t.classList.contains('is-deleted') || state.showDeleted)
+      !t.classList.contains('is-deleted')
     );
     sec.classList.toggle('empty', !any);
   });
   if (favSection.classList.contains('show')) {
     const any = [...favGrid.querySelectorAll('.term')].some(t =>
       !t.classList.contains('hidden-search') &&
-      (!t.classList.contains('is-deleted') || state.showDeleted)
+      !t.classList.contains('is-deleted')
     );
     favSection.classList.toggle('empty-search', !any && q);
     if (!any && q) favSection.style.display = 'none';
@@ -1008,13 +1001,7 @@ function applySearch() {
   noResults.classList.toggle('show', visible === 0 && q.length > 0);
 }
 
-function updateDelToggle() {
-  const n = state.deleted.size;
-  delToggle.textContent = (state.showDeleted ? '隐藏回收站 ' : '回收站 ') + n;
-  delToggle.classList.toggle('show', n > 0);
-  delToggle.classList.toggle('is-on', state.showDeleted);
-  document.body.classList.toggle('show-deleted', state.showDeleted);
-}
+function updateDelToggle() { /* 回收站 UI 已移除 — 删除即硬删除,此函数保留为空 stub 防外部调用 */ }
 
 /* ============================================================
    PRACTICE MODE — inline mini-game per card
@@ -1551,15 +1538,19 @@ main.addEventListener('click', e => {
   if (action === 'fav') {
     if (state.favorites.has(id)) state.favorites.delete(id);
     else state.favorites.add(id);
+    save();
+    syncCardsById(id);
+    rebuildFavorites();
+    applySearch();
   } else if (action === 'del') {
-    if (state.deleted.has(id)) state.deleted.delete(id);
-    else state.deleted.add(id);
+    // 硬删除:从 state 持久化 + 立即从 DOM 移除所有副本(主分类 + 收藏区)
+    state.deleted.add(id);
+    state.favorites.delete(id);
+    save();
+    document.querySelectorAll('.term[data-id="' + CSS.escape(id) + '"]').forEach(t => t.remove());
+    rebuildFavorites();
+    applySearch();
   }
-  save();
-  syncCardsById(id);
-  rebuildFavorites();
-  updateDelToggle();
-  applySearch();
 });
 
 search.addEventListener('input', e => {
@@ -1567,15 +1558,7 @@ search.addEventListener('input', e => {
   applySearch();
 });
 
-delToggle.addEventListener('click', () => {
-  state.showDeleted = !state.showDeleted;
-  save();
-  updateDelToggle();
-  applySearch();
-});
-
 rebuildFavorites();
-updateDelToggle();
 
 // Set initial active group (restore from localStorage, default Vibe Coding)
 setActiveCat(localStorage.getItem('glossary-active-cat') || 'vibe-coding');
@@ -1588,7 +1571,6 @@ function reloadFromStorage() {
   state.deleted = new Set(JSON.parse(localStorage.getItem('glossary-deleted') || '[]'));
   state.edits = JSON.parse(localStorage.getItem('glossary-edits') || '{}');
   const newUserTerms = JSON.parse(localStorage.getItem('glossary-user-terms') || '{}');
-  state.showDeleted = localStorage.getItem('glossary-show-deleted') === '1';
   // Rebuild categories whose user terms changed
   DATA.forEach(cat => {
     const oldArr = state.userTerms[cat.id] || [];
