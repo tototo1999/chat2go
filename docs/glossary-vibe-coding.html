@@ -1290,7 +1290,8 @@ function applySearch() {
       !t.classList.contains('hidden-search') &&
       !t.classList.contains('is-deleted')
     );
-    sec.classList.toggle('empty', !any);
+    // 只在有搜索 query 且无匹配时标 empty,平时空类目要显示出来(给 + 加词 按钮留位置)
+    sec.classList.toggle('empty', !any && !!q);
   });
   if (favSection.classList.contains('show')) {
     const any = [...favGrid.querySelectorAll('.term')].some(t =>
