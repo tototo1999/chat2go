@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>W00000W·AI 冰箱贴 🎈 温暖又有趣的家庭多模态智能终端</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700;800&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-cream: #fefaf4;
+    --coffee-dark: #292524;
+    --coffee-medium: #57534e;
+    --coffee-light: #78716c;
+    
+    /* Dopamine Bright Candies */
+    --dopa-pink: #f472b6;
+    --dopa-pink-light: #fce7f3;
+    --dopa-pink-shadow: rgba(244, 114, 182, 0.4);
+    
+    --dopa-orange: #fb923c;
+    --dopa-orange-light: #ffedd5;
+    
+    --dopa-yellow: #facc15;
+    --dopa-yellow-light: #fef9c3;
+    
+    --dopa-green: #34d399;
+    --dopa-green-light: #d1fae5;
+    
+    --dopa-blue: #38bdf8;
+    --dopa-blue-light: #e0f2fe;
+    --dopa-blue-shadow: rgba(56, 189, 248, 0.4);
+    
+    --dopa-purple: #c084fc;
+    --dopa-purple-light: #f3e8ff;
+    
+    --border-chunky: 3px solid #292524;
+    
+    /* Claymorphism & Friendly shadows */
+    --shadow-chunky: 4px 4px 0px #292524;
+    --shadow-chunky-hover: 8px 8px 0px #292524;
+    --shadow-soft: 0 10px 25px rgba(41, 37, 36, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--bg-cream);
+    color: var(--coffee-dark);
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Cozy background wavy shape */
+  .bg-blob {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--dopa-pink-light) 0%, transparent 70%);
+    top: -200px; right: -100px;
+    z-index: -1; pointer-events: none;
+    opacity: 0.7;
+  }
+  .bg-blob-left {
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, var(--dopa-blue-light) 0%, transparent 70%);
+    top: 400px; left: -150px;
+    z-index: -1; pointer-events: none;
+    opacity: 0.7;
+  }
+
+  /* Joyful Nav Bar */
+  nav {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(254, 250, 244, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: var(--border-chunky);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--coffee-dark);
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none;
+  }
+  .nav-brand span.logo-bubble {
+    background: var(--dopa-pink);
+    color: #ffffff;
+    padding: 2px 10px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    border: 2px solid var(--coffee-dark);
+  }
+  .nav-links { display: flex; gap: 28px; font-size: 15px; font-weight: 700; font-family: 'Fredoka', sans-serif; }
+  .nav-links a {
+    color: var(--coffee-medium); text-decoration: none;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover {
+    color: var(--dopa-pink);
+    transform: translateY(-1px);
+  }
+  .nav-status {
+    background: var(--dopa-green-light);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: 'Fredoka', sans-serif; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .status-dot-pulse {
+    width: 8px; height: 8px;
+    background-color: var(--dopa-green);
+    border-radius: 50%;
+    animation: bubble-scale 2s infinite ease-in-out;
+  }
+  @keyframes bubble-scale {
+    0%, 100% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+  }
+
+  /* Cheerful Hero Section */
+  .hero {
+    padding: 100px 24px 60px;
+    text-align: center;
+    position: relative;
+  }
+  .eyebrow-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--dopa-yellow-light);
+    border: 2px solid var(--coffee-dark);
+    padding: 6px 16px; border-radius: 999px;
+    margin-bottom: 24px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 13px;
+  }
+  h1 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(38px, 6vw, 72px);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    color: var(--coffee-dark);
+  }
+  h1 span.hl {
+    color: var(--dopa-pink);
+    position: relative;
+    display: inline-block;
+  }
+  h1 span.hl::after {
+    content: ""; position: absolute;
+    width: 100%; height: 8px;
+    background: var(--dopa-yellow);
+    bottom: 6px; left: 0; z-index: -1;
+    border-radius: 4px;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 2.2vw, 22px);
+    font-weight: 400;
+    color: var(--coffee-medium);
+    max-width: 800px; margin: 0 auto 44px;
+    line-height: 1.5;
+  }
+  .hero-sub code {
+    background: var(--dopa-blue-light);
+    color: var(--coffee-dark);
+    padding: 1px 6px; border-radius: 6px;
+    font-family: 'Quicksand', monospace; font-size: 0.9em;
+    border: 2px dashed var(--dopa-blue);
+  }
+  
+  /* Bouncy Dopamine Buttons */
+  .btn-dopa {
+    display: inline-block;
+    padding: 14px 36px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px; font-weight: 700;
+    text-decoration: none;
+    border-radius: 999px;
+    border: var(--border-chunky);
+    box-shadow: var(--shadow-chunky);
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    margin: 8px;
+  }
+  .btn-dopa:hover {
+    transform: translateY(-4px) scale(1.02) rotate(1deg);
+    box-shadow: var(--shadow-chunky-hover);
+  }
+  .btn-dopa:active {
+    transform: translateY(2px) scale(0.98);
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .btn-dopa-pink { background: var(--dopa-pink); color: #ffffff; }
+  .btn-dopa-cream { background: #ffffff; color: var(--coffee-dark); }
+  
+  .tech-pills {
+    display: flex; gap: 10px; justify-content: center;
+    flex-wrap: wrap; margin-top: 32px;
+  }
+  .tech-pill {
+    font-family: 'Fredoka', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--coffee-medium);
+    background: #ffffff;
+    border: 2px solid var(--coffee-dark);
+    padding: 6px 16px; border-radius: 999px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+
+  /* --------------------------------------------- */
+  /* Cozy Soft Kitchen Fridge & Interactive Magnet */
+  /* --------------------------------------------- */
+  .kitchen-stage {
+    max-width: 1100px; margin: 60px auto 0;
+    display: grid;
+    grid-template-columns: 0.95fr 1.05fr;
+    gap: 48px;
+    padding: 0 24px;
+    align-items: center;
+  }
+  
+  /* Left Panel: Simulated Kitchen Fridge Door Container */
+  .fridge-wall {
+    display: flex; justify-content: center; align-items: center;
+    padding: 30px 10px;
+    background: #fffbeb; /* Warm brick wall color */
+    border: var(--border-chunky);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-chunky);
+    position: relative;
+    height: 540px;
+  }
+  .fridge-wall::before {
+    content: "🏡 OUR KITCHEN FRIDGE";
+    position: absolute; top: 12px; left: 20px;
+    font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 700;
+    color: var(--coffee-light); letter-spacing: 0.05em;
+  }
+  
+  /* Mint Pastel Fridge Door Mockup - Perfectly Proportioned */
+  .fridge-door {
+    width: 340px; height: 460px;
+    background: #ccfbf1; /* Pastel mint green fridge */
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-chunky), inset -6px -6px 0 rgba(0, 0, 0, 0.05);
+    position: relative;
+    display: flex; flex-direction: column;
+    padding: 24px 16px;
+  }
+  .fridge-handle {
+    position: absolute; left: 14px; top: 130px; width: 14px; height: 180px;
+    background: #ffffff; border: var(--border-chunky);
+    border-radius: 8px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    z-index: 5;
+  }
+
+  /* 2x2 Magnet Grid Container */
+  .magnet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-left: 20px; /* Offset for left handle */
+    flex: 1;
+    align-content: center;
+    justify-items: center;
+  }
+
+  /* Smart Refrigerator Magnet Mockup (Claymorphism style) - Perfectly Scaled */
+  .fridge-magnet {
+    width: 120px; height: 120px;
+    border: 2px solid var(--coffee-dark);
+    padding: 8px;
+    display: flex; flex-direction: column;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--coffee-dark), inset -2px -2px 0 rgba(0,0,0,0.06);
+  }
+  .fridge-magnet:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 4px 4px 0 var(--coffee-dark);
+  }
+  .fridge-magnet.active {
+    border-color: var(--dopa-pink);
+    box-shadow: 4px 4px 0 var(--dopa-pink);
+    transform: scale(1.06) rotate(1deg);
+  }
+  
+  /* Shape Customizer Classes - Girls: circle, Boys: square, Agent: rounded */
+  .shape-circle {
+    border-radius: 50%;
+  }
+  .shape-circle .magnet-window {
+    border-radius: 50%;
+    padding: 10px;
+  }
+  .shape-circle .magnet-lens {
+    top: 5px;
+  }
+  .shape-square {
+    border-radius: 12px;
+  }
+  .shape-square .magnet-window {
+    border-radius: 6px;
+  }
+  .shape-rounded {
+    border-radius: 20px;
+  }
+  .shape-rounded .magnet-window {
+    border-radius: 10px;
+  }
+  
+  /* Hardware parts */
+  .magnet-lens {
+    width: 6px; height: 6px;
+    background: var(--coffee-dark); border-radius: 50%;
+    position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  }
+  
+  /* Cute Smart Screen Window */
+  .magnet-window {
+    flex: 1;
+    background: #ffffff;
+    border: 1.5px solid var(--coffee-dark);
+    margin-top: 8px;
+    padding: 6px;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Display Output cards */
+  .screen-card-box {
+    display: flex; width: 100%; height: 100%;
+    flex-direction: column; justify-content: center; align-items: center;
+    text-align: center;
+  }
+  
+  .card-emoji { font-size: 20px; margin-bottom: 2px; }
+  .card-msg {
+    font-size: 8px; font-weight: 800; color: var(--coffee-dark);
+    line-height: 1.25;
+    word-break: keep-all;
+  }
+  .card-subtext {
+    font-size: 7px; color: var(--coffee-light); font-weight: 500;
+    margin-top: 2px;
+  }
+  
+  /* Speaker lines at bottom */
+  .magnet-grill {
+    display: flex; gap: 2px; justify-content: center;
+    margin-top: 4px;
+  }
+  .grill-dot { width: 2px; height: 2px; background: var(--coffee-dark); border-radius: 50%; }
+
+  /* Right Panel: Lab & Controls */
+  .lab-card {
+    background: #ffffff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    padding: 36px 32px;
+    box-shadow: var(--shadow-chunky);
+    position: relative;
+  }
+  .lab-card::before {
+    content: "🎨 CUSTOMIZE_LAB";
+    position: absolute; top: -11px; right: 24px;
+    background: var(--bg-cream);
+    padding: 0 8px;
+    font-family: 'Fredoka', sans-serif; font-size: 11px; font-weight: 700;
+    color: var(--dopa-pink);
+  }
+  .lab-title {
+    font-family: 'Fredoka', sans-serif; font-size: 24px; font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .lab-desc { color: var(--coffee-light); font-size: 15px; margin-bottom: 28px; }
+
+  .ctrl-label {
+    font-family: 'Fredoka', sans-serif; font-size: 14px; font-weight: 700;
+    text-transform: uppercase; color: var(--coffee-medium);
+    margin-bottom: 12px; display: block;
+  }
+  
+  /* Color theme picker chips */
+  .palette-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 28px; }
+  .color-chip {
+    padding: 8px 16px;
+    background: #ffffff;
+    border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    font-family: 'Fredoka', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .color-chip::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--coffee-dark);
+  }
+  
+  .chip-pink::before { background: var(--dopa-pink); }
+  .chip-green::before { background: var(--dopa-green); }
+  .chip-yellow::before { background: var(--dopa-yellow); }
+  .chip-blue::before { background: var(--dopa-blue); }
+  .chip-purple::before { background: var(--dopa-purple); }
+  
+  .color-chip.active {
+    background: var(--coffee-dark);
+    color: #ffffff;
+    transform: translateY(-2px);
+  }
+
+  /* Cute Member Avatars switcher */
+  .avatar-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .av-btn {
+    padding: 10px 8px;
+    background: #ffffff;
+    border: 2px solid var(--coffee-dark);
+    border-radius: 12px;
+    cursor: pointer; text-align: center;
+    transition: all 0.2s;
+    font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .av-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 var(--coffee-dark);
+  }
+  .av-btn.active {
+    background: var(--dopa-pink-light);
+    border-color: var(--dopa-pink);
+    color: var(--coffee-dark);
+    box-shadow: 3px 3px 0 var(--dopa-pink);
+  }
+  .av-emoji { font-size: 22px; display: block; margin-bottom: 2px; }
+
+  /* --------------------------------------------- */
+  /* Specs Section                                 */
+  /* --------------------------------------------- */
+  section { padding: 100px 24px; position: relative; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+  .section-alt { background-color: var(--dopa-blue-light); border-top: var(--border-chunky); border-bottom: var(--border-chunky); }
+  
+  h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(28px, 4.5vw, 48px);
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--coffee-medium);
+    max-width: 720px; margin: 0 auto 60px;
+    text-align: center; line-height: 1.6;
+  }
+
+  /* --------------------------------------------- */
+  /* Connections & Paradigm                        */
+  /* --------------------------------------------- */
+  .paradigm-pipeline {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 820px;
+    margin: 40px auto 0;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .pipeline-step {
+    background: #ffffff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    width: 200px;
+    text-align: center;
+    box-shadow: var(--shadow-chunky);
+    position: relative;
+    transition: all 0.2s;
+  }
+  .pipeline-step:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-chunky-hover);
+  }
+  .pipeline-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .pipeline-lbl {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--coffee-dark);
+  }
+  .pipeline-arrow {
+    font-size: 28px;
+    color: var(--dopa-pink);
+    font-weight: bold;
+    animation: bounce-arrow 1.5s infinite;
+  }
+  @keyframes bounce-arrow {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(8px); }
+  }
+  @media (max-width: 768px) {
+    .pipeline-arrow { transform: rotate(90deg); }
+    @keyframes bounce-arrow {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(8px); }
+    }
+  }
+
+  /* --------------------------------------------- */
+  /* Toybox CLI Whiteboard Simulator               */
+  /* --------------------------------------------- */
+  .cli-board-section {
+    max-width: 780px; margin: 40px auto 0;
+  }
+  .whiteboard {
+    background: #ffffff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-chunky);
+  }
+  .board-header {
+    background: var(--dopa-yellow-light);
+    padding: 12px 24px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: var(--border-chunky);
+  }
+  .board-title { font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 15px; }
+  .board-deco-bubbles { display: flex; gap: 6px; }
+  .board-bubble { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--coffee-dark); }
+  .board-bubble.b1 { background: var(--dopa-pink); }
+  .board-bubble.b2 { background: var(--dopa-blue); }
+  .board-bubble.b3 { background: var(--dopa-green); }
+
+  .board-body {
+    padding: 24px; min-height: 180px;
+    font-size: 15px; color: var(--coffee-dark);
+    display: flex; flex-direction: column; gap: 14px;
+    background-image: 
+      linear-gradient(#f1f5f9 1px, transparent 1px),
+      linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  .board-prompt-line { display: flex; gap: 12px; align-items: center; justify-content: center; flex-direction: column; padding: 20px 0; }
+  
+  .btn-fly {
+    background: var(--dopa-pink);
+    color: #ffffff;
+    border: 3px solid var(--coffee-dark);
+    padding: 12px 32px; border-radius: 999px;
+    font-family: 'Fredoka', sans-serif; font-size: 18px; font-weight: 700;
+    cursor: pointer; box-shadow: 4px 4px 0 var(--coffee-dark);
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .btn-fly:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 5px 5px 0 var(--coffee-dark);
+  }
+
+  .board-simulation-stage {
+    display: none; flex-direction: column; gap: 8px;
+    border-top: 2px dashed rgba(41, 37, 36, 0.1);
+    padding-top: 14px;
+    align-items: center;
+    text-align: center;
+  }
+  .board-simulation-stage.active { display: flex; }
+  .sim-log-row { display: flex; gap: 10px; font-size: 14px; color: var(--coffee-dark); align-items: center; font-weight: 700; }
+  .sim-log-row.success { color: var(--dopa-green); font-weight: 700; font-size: 16px; }
+
+  /* Cheerful Circle progress loader */
+  .flying-loading {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Fredoka', sans-serif; font-weight: 600; color: var(--dopa-blue);
+  }
+  .bubble-spinner {
+    width: 20px; height: 20px;
+    border: 3px solid var(--dopa-blue-light);
+    border-top: 3px solid var(--dopa-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+
+  /* --------------------------------------------- */
+  /* Simplified Bouncy Examples Grid               */
+  /* --------------------------------------------- */
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 28px;
+    max-width: 1000px;
+    margin: 40px auto 0;
+  }
+  .example-card {
+    background: #ffffff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-chunky);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: all 0.2s;
+  }
+  .example-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-chunky-hover);
+  }
+  .example-visual {
+    height: 160px;
+    border-radius: 12px;
+    border: 2px solid var(--coffee-dark);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-cream);
+    position: relative;
+    overflow: hidden;
+  }
+  .example-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--coffee-dark);
+  }
+  pre.example-code {
+    font-family: 'Quicksand', monospace;
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--coffee-dark);
+    color: #ffffff;
+    padding: 14px;
+    border-radius: 10px;
+    border: 2px solid var(--coffee-dark);
+    overflow-x: auto;
+    margin: 0;
+    text-align: left;
+  }
+  .code-cmt { color: #f59e0b; font-style: italic; }
+  .code-key { color: var(--dopa-pink); font-weight: 700; }
+  .code-str { color: var(--dopa-green); font-weight: 700; }
+  .code-acc { color: var(--dopa-blue); font-weight: 700; }
+
+  /* --------------------------------------------- */
+  /* Joyful Family Rooms Grid                      */
+  /* --------------------------------------------- */
+  .rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 56px;
+  }
+  .room-cute-card {
+    background: #ffffff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    padding: 32px 24px;
+    box-shadow: var(--shadow-chunky);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+  }
+  .room-cute-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-chunky-hover);
+  }
+  .room-cute-card.primary {
+    background: var(--dopa-pink-light);
+    border-color: var(--dopa-pink);
+  }
+  .room-cute-icon { font-size: 36px; margin-bottom: 14px; display: block; }
+  .room-cute-title { font-family: 'Fredoka', sans-serif; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .room-cute-desc { font-size: 14px; color: var(--coffee-medium); line-height: 1.5; }
+  .room-cute-meta {
+    font-family: 'Fredoka', sans-serif; font-size: 11px; color: var(--dopa-blue);
+    margin-top: 14px; font-weight: 600; text-transform: uppercase;
+  }
+
+  /* Comparison Grid Board */
+  .cute-scoreboard {
+    margin-top: 48px;
+    background: #ffffff;
+    border-radius: var(--radius-md);
+    border: var(--border-chunky);
+    overflow: hidden;
+    box-shadow: var(--shadow-chunky);
+  }
+  .scoreboard-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    padding: 20px 24px;
+    border-bottom: var(--border-chunky);
+    align-items: center;
+    font-size: 15px;
+  }
+  .scoreboard-row:last-child { border-bottom: none; }
+  .scoreboard-row.head {
+    background: var(--dopa-yellow-light);
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 14px;
+    color: var(--coffee-dark); text-transform: uppercase;
+  }
+  .scoreboard-row.head .wow { color: var(--dopa-pink); }
+  .scoreboard-row .wow { font-weight: 700; color: var(--coffee-dark); }
+  .scoreboard-row .other { color: var(--coffee-light); }
+
+  /* Final CTA */
+  .dopa-cta-final {
+    background: var(--dopa-yellow-light);
+    border-top: var(--border-chunky);
+    border-bottom: var(--border-chunky);
+    text-align: center;
+    padding: 100px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .dopa-cta-final h2 {
+    font-family: 'Fredoka', sans-serif; font-size: clamp(32px, 5.5vw, 60px);
+    color: var(--coffee-dark);
+    margin-bottom: 12px;
+  }
+
+  footer {
+    background: var(--bg-cream);
+    padding: 48px 24px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--coffee-light);
+  }
+  footer a {
+    color: var(--coffee-medium); text-decoration: none; margin: 0 14px;
+    font-family: 'Fredoka', sans-serif; font-weight: 600;
+    transition: color 0.2s;
+  }
+  footer a:hover { color: var(--dopa-pink); }
+  
+  @media (max-width: 900px) {
+    .kitchen-stage { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding-top: 60px; }
+    .scoreboard-row { grid-template-columns: 1fr; gap: 6px; padding: 16px 20px; }
+    .scoreboard-row.head { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-blob"></div>
+<div class="bg-blob-left"></div>
+
+<!-- Cheerful Top Nav -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="nav-brand">
+      W00000W·AI <span class="logo-bubble">冰箱贴</span>
+    </a>
+    <div class="nav-links">
+      <a href="#lab">小工坊</a>
+      <a href="#paradigm">连接魔法</a>
+      <a href="#deploy">起飞演练</a>
+      <a href="#sdk">极简 SDK</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot-pulse"></span>
+      <span>124 个家庭智能体正在忙碌 🏡</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Cheerful Hero Header -->
+<header class="hero">
+  <div class="eyebrow-badge">
+    <span>✨ 温暖的家庭多模态智能体终端 ✨</span>
+  </div>
+  <h1>做家人爱用的<br><span class="hl">温情智能硬件</span> 🏡</h1>
+  <p class="hero-sub">在 Claude Code / Codex / Antigravity 写真正的代码，<code>wow deploy</code> 一键像蒲公英一样射向实体磁贴。把你的开发成果，变成真的摆在厨房里、墙壁上的温馨奖励。</p>
+  <div style="margin-bottom: 24px;">
+    <a href="#deploy" class="btn-dopa btn-dopa-pink">🎈 30秒起飞部署演练</a>
+    <a href="#lab" class="btn-dopa btn-dopa-cream">💖 去看我们的冰箱贴</a>
+  </div>
+  <div class="tech-pills">
+    <span class="tech-pill">👪 家人 + AI 同群聊</span>
+    <span class="tech-pill">🗣️ Speak2Go 智能纠音</span>
+    <span class="tech-pill">🎈 30秒热 OTA 载入</span>
+    <span class="tech-pill">🧸 全 MIT 开源硬件</span>
+  </div>
+</header>
+
+<!-- Soft Kitchen Fridge & Interactive Magnet Section -->
+<section id="lab" class="section-alt">
+  <div class="section-inner">
+    <h2>AI 智能体成为你的家庭新成员。</h2>
+    <p class="section-sub">通过小巧温馨的冰箱磁吸屏幕，把智能体和你的家人紧密聚在一个群聊中。这不仅是好玩的科技，更是流淌在每天厨房里的欢笑。</p>
+    
+    <div class="kitchen-stage">
+      
+      <!-- Left side: Warm kitchen brick wall and mint fridge -->
+      <div class="fridge-wall">
+        <div class="fridge-door">
+          <div class="fridge-handle"></div>
+          
+          <!-- 2x2 Magnet Grid -->
+          <div class="magnet-grid">
+            
+            <!-- Magnet 1: Mom's Strawberry Pink Magnet -->
+            <div class="fridge-magnet shape-circle active" id="mag-mom" onclick="selectMagnet('mom')" style="background: var(--dopa-pink-light); border-color: var(--dopa-pink); transform: rotate(-1deg);">
+              <div class="magnet-lens"></div>
+              <div class="magnet-window">
+                <div class="screen-card-box">
+                  <span class="card-emoji">👩</span>
+                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">📝 买点苹果 🍎<br>和纯牛奶~</div>
+                  <span class="card-subtext">妈妈</span>
+                </div>
+              </div>
+              <div class="magnet-grill">
+                <span class="grill-dot"></span><span class="grill-dot"></span><span class="grill-dot"></span>
+              </div>
+            </div>
+
+            <!-- Magnet 2: Dad's Honey Yellow Magnet -->
+            <div class="fridge-magnet shape-square" id="mag-dad" onclick="selectMagnet('dad')" style="background: var(--dopa-yellow-light); border-color: var(--dopa-yellow); transform: rotate(1deg);">
+              <div class="magnet-lens"></div>
+              <div class="magnet-window">
+                <div class="screen-card-box">
+                  <span class="card-emoji">👨</span>
+                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">🥩 今晚我下厨！<br>做红烧肉！</div>
+                  <span class="card-subtext">爸爸</span>
+                </div>
+              </div>
+              <div class="magnet-grill">
+                <span class="grill-dot"></span><span class="grill-dot"></span><span class="grill-dot"></span>
+              </div>
+            </div>
+
+            <!-- Magnet 3: Kid's Soda Blue Magnet -->
+            <div class="fridge-magnet shape-circle" id="mag-kid" onclick="selectMagnet('kid')" style="background: var(--dopa-blue-light); border-color: var(--dopa-blue); transform: rotate(-2deg);">
+              <div class="magnet-lens"></div>
+              <div class="magnet-window">
+                <div class="screen-card-box">
+                  <span class="card-emoji">👧</span>
+                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">🗣️ Speak2Go<br>Apple! /æpl/ 🌟</div>
+                  <span class="card-subtext">宝贝学拼读</span>
+                </div>
+              </div>
+              <div class="magnet-grill">
+                <span class="grill-dot"></span><span class="grill-dot"></span><span class="grill-dot"></span>
+              </div>
+            </div>
+
+            <!-- Magnet 4: AI Agent's Mint Green Magnet -->
+            <div class="fridge-magnet shape-rounded" id="mag-agent" onclick="selectMagnet('agent')" style="background: var(--dopa-green-light); border-color: var(--dopa-green); transform: rotate(2deg);">
+              <div class="magnet-lens"></div>
+              <div class="magnet-window">
+                
+                <!-- Normal view: Health recommendation -->
+                <div class="screen-card-box" id="agent-normal-view">
+                  <span class="card-emoji">🤖</span>
+                  <div class="card-msg" style="font-family: 'Fredoka', sans-serif;">🥗 建议晚餐多加<br>清炒菠菜哦</div>
+                  <span class="card-subtext">AI 助手</span>
+                </div>
+                
+                <!-- Deploy Success view: Checked off status -->
+                <div class="screen-card-box" id="agent-deploy-view" style="display: none;">
+                  <span class="card-emoji">🎉</span>
+                  <div class="card-msg" style="color: var(--dopa-green); font-family: 'Fredoka', sans-serif;">部署成功！<br>my-app 运行中</div>
+                  <span class="card-subtext">wow deploy</span>
+                </div>
+
+              </div>
+              <div class="magnet-grill">
+                <span class="grill-dot"></span><span class="grill-dot"></span><span class="grill-dot"></span>
+              </div>
+            </div>
+
+          </div>
+          
+        </div>
+      </div>
+      
+      <!-- Right side: Lab customizer panel -->
+      <div class="lab-card">
+        <h3 class="lab-title">智能冰箱贴工坊</h3>
+        <p class="lab-desc">冰箱比例已完美纠偏！现在上面吸附了 <strong>4 块专属冰箱贴</strong>。点击任一磁吸贴将其激活，即可自定义它的马卡龙配色！</p>
+        
+        <div style="margin-bottom: 24px;">
+          <span class="ctrl-label">自定义选定磁贴外壳 (CASE COLOR)</span>
+          <div class="palette-grid">
+            <div class="color-chip chip-pink active" onclick="setMagnetTheme('pink')">蜜桃粉</div>
+            <div class="color-chip chip-green" onclick="setMagnetTheme('green')">哈密瓜绿</div>
+            <div class="color-chip chip-yellow" onclick="setMagnetTheme('yellow')">蜂蜜黄</div>
+            <div class="color-chip chip-blue" onclick="setMagnetTheme('blue')">汽水蓝</div>
+            <div class="color-chip chip-purple" onclick="setMagnetTheme('purple')">薰衣草紫</div>
+          </div>
+        </div>
+        
+        <div>
+          <span class="ctrl-label">快速激活发言磁贴 (QUICK SWITCH)</span>
+          <div class="avatar-row">
+            <button class="av-btn active" id="btn-mom" onclick="selectMagnet('mom')">
+              <span class="av-emoji">👩</span>妈妈贴
+            </button>
+            <button class="av-btn" id="btn-dad" onclick="selectMagnet('dad')">
+              <span class="av-emoji">👨</span>爸爸贴
+            </button>
+            <button class="av-btn" id="btn-kid" onclick="selectMagnet('kid')">
+              <span class="av-emoji">👧</span>孩子贴
+            </button>
+            <button class="av-btn" id="btn-agent" onclick="selectMagnet('agent')">
+              <span class="av-emoji">🤖</span>AI助手
+            </button>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+<!-- W00000W Joyful Paradigm -->
+<section id="paradigm" class="section-alt">
+  <div class="section-inner">
+    <div class="paradigm-pipeline">
+      <div class="pipeline-step">
+        <span class="pipeline-icon">💻</span>
+        <span class="pipeline-lbl">电脑写好代码</span>
+      </div>
+      <div class="pipeline-arrow">➔</div>
+      <div class="pipeline-step">
+        <span class="pipeline-icon">☁️</span>
+        <span class="pipeline-lbl">无线空中传送</span>
+      </div>
+      <div class="pipeline-arrow">➔</div>
+      <div class="pipeline-step">
+        <span class="pipeline-icon">🏡</span>
+        <span class="pipeline-lbl">冰箱贴上运行</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Whiteboard Bubble CLI simulator -->
+<section id="deploy">
+  <div class="section-inner">
+    <div class="cli-board-section">
+      <div class="whiteboard">
+        <div class="board-header">
+          <div class="board-title">🧸 极客家庭手写白板终端</div>
+          <div class="board-deco-bubbles">
+            <span class="board-bubble b1"></span>
+            <span class="board-bubble b2"></span>
+            <span class="board-bubble b3"></span>
+          </div>
+        </div>
+        <div class="board-body">
+          <div class="board-prompt-line">
+            <div class="board-cmd" style="font-size: 20px;">wow deploy ./my-app 🚀</div>
+            <button class="btn-fly" onclick="startDopaDeploy()">🎈 一键飞送 (FLY NOW)</button>
+          </div>
+          
+          <div class="board-simulation-stage" id="dopa-cli-stage">
+            <div class="sim-log-row">
+              <div class="flying-loading">
+                <span class="bubble-spinner"></span>
+                <span id="load-pct-lbl">正在传送 0%...</span>
+              </div>
+            </div>
+            <div class="sim-log-row success" id="dopa-cli-final" style="display:none;">🎉 传送成功！磁贴已重载！</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Cute Folder Tab Code Panels -->
+<section id="sdk" class="section-alt">
+  <div class="section-inner">
+    <div class="examples-grid">
+      
+      <!-- Example 1 -->
+      <div class="example-card">
+        <div class="example-visual" style="background: var(--dopa-pink-light);">
+          <div class="fridge-magnet shape-circle active" style="width: 100px; height: 100px; transform: scale(1); pointer-events: none; background: var(--dopa-pink-light); border-color: var(--dopa-pink);">
+            <div class="magnet-lens"></div>
+            <div class="magnet-window">
+              <div class="screen-card-box" style="justify-content: center; align-items: center; background: #fff; border-radius: 50%;">
+                <span style="font-size: 24px; margin: 0; line-height: 1;">🥛</span>
+                <span style="font-size: 8px; font-weight: 700; color: var(--coffee-dark); margin-top: 4px;">MILK OK!</span>
+              </div>
+            </div>
+            <div class="magnet-grill" style="height: 6px;"><span class="grill-dot"></span><span class="grill-dot"></span></div>
+          </div>
+        </div>
+        <div class="example-title">💌 妈妈的温馨留言</div>
+        <pre class="example-code">
+<span class="code-cmt"># 投送温馨留言到屏幕并播报</span>
+<span class="code-key">from</span> wow <span class="code-key">import</span> Magnet
+
+Magnet.show(<span class="code-str">"牛奶在冰箱里 🥛"</span>)
+Magnet.say(<span class="code-str">"记得趁热喝哦"</span>)</pre>
+      </div>
+      
+      <!-- Example 2 -->
+      <div class="example-card">
+        <div class="example-visual" style="background: var(--dopa-blue-light);">
+          <div class="fridge-magnet shape-circle active" style="width: 100px; height: 100px; transform: scale(1); pointer-events: none; background: var(--dopa-blue-light); border-color: var(--dopa-blue);">
+            <div class="magnet-lens"></div>
+            <div class="magnet-window">
+              <div class="screen-card-box" style="justify-content: center; align-items: center; background: #fff; border-radius: 50%;">
+                <span style="font-size: 24px; margin: 0; line-height: 1;">🍎</span>
+                <span style="font-size: 8px; font-weight: 700; color: var(--coffee-dark); margin-top: 4px;">★★★</span>
+              </div>
+            </div>
+            <div class="magnet-grill" style="height: 6px;"><span class="grill-dot"></span><span class="grill-dot"></span></div>
+          </div>
+        </div>
+        <div class="example-title">👧 宝贝的单词发音官</div>
+        <pre class="example-code">
+<span class="code-cmt"># 纠音打卡与趣味评星</span>
+<span class="code-key">from</span> wow <span class="code-key">import</span> Magnet
+
+word = Magnet.mic.listen() <span class="code-cmt"># "Apple"</span>
+Magnet.screen.show(<span class="code-str">"Apple! ★★★"</span>)</pre>
+      </div>
+      
+      <!-- Example 3 -->
+      <div class="example-card">
+        <div class="example-visual" style="background: var(--dopa-green-light);">
+          <div class="fridge-magnet shape-rounded active" style="width: 100px; height: 100px; transform: scale(1); pointer-events: none; background: var(--dopa-green-light); border-color: var(--dopa-green);">
+            <div class="magnet-lens"></div>
+            <div class="magnet-window">
+              <div class="screen-card-box" style="justify-content: center; align-items: center; background: #fff;">
+                <span style="font-size: 24px; margin: 0; line-height: 1;">🥗</span>
+                <span style="font-size: 8px; font-weight: 700; color: var(--coffee-dark); margin-top: 4px;">SPINACH!</span>
+              </div>
+            </div>
+            <div class="magnet-grill" style="height: 6px;"><span class="grill-dot"></span><span class="grill-dot"></span></div>
+          </div>
+        </div>
+        <div class="example-title">🤖 AI 晚餐健康推荐</div>
+        <pre class="example-code">
+<span class="code-cmt"># 检测到爸爸回家时温馨推荐</span>
+<span class="code-key">from</span> wow <span class="code-key">import</span> Magnet
+
+<span class="code-key">if</span> Magnet.face.detect() == <span class="code-str">"Dad"</span>:
+    Magnet.say(<span class="code-str">"晚餐推荐多吃清炒菠菜哦 🥗"</span>)</pre>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+<!-- Family Site cute rooms grid -->
+<section>
+  <div class="section-inner">
+    <h2>全套家庭私有应用：写好便签，一键发送。</h2>
+    <p class="section-sub">支持自由构建 5 个暖融融的 AI 特色小空间。全家都在同一个栈，支持成语大闯关、纠音学习与每月生成的回忆视频册。</p>
+    
+    <div class="rooms-grid">
+      <div class="room-cute-card primary">
+        <span class="room-cute-icon">💬</span>
+        <h3 class="room-cute-title">温暖大客厅</h3>
+        <p class="room-cute-desc">家人 + AI Agent 快乐互聊 the center。Agent 会悄悄记得每个人的喜好、专属回忆和小小纪念日。</p>
+        <span class="room-cute-meta">Industry: family-chat</span>
+      </div>
+      
+      <div class="room-cute-card">
+        <span class="room-cute-icon">🎲</span>
+        <h3 class="room-cute-title">真心话乐园</h3>
+        <p class="room-cute-desc">打破晚饭沉寂的法宝！AI 会根据当日温馨氛围，悄悄出一道全家互答题，分享儿时童话与青春欢笑。</p>
+        <span class="room-cute-meta">Industry: family-games</span>
+      </div>
+      
+
+      
+      <div class="room-cute-card">
+        <span class="room-cute-icon">📚</span>
+        <h3 class="room-cute-title">开心学英语</h3>
+        <p class="room-cute-desc">包含亲子单词卡、纠音和打卡挑战。底层无缝共享 NYC 外教 <code>speak2go.ai</code> 清爽、干净的对齐内核。</p>
+        <span class="room-cute-meta">Industry: family-english</span>
+      </div>
+      
+      <div class="room-cute-card">
+        <span class="room-cute-icon">📸</span>
+        <h3 class="room-cute-title">记忆放映机</h3>
+        <p class="room-cute-desc">收纳家庭账单、日常照片 and 日记。AI 自动打上温暖的月份标签，并在月底生成温馨的快剪短视频。</p>
+        <span class="room-cute-meta">Industry: family-memory</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Cheerful comparison scoreboard -->
+<section id="vs" class="section-alt">
+  <div class="section-inner">
+    <h2>为什么 W00000W 不一样？</h2>
+    <p class="section-sub">它不是那种玩几次就吃灰的冷冰冰 AI 小玩具 — W00000W 是一套可以真正由大朋友写代码部署的，实实在在摆在身边的家庭小帮手。</p>
+    
+    <div class="cute-scoreboard">
+      <div class="scoreboard-row head">
+        <div>可爱大比拼 // SHOWBOARD</div>
+        <div class="wow">W00000W 冰箱贴</div>
+        <div>传统 AI 消费者玩具</div>
+      </div>
+      <div class="scoreboard-row">
+        <div>创作与部署方式</div>
+        <div class="wow">大语言模型辅助写真代码，30秒热 OTA 蒲公英上屏，全 MCP 回传</div>
+        <div class="other">局限在闭源 App 或图形化拼图面板</div>
+      </div>
+      <div class="scoreboard-row">
+        <div>目标使用群体</div>
+        <div class="wow">希望为自己的家人和孩子亲手写出实用硬件小功能的开发者</div>
+        <div class="other">猎奇电子数码产品的尝鲜普通消费者</div>
+      </div>
+      <div class="scoreboard-row">
+        <div>硬件好伙伴矩阵</div>
+        <div class="wow">6件传感器配齐 (摄+麦+大喇叭+全彩屏+Wi-Fi+局域Mesh)</div>
+        <div class="other">通常为了控制成本只给一两个小眼睛或指示灯</div>
+      </div>
+      <div class="scoreboard-row">
+        <div>系统与固件开源</div>
+        <div class="wow">完全开放 of 固件框架、封装 SDK、CLI 工具，全数遵循 MIT 协议</div>
+        <div class="other">私有闭源，无法修改或为家人自行定制任何新指令</div>
+      </div>
+      <div class="scoreboard-row">
+        <div>物理形态灵活性</div>
+        <div class="wow">萌系磁吸设计，背部马卡龙糖果外壳更换如换表带般简单</div>
+        <div class="other">不可拆卸的一体化重型消费类机身</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Glowing Dopamine CTA section -->
+<section id="waitlist" class="dopa-cta-final">
+  <div class="section-inner">
+    <h2>让全家人的小温暖，在这里连线。</h2>
+    <p class="section-sub">我们预计在 2026 年底寄送第一批面向温暖开发者家庭的测试套件。<br>留下您的邮箱，我们会在第一颗蒲公英准备就绪时对您发出邀请，并带您抢先试用 wow-cli。</p>
+    <div style="margin-top: 36px;">
+      <a href="mailto:hi@wooooow.ai?subject=W00000W%20Refrigerator%20Magnet%20Dopamine%20Waitlist" class="btn-dopa btn-dopa-pink">🎯 获取 alpha 抢先测试资格</a>
+      <a href="https://github.com/tototo1999/wooooow" class="btn-dopa btn-dopa-cream" target="_blank">关注 GITHUB 极客仓库</a>
+    </div>
+  </div>
+</section>
+
+<!-- Cheerful Footer -->
+<footer>
+  <div style="margin-bottom: 24px;">
+    <a href="https://wooooow.ai" target="_blank">wooooow.ai</a>
+    <a href="#sdk">极简 SDK</a>
+    <a href="https://github.com/tototo1999/wooooow" target="_blank">GitHub</a>
+    <a href="#paradigm">连接魔法</a>
+  </div>
+  <div style="color: var(--coffee-light); font-family: 'Fredoka', sans-serif; font-size: 13px; margin-top: 16px;">
+    © 2026 wooooow.ai · SHIPPED WITH WARM FAMILY VIBE · DATA IS LOCAL FIRST · MIT OPEN SOURCE
+  </div>
+</footer>
+
+<script>
+  // Global active magnet state tracking
+  let activeMagnet = 'mom';
+
+  // Magnet casing theme change function - dynamically updates only the selected active magnet!
+  function setMagnetTheme(theme) {
+    const dev = document.getElementById('mag-' + activeMagnet);
+    
+    // Remove inline styles for background/border
+    dev.style.background = '';
+    dev.style.borderColor = '';
+    
+    if (theme === 'pink') {
+      dev.style.background = 'var(--dopa-pink-light)';
+      dev.style.borderColor = 'var(--dopa-pink)';
+    } else if (theme === 'green') {
+      dev.style.background = 'var(--dopa-green-light)';
+      dev.style.borderColor = 'var(--dopa-green)';
+    } else if (theme === 'yellow') {
+      dev.style.background = 'var(--dopa-yellow-light)';
+      dev.style.borderColor = 'var(--dopa-yellow)';
+    } else if (theme === 'blue') {
+      dev.style.background = 'var(--dopa-blue-light)';
+      dev.style.borderColor = 'var(--dopa-blue)';
+    } else if (theme === 'purple') {
+      dev.style.background = 'var(--dopa-purple-light)';
+      dev.style.borderColor = 'var(--dopa-purple)';
+    }
+    
+    // Set active class on color chips
+    document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+
+  // Active magnet selector function - perfectly syncs both fridge clicking and lab button clicking
+  function selectMagnet(id) {
+    activeMagnet = id;
+    
+    // Highlight selected magnet in the grid
+    document.querySelectorAll('.fridge-magnet').forEach(m => m.classList.remove('active'));
+    document.getElementById('mag-' + id).classList.add('active');
+    
+    // Highlight selected button inside the control panel
+    document.querySelectorAll('.av-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + id).classList.add('active');
+    
+    // Synchronize color chip highlight to current active magnet background style
+    const bg = document.getElementById('mag-' + id).style.backgroundColor;
+    document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+    
+    if (bg.includes('pink') || bg.includes('244')) {
+      document.querySelector('.chip-pink').classList.add('active');
+    } else if (bg.includes('green') || bg.includes('52')) {
+      document.querySelector('.chip-green').classList.add('active');
+    } else if (bg.includes('yellow') || bg.includes('250')) {
+      document.querySelector('.chip-yellow').classList.add('active');
+    } else if (bg.includes('blue') || bg.includes('56')) {
+      document.querySelector('.chip-blue').classList.add('active');
+    } else if (bg.includes('purple') || bg.includes('192')) {
+      document.querySelector('.chip-purple').classList.add('active');
+    }
+  }
+
+  // CLI Deploy Simulation sequence script
+  function startDopaDeploy() {
+    const simStage = document.getElementById('dopa-cli-stage');
+    const loadLabel = document.getElementById('load-pct-lbl');
+    const finalMsg = document.getElementById('dopa-cli-final');
+    
+    // Reset simulation
+    simStage.classList.add('active');
+    loadLabel.innerText = '正在传送 0%... 🎈';
+    finalMsg.style.display = 'none';
+    
+    // Highlight the AI Agent magnet and show progress status
+    selectMagnet('agent');
+    document.getElementById('agent-normal-view').style.display = 'none';
+    document.getElementById('agent-deploy-view').style.display = 'flex';
+    document.querySelector('#agent-deploy-view .card-emoji').innerText = '🎈';
+    document.querySelector('#agent-deploy-view .card-msg').innerText = '正在空中无线接收...';
+    document.querySelector('#agent-deploy-view .card-subtext').innerText = '0%';
+    
+    let pct = 0;
+    const interval = setInterval(() => {
+      pct += 10;
+      if (pct <= 100) {
+        loadLabel.innerText = `正在空中快乐传送 ${pct}%... 🎈`;
+        document.querySelector('#agent-deploy-view .card-subtext').innerText = `${pct}%`;
+      } else {
+        clearInterval(interval);
+        loadLabel.innerText = '传送 100% ✓';
+        setTimeout(() => {
+          finalMsg.style.display = 'block';
+          
+          // Switch AI Agent's screen to final success checkbox!
+          document.querySelector('#agent-deploy-view .card-emoji').innerText = '🎉';
+          document.querySelector('#agent-deploy-view .card-msg').innerText = '部署成功！\nmy-app 运行中';
+          document.querySelector('#agent-deploy-view .card-subtext').innerText = 'wow deploy';
+        }, 300);
+      }
+    }, 80);
+  }
+</script>
+
+</body>
+</html>
