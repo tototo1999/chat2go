@@ -44,7 +44,10 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    background-color: #e5dfd3; /* Soft warm clay backdrop for the centered layout */
+  }
   body {
     background-color: var(--bg-cream);
     color: var(--coffee-dark);
@@ -52,6 +55,17 @@
     line-height: 1.6;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    max-width: 880px; /* Locked vertical composition (exactly 1/5th smaller) */
+    margin: 0 auto;
+    position: relative;
+    min-height: 100vh;
+    box-shadow: 0 0 60px rgba(41, 37, 36, 0.12);
+  }
+  @media (min-width: 881px) {
+    body {
+      border-left: var(--border-chunky);
+      border-right: var(--border-chunky);
+    }
   }
 
   /* Cozy background wavy shape */
