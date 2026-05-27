@@ -1082,7 +1082,7 @@ function renderCardContent(card) {
         '<button class="speak" data-action="speak" title="朗读" aria-label="朗读">🔊</button>' +
         '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">▶</button>' +
         '<button class="fav' + (isFav ? ' is-on' : '') + '" data-action="fav" title="' + (isFav ? '取消收藏' : '收藏置顶') + '" aria-label="收藏">★</button>' +
-        '<button class="edit" data-action="edit" title="编辑/加音标笔记" aria-label="编辑">✎</button>' +
+        '<button class="edit" data-action="edit" title="编辑/加自然拼读笔记" aria-label="编辑">✎</button>' +
         '<button class="del' + (isDel ? ' is-undo' : '') + '" data-action="del" title="' + (isDel ? '恢复' : '删除') + '" aria-label="删除">' + (isDel ? '↺' : '✕') + '</button>' +
       '</div>' +
     '</div>' +
@@ -1099,7 +1099,7 @@ function renderEditForm(card) {
   card.innerHTML =
     '<form class="edit-form" onsubmit="return false">' +
       '<div class="edit-row"><label>英文 (不可改)</label><input type="text" name="en" value="' + escapeHtml(d.en) + '" readonly></div>' +
-      '<div class="edit-row"><label>音标</label><input type="text" name="phonetic" value="' + escapeHtml(d.phonetic) + '" placeholder="/kəmˈpoʊnənt/"></div>' +
+      '<div class="edit-row"><label>自然拼读 (重音音节用大写)</label><input type="text" name="phonetic" value="' + escapeHtml(d.phonetic) + '" placeholder="kem·PO·nent" autocomplete="off" spellcheck="false"></div>' +
       '<div class="edit-row"><label>中文</label><input type="text" name="zh" value="' + escapeHtml(d.zh) + '"></div>' +
       '<div class="edit-row"><label>解释</label><textarea name="hint" rows="2">' + escapeHtml(d.hint) + '</textarea></div>' +
       '<div class="edit-row"><label>个人笔记</label><textarea name="note" rows="3" placeholder="例句 / 关联词 / 记忆方法…">' + escapeHtml(d.note) + '</textarea></div>' +
@@ -1417,6 +1417,20 @@ function parseStressFromIPA(ipa, maxIdx) {
   return Math.min(idx, maxIdx);
 }
 
+/* Romaji 自然拼读 → stress index: 找全大写音节 */
+function parseStressFromRomaji(romaji, maxIdx) {
+  if (!romaji) return null;
+  const parts = String(romaji).split(/[·\-\s\/]+/).filter(Boolean);
+  if (parts.length === 0) return null;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (/[A-Z]/.test(p) && p === p.toUpperCase()) {
+      return Math.min(i, maxIdx);
+    }
+  }
+  return null;
+}
+
 function syllablesToBounds(syls) {
   const bounds = []; let acc = 0;
   for (let i = 0; i < syls.length - 1; i++) { acc += syls[i].length; bounds.push(acc - 1); }
@@ -1456,10 +1470,15 @@ function openPractice(card) {
     answerSource = 'dict';
   } else {
     answerSyls = syllabify(en);
+    const romajiIdx = parseStressFromRomaji(d.phonetic, answerSyls.length - 1);
     const ipaIdx = parseStressFromIPA(d.phonetic, answerSyls.length - 1);
-    answerStressIdx = (ipaIdx !== null) ? ipaIdx : pickStress(answerSyls, en);
+    answerStressIdx = (romajiIdx !== null) ? romajiIdx
+                    : (ipaIdx !== null) ? ipaIdx
+                    : pickStress(answerSyls, en);
     answerRomaji = answerSyls.map((s, i) => i === answerStressIdx ? s.toUpperCase() : s.toLowerCase());
-    answerSource = (ipaIdx !== null) ? 'ipa' : 'heuristic';
+    answerSource = (romajiIdx !== null) ? 'romaji'
+                 : (ipaIdx !== null) ? 'ipa'
+                 : 'heuristic';
   }
   practiceState = {
     card, id, catId, en,
@@ -1615,9 +1634,10 @@ function submitPractice() {
     if (i === ps.answerStressIdx) cls.push('stress');
     return '<div class="p-rc-slot"><div class="' + cls.join(' ') + '">' + escapeHtml(s) + '</div><div class="p-rc-romaji answer">' + escapeHtml(ps.answerRomaji[i]) + '</div></div>';
   }).join('');
-  const sourceLabel = ps.answerSource === 'dict' ? '字典' :
-                      ps.answerSource === 'ipa'  ? '依据你填的 IPA' :
-                                                   '启发式估算';
+  const sourceLabel = ps.answerSource === 'dict'   ? '字典' :
+                      ps.answerSource === 'romaji' ? '依据你填的拼读' :
+                      ps.answerSource === 'ipa'    ? '依据你填的 IPA' :
+                                                     '启发式估算';
   const rows = [];
   rows.push('<div class="p-rb-row"><span>切分正确 ' + correctBounds.length + '/' + ps.answerBounds.length + '</span><span class="pos">+' + boundPoints + '</span></div>');
   if (extraPenalty) rows.push('<div class="p-rb-row"><span>多切 ×' + extraBounds.length + '</span><span class="neg">-' + extraPenalty + '</span></div>');
@@ -1752,7 +1772,7 @@ main.addEventListener('click', e => {
   }
 
   if (action === 'reset') {
-    if (!confirm('清除该词的所有自定义内容(音标 / 笔记 / 中文 / 解释)?')) return;
+    if (!confirm('清除该词的所有自定义内容(自然拼读 / 笔记 / 中文 / 解释)?')) return;
     delete state.edits[id];
     save();
     syncCardsById(id);
