@@ -79,6 +79,36 @@ nav.cats a {
   text-decoration: none; white-space: nowrap;
 }
 nav.cats a:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+nav.cats a.group-link {
+  font-weight: 700; font-size: 13px;
+  background: var(--accent); color: var(--surface);
+  border-color: var(--accent);
+}
+nav.cats a.group-link:hover { background: var(--text); border-color: var(--text); }
+
+.group-header {
+  font-size: 22px; font-weight: 700;
+  color: var(--text);
+  margin: 28px 0 8px;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, var(--accent) 0%, transparent 100%);
+  color: var(--surface);
+  border-radius: 8px;
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.group-header:first-child { margin-top: 0; }
+.group-header .count { font-size: 12px; font-weight: 400; opacity: 0.85; }
+nav.sub-cats {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding: 0 4px 14px;
+}
+nav.sub-cats a {
+  font-size: 11px; padding: 3px 9px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--text-dim);
+  text-decoration: none; white-space: nowrap;
+}
+nav.sub-cats a:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 main {
   max-width: 980px; margin: 0 auto;
   padding: 24px 16px 80px;
@@ -195,6 +225,28 @@ section h2 .count {
   margin-left: auto; color: #ef4444; border-color: transparent;
 }
 .edit-actions button:hover { opacity: 0.85; }
+.add-term-btn {
+  background: rgba(29,158,117,0.06);
+  border: 1px dashed var(--accent);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 13px; font-weight: 600;
+  padding: 12px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.add-term-btn:hover { background: rgba(29,158,117,0.12); }
+.term.is-user::before {
+  content: '✚'; position: absolute; top: -6px; right: -6px;
+  background: var(--accent); color: #fff;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+}
+.term.is-user.is-favorite::before {
+  content: '★'; background: #f59e0b;
+}
 .term .actions {
   margin-left: auto;
   display: flex; gap: 2px;
@@ -733,6 +785,11 @@ const DATA = [
       ['Hotfix', '紧急修复', '直接打线上的补丁'],
     ]
   },
+  {
+    id: 'nyc-global-center', title: 'NYC Global Center', terms: [
+      // 你在英文课里常用的单词加到这里 — 也可以直接在页面上点 "+ 加词" 按钮加,会存在浏览器本地
+    ]
+  },
 ];
 
 const main = document.getElementById('main');
@@ -749,6 +806,7 @@ const state = {
   favorites: new Set(JSON.parse(localStorage.getItem('glossary-favorites') || '[]')),
   deleted: new Set(JSON.parse(localStorage.getItem('glossary-deleted') || '[]')),
   edits: JSON.parse(localStorage.getItem('glossary-edits') || '{}'),
+  userTerms: JSON.parse(localStorage.getItem('glossary-user-terms') || '{}'),
   showDeleted: localStorage.getItem('glossary-show-deleted') === '1',
   query: ''
 };
@@ -757,7 +815,19 @@ function save() {
   localStorage.setItem('glossary-favorites', JSON.stringify([...state.favorites]));
   localStorage.setItem('glossary-deleted', JSON.stringify([...state.deleted]));
   localStorage.setItem('glossary-edits', JSON.stringify(state.edits));
+  localStorage.setItem('glossary-user-terms', JSON.stringify(state.userTerms));
   localStorage.setItem('glossary-show-deleted', state.showDeleted ? '1' : '0');
+}
+
+function getMergedTerms(cat) {
+  const builtin = cat.terms.slice();
+  const user = state.userTerms[cat.id] || [];
+  return builtin.concat(user.map(t => [t.en, t.zh, t.hint || '']));
+}
+
+function isUserTerm(catId, en) {
+  const arr = state.userTerms[catId] || [];
+  return arr.some(t => t.en === en);
 }
 
 function escapeHtml(s) {
@@ -767,7 +837,12 @@ function escapeHtml(s) {
 function getTermData(catId, en) {
   const cat = DATA.find(c => c.id === catId);
   if (!cat) return null;
-  const orig = cat.terms.find(t => t[0] === en);
+  let orig = cat.terms.find(t => t[0] === en);
+  if (!orig) {
+    const userArr = state.userTerms[catId] || [];
+    const u = userArr.find(t => t.en === en);
+    if (u) orig = [u.en, u.zh, u.hint || ''];
+  }
   if (!orig) return null;
   const edit = state.edits[catId + '::' + en] || {};
   return {
@@ -793,6 +868,7 @@ function renderCardContent(card) {
   applyState(card);
   card.classList.remove('is-editing');
   card.classList.toggle('is-edited', d.edited);
+  card.classList.toggle('is-user', isUserTerm(catId, en));
   const isFav = state.favorites.has(id);
   const isDel = state.deleted.has(id);
   card.innerHTML =
@@ -889,26 +965,121 @@ let total = 0;
 DATA.forEach(cat => { total += cat.terms.length; });
 totalCountEl.textContent = total;
 
-DATA.forEach(cat => {
-  const a = document.createElement('a');
-  a.href = '#' + cat.id;
-  a.textContent = cat.title + ' (' + cat.terms.length + ')';
-  catsNav.appendChild(a);
+const GROUPS = [
+  { id: 'web-coding',         title: 'Web Coding' },
+  { id: 'nyc-global-center',  title: 'NYC Global Center' }
+];
 
+// auto-assign each cat to a group
+DATA.forEach(c => {
+  if (!c.group) c.group = (c.id === 'nyc-global-center') ? 'nyc-global-center' : 'web-coding';
+});
+
+function getGroupTermCount(groupId) {
+  return DATA.filter(c => c.group === groupId)
+    .reduce((sum, c) => sum + getMergedTerms(c).length, 0);
+}
+
+function renderCategorySection(cat) {
+  const existing = document.getElementById('cat-' + cat.id);
+  if (existing) existing.remove();
+  const merged = getMergedTerms(cat);
   const section = document.createElement('section');
-  section.id = cat.id;
+  section.id = 'cat-' + cat.id;
   section.dataset.cat = cat.id;
   const h2 = document.createElement('h2');
-  h2.innerHTML = '<span>' + cat.title + '</span><span class="count">' + cat.terms.length + ' 个</span>';
+  h2.innerHTML = '<span>' + cat.title + '</span><span class="count">' + merged.length + ' 个</span>';
   section.appendChild(h2);
   const grid = document.createElement('div');
   grid.className = 'terms';
-  cat.terms.forEach(([en, zh, hint]) => {
+  merged.forEach(([en, zh, hint]) => {
     grid.appendChild(makeCard(en, zh, hint, cat.id));
   });
+  // "+ 加词" button at end of grid
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-term-btn';
+  addBtn.textContent = '+ 加词';
+  addBtn.dataset.cat = cat.id;
+  addBtn.onclick = () => openAddTermForm(cat.id, addBtn);
+  grid.appendChild(addBtn);
   section.appendChild(grid);
-  main.insertBefore(section, noResults);
+  return section;
+}
+
+// top nav: main groups only
+GROUPS.forEach(group => {
+  const a = document.createElement('a');
+  a.href = '#group-' + group.id;
+  a.className = 'group-link';
+  a.textContent = group.title + ' (' + getGroupTermCount(group.id) + ')';
+  a.dataset.group = group.id;
+  catsNav.appendChild(a);
 });
+
+// render each group: header + sub-cat chip nav + each subcategory
+GROUPS.forEach(group => {
+  const header = document.createElement('h2');
+  header.className = 'group-header';
+  header.id = 'group-' + group.id;
+  header.innerHTML = '<span>' + group.title + '</span><span class="count">' + getGroupTermCount(group.id) + ' 个词 / ' +
+                     DATA.filter(c => c.group === group.id).length + ' 子类</span>';
+  main.insertBefore(header, noResults);
+
+  const subNav = document.createElement('nav');
+  subNav.className = 'sub-cats';
+  subNav.dataset.group = group.id;
+  DATA.filter(c => c.group === group.id).forEach(cat => {
+    const a = document.createElement('a');
+    a.href = '#cat-' + cat.id;
+    a.dataset.cat = cat.id;
+    a.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
+    subNav.appendChild(a);
+  });
+  main.insertBefore(subNav, noResults);
+
+  DATA.filter(c => c.group === group.id).forEach(cat => {
+    main.insertBefore(renderCategorySection(cat), noResults);
+  });
+});
+
+function updateCatNavCount(catId) {
+  const cat = DATA.find(c => c.id === catId);
+  if (!cat) return;
+  // update sub-cat link
+  const link = document.querySelector('nav.sub-cats a[data-cat="' + catId + '"]');
+  if (link) link.textContent = cat.title + ' (' + getMergedTerms(cat).length + ')';
+  // update top-level group count
+  const group = GROUPS.find(g => g.id === cat.group);
+  if (group) {
+    const topLink = catsNav.querySelector('a[data-group="' + group.id + '"]');
+    if (topLink) topLink.textContent = group.title + ' (' + getGroupTermCount(group.id) + ')';
+    const groupHeader = document.getElementById('group-' + group.id);
+    if (groupHeader) {
+      const c = groupHeader.querySelector('.count');
+      if (c) c.textContent = getGroupTermCount(group.id) + ' 个词 / ' + DATA.filter(c => c.group === group.id).length + ' 子类';
+    }
+  }
+}
+
+function openAddTermForm(catId, btn) {
+  // replace the + button with an inline form (just for this category)
+  const form = document.createElement('div');
+  form.className = 'term';
+  form.style.gridColumn = '1 / -1';
+  form.innerHTML =
+    '<form class="edit-form" onsubmit="return false">' +
+      '<div class="edit-row"><label>英文 *</label><input type="text" name="en" placeholder="e.g. Procrastinate" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></div>' +
+      '<div class="edit-row"><label>中文 *</label><input type="text" name="zh" placeholder="e.g. 拖延"></div>' +
+      '<div class="edit-row"><label>解释 (选填)</label><textarea name="hint" rows="2" placeholder="用法 / 例句 / 关联词…"></textarea></div>' +
+      '<div class="edit-actions">' +
+        '<button type="button" data-action="add-save" data-cat="' + catId + '">添加</button>' +
+        '<button type="button" data-action="add-cancel">取消</button>' +
+      '</div>' +
+    '</form>';
+  btn.replaceWith(form);
+  const first = form.querySelector('[name=en]');
+  if (first) first.focus();
+}
 
 function rebuildFavorites() {
   favGrid.innerHTML = '';
@@ -923,7 +1094,12 @@ function rebuildFavorites() {
     const [catId, en] = id.split('::');
     const cat = DATA.find(c => c.id === catId);
     if (!cat) return;
-    const term = cat.terms.find(tt => tt[0] === en);
+    let term = cat.terms.find(tt => tt[0] === en);
+    if (!term) {
+      const userArr = state.userTerms[catId] || [];
+      const u = userArr.find(t => t.en === en);
+      if (u) term = [u.en, u.zh, u.hint || ''];
+    }
     if (!term) return;
     favGrid.appendChild(makeCard(term[0], term[1], term[2], catId));
   });
@@ -968,11 +1144,50 @@ function updateDelToggle() {
 main.addEventListener('click', e => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
+  const action = btn.dataset.action;
+
+  // add-term flow doesn't have a card data-id
+  if (action === 'add-save') {
+    const form = btn.closest('form');
+    const catId = btn.dataset.cat;
+    const en = form.querySelector('[name=en]').value.trim();
+    const zh = form.querySelector('[name=zh]').value.trim();
+    const hint = form.querySelector('[name=hint]').value.trim();
+    if (!en || !zh) { alert('英文和中文都要填'); return; }
+    // dedupe within category (built-in + user)
+    const cat = DATA.find(c => c.id === catId);
+    const existing = getMergedTerms(cat).find(t => t[0].toLowerCase() === en.toLowerCase());
+    if (existing) { alert('"' + existing[0] + '" 已在该分类下'); return; }
+    if (!state.userTerms[catId]) state.userTerms[catId] = [];
+    state.userTerms[catId].push({ en, zh, hint });
+    save();
+    const newSection = renderCategorySection(cat);
+    document.getElementById('cat-' + catId).replaceWith(newSection);
+    updateCatNavCount(catId);
+    applySearch();
+    return;
+  }
+  if (action === 'add-cancel') {
+    const form = btn.closest('.term');
+    const catId = form.previousElementSibling ? null : null;
+    // simplest: just re-render the category section the form is inside
+    const section = form.closest('section[data-cat]');
+    if (section) {
+      const cat = DATA.find(c => c.id === section.dataset.cat);
+      if (cat) {
+        const newSection = renderCategorySection(cat);
+        section.replaceWith(newSection);
+        applySearch();
+      }
+    }
+    return;
+  }
+
   const card = btn.closest('.term');
   if (!card) return;
   const id = card.dataset.id;
+  if (!id) return;
   const [catId, en] = id.split('::');
-  const action = btn.dataset.action;
 
   if (action === 'speak') {
     speakTerm(en, btn);
@@ -1005,7 +1220,13 @@ main.addEventListener('click', e => {
   if (action === 'save') {
     const form = btn.closest('form');
     const cat = DATA.find(c => c.id === catId);
-    const orig = cat.terms.find(t => t[0] === en);
+    let orig = cat.terms.find(t => t[0] === en);
+    if (!orig) {
+      const userArr = state.userTerms[catId] || [];
+      const u = userArr.find(t => t.en === en);
+      if (u) orig = [u.en, u.zh, u.hint || ''];
+    }
+    if (!orig) return;
     const get = name => form.querySelector('[name=' + name + ']').value.trim();
     const phonetic = get('phonetic');
     const zh = get('zh');
