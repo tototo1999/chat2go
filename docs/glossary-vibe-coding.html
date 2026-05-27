@@ -88,8 +88,26 @@ nav.cats a.group-link {
   font-weight: 700; font-size: 11px; padding: 3px 10px;
   background: var(--accent); color: var(--surface);
   border-color: var(--accent);
+  cursor: pointer;
 }
-nav.cats a.group-link:hover { background: var(--text); border-color: var(--text); }
+nav.cats a.group-link:hover { opacity: 0.85; }
+nav.cats a.group-link.inactive {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+/* Tab 切换 — 主目录互斥显示 */
+.group-header, nav.sub-cats, section[data-cat] { display: none; }
+body[data-active-group="vibe-coding"] .group-header[data-group="vibe-coding"],
+body[data-active-group="vibe-coding"] nav.sub-cats[data-group="vibe-coding"],
+body[data-active-group="vibe-coding"] section[data-group="vibe-coding"] { display: block; }
+body[data-active-group="nyc-global-center"] .group-header[data-group="nyc-global-center"],
+body[data-active-group="nyc-global-center"] nav.sub-cats[data-group="nyc-global-center"],
+body[data-active-group="nyc-global-center"] section[data-group="nyc-global-center"] { display: block; }
+body[data-active-group="vibe-coding"] section[data-group="vibe-coding"] .terms,
+body[data-active-group="nyc-global-center"] section[data-group="nyc-global-center"] .terms { display: grid; }
+section[data-cat].empty { display: none !important; }
+.group-header { margin-top: 8px; }
 
 .group-header {
   font-size: 22px; font-weight: 700;
@@ -1289,6 +1307,7 @@ function renderCategorySection(cat) {
   const section = document.createElement('section');
   section.id = 'cat-' + cat.id;
   section.dataset.cat = cat.id;
+  section.dataset.group = cat.group || 'vibe-coding';
   const h2 = document.createElement('h2');
   h2.innerHTML = '<span>' + cat.title + '</span><span class="count">' + merged.length + ' 个</span>';
   section.appendChild(h2);
@@ -1308,13 +1327,22 @@ function renderCategorySection(cat) {
   return section;
 }
 
-// top nav: main groups only
+// top nav: main groups only — click to switch tab
+function setActiveGroup(groupId) {
+  document.body.dataset.activeGroup = groupId;
+  document.querySelectorAll('nav.cats a.group-link').forEach(a => {
+    a.classList.toggle('inactive', a.dataset.group !== groupId);
+  });
+  try { localStorage.setItem('glossary-active-group', groupId); } catch (e) {}
+}
+
 GROUPS.forEach(group => {
   const a = document.createElement('a');
-  a.href = '#group-' + group.id;
+  a.href = '#';
   a.className = 'group-link';
   a.textContent = group.title + ' (' + getGroupTermCount(group.id) + ')';
   a.dataset.group = group.id;
+  a.onclick = (e) => { e.preventDefault(); setActiveGroup(group.id); };
   catsNav.appendChild(a);
 });
 
@@ -1323,6 +1351,7 @@ GROUPS.forEach(group => {
   const header = document.createElement('h2');
   header.className = 'group-header';
   header.id = 'group-' + group.id;
+  header.dataset.group = group.id;
   header.innerHTML = '<span>' + group.title + '</span><span class="count">' + getGroupTermCount(group.id) + ' 个词 / ' +
                      DATA.filter(c => c.group === group.id).length + ' 子类</span>';
   main.insertBefore(header, noResults);
@@ -2003,6 +2032,9 @@ delToggle.addEventListener('click', () => {
 
 rebuildFavorites();
 updateDelToggle();
+
+// Set initial active group (restore from localStorage, default Vibe Coding)
+setActiveGroup(localStorage.getItem('glossary-active-group') || 'vibe-coding');
 
 /* ============================================================
    跨标签 / iframe 同步 — 另一个 tab 改了 localStorage,这边自动跟上
