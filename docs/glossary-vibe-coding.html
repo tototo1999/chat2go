@@ -247,6 +247,207 @@ section h2 .count {
 .term.is-user.is-favorite::before {
   content: '★'; background: #f59e0b;
 }
+
+/* ───── Practice drawer (inline mini-game) ───── */
+.term .actions .play:hover { color: var(--accent); }
+.term.is-practicing { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.practice-drawer {
+  background: var(--code-bg);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: -2px;
+  box-shadow: 0 2px 12px rgba(29,158,117,0.08);
+}
+.practice-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
+}
+.practice-title { font-size: 13px; color: var(--text-dim); }
+.practice-title strong {
+  color: var(--accent);
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-size: 15px; margin-left: 6px;
+}
+.practice-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 20px; line-height: 1;
+  padding: 2px 8px;
+}
+.practice-close:hover { color: #ef4444; }
+.practice-step {
+  font-size: 11px; color: var(--text-dim);
+  margin: 8px 0 4px; letter-spacing: 1px;
+}
+.practice-letters {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0; padding: 10px;
+  background: var(--surface);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  user-select: none;
+}
+.practice-letters .p-letter {
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-size: 22px; font-weight: 700;
+  padding: 4px 6px; color: var(--text);
+}
+.practice-letters .p-gap {
+  background: transparent; border: none;
+  color: var(--text-dim); font-size: 16px;
+  padding: 6px 4px; cursor: pointer;
+  font-family: inherit; min-width: 14px;
+}
+.practice-letters .p-gap:hover { color: var(--accent); }
+.practice-letters .p-gap.active { color: var(--accent); font-weight: 900; }
+.practice-letters .p-gap:disabled { cursor: default; opacity: 0.7; }
+.practice-preview {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding: 10px; min-height: 70px;
+  background: var(--surface);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.practice-preview .p-hint {
+  font-size: 12px; color: var(--text-dim);
+  display: flex; align-items: center;
+}
+.practice-preview .p-slot {
+  display: flex; flex-direction: column; gap: 4px; min-width: 70px;
+}
+.practice-preview .p-syl {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-size: 18px; font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}
+.practice-preview .p-syl:hover { border-color: var(--accent); }
+.practice-preview .p-syl.stress {
+  background: linear-gradient(135deg, rgba(245,158,11,0.18), rgba(245,158,11,0.06));
+  border-color: #f59e0b;
+  color: #b45309;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+.practice-preview .p-syl:disabled { cursor: default; }
+.practice-preview .p-romaji {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'SF Mono', monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 5px;
+  border-radius: 5px;
+  outline: none;
+  width: 100%; min-width: 0;
+}
+.practice-preview .p-romaji:focus { border-color: var(--accent); box-shadow: 0 0 6px rgba(29,158,117,0.18); }
+.practice-preview .p-romaji::placeholder { color: var(--text-dim); opacity: 0.5; }
+.practice-preview .p-romaji:disabled { opacity: 0.7; }
+.practice-actions {
+  display: flex; gap: 8px; justify-content: center;
+}
+.practice-actions button {
+  padding: 8px 18px;
+  font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit; letter-spacing: 1px;
+}
+.practice-actions button.primary {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.practice-actions button:hover { opacity: 0.88; }
+
+.practice-result {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+.p-rc-rank {
+  font-size: 64px; font-weight: 900;
+  text-align: center; line-height: 1;
+  margin-bottom: 4px; letter-spacing: -3px;
+}
+.p-rc-rank.s { color: #f59e0b; text-shadow: 0 0 14px rgba(245,158,11,0.4); }
+.p-rc-rank.a { color: var(--accent); text-shadow: 0 0 12px rgba(29,158,117,0.3); }
+.p-rc-rank.b { color: #10b981; }
+.p-rc-rank.c { color: var(--text-dim); }
+.p-rc-rank.d { color: #ef4444; }
+.p-rc-score {
+  text-align: center; font-size: 11px; color: var(--text-dim);
+  letter-spacing: 2px; margin-bottom: 14px;
+}
+.p-rc-section { margin-bottom: 12px; }
+.p-rc-label {
+  font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+.p-rc-src { color: var(--accent); opacity: 0.75; font-weight: 600; }
+.p-rc-cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.p-rc-slot { display: flex; flex-direction: column; gap: 3px; min-width: 62px; }
+.p-rc-syl {
+  font-family: 'SF Mono', monospace;
+  font-size: 14px; font-weight: 600;
+  padding: 7px 12px; border-radius: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-align: center;
+}
+.p-rc-syl.match { border-color: #10b981; color: #10b981; background: rgba(16,185,129,0.07); }
+.p-rc-syl.stress {
+  background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.08));
+  border-color: #f59e0b; color: #b45309;
+  font-weight: 800; text-transform: uppercase;
+}
+.p-rc-syl.miss.stress { background: rgba(239,68,68,0.1); border-color: #ef4444; color: #ef4444; }
+.p-rc-romaji {
+  font-size: 11px; color: var(--text-dim);
+  font-family: 'SF Mono', monospace;
+  text-align: center;
+  padding: 3px 4px;
+  background: var(--surface);
+  border-radius: 4px;
+}
+.p-rc-romaji.answer { color: var(--accent); font-weight: 600; }
+.p-rc-breakdown {
+  font-size: 11px; color: var(--text-dim);
+  padding-top: 8px; border-top: 1px dashed var(--border);
+  margin-top: 10px; line-height: 1.7;
+}
+.p-rb-row { display: flex; justify-content: space-between; }
+.p-rb-row .pos { color: var(--accent); font-weight: 600; }
+.p-rb-row .neg { color: #ef4444; font-weight: 600; }
+.p-rb-row.total {
+  font-weight: 700; color: var(--text); font-size: 13px;
+  padding-top: 6px; border-top: 1px solid var(--border); margin-top: 6px;
+}
+.p-rc-actions {
+  display: flex; gap: 8px; justify-content: center; margin-top: 14px;
+}
+.p-rc-actions button {
+  padding: 8px 18px;
+  font-size: 12px; font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+}
+.p-rc-actions button:hover { opacity: 0.88; }
 .term .actions {
   margin-left: auto;
   display: flex; gap: 2px;
@@ -357,6 +558,7 @@ footer {
   共 <span id="totalCount">0</span> 个术语 · 单文件离线可用 · 双击 HTML 直接打开
 </footer>
 
+<script src="romanizer-dict.js"></script>
 <script>
 const DATA = [
   {
@@ -878,6 +1080,7 @@ function renderCardContent(card) {
       '<span class="zh">' + escapeHtml(d.zh) + '</span>' +
       '<div class="actions">' +
         '<button class="speak" data-action="speak" title="朗读" aria-label="朗读">🔊</button>' +
+        '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">▶</button>' +
         '<button class="fav' + (isFav ? ' is-on' : '') + '" data-action="fav" title="' + (isFav ? '取消收藏' : '收藏置顶') + '" aria-label="收藏">★</button>' +
         '<button class="edit" data-action="edit" title="编辑/加音标笔记" aria-label="编辑">✎</button>' +
         '<button class="del' + (isDel ? ' is-undo' : '') + '" data-action="del" title="' + (isDel ? '恢复' : '删除') + '" aria-label="删除">' + (isDel ? '↺' : '✕') + '</button>' +
@@ -1141,10 +1344,346 @@ function updateDelToggle() {
   document.body.classList.toggle('show-deleted', state.showDeleted);
 }
 
+/* ============================================================
+   PRACTICE MODE — inline mini-game per card
+   ============================================================ */
+const VOWELS = 'aeiouy';
+const DIGRAPHS = ['ch','sh','th','ph','wh','ng','ck','qu','gh'];
+const UNSTRESSED_PREFIXES = ['de','re','dis','pre','mis','ex','en','com','con','ob','be','sub'];
+
+function syllabify(word) {
+  const w = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (!w) return [];
+  const groups = [];
+  let cur = '', st = null;
+  for (const ch of w) {
+    const t = VOWELS.includes(ch) ? 'V' : 'C';
+    if (st && t === st) cur += ch;
+    else { if (cur) groups.push({t: st, s: cur}); cur = ch; st = t; }
+  }
+  if (cur) groups.push({t: st, s: cur});
+  const syls = []; let buf = '';
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
+    if (g.t === 'V') { buf += g.s; }
+    else {
+      const next = groups[i+1];
+      if (!next) buf += g.s;
+      else if (!buf) buf = g.s;
+      else if (g.s.length === 1) { syls.push(buf); buf = g.s; }
+      else {
+        const ending = g.s.slice(-2);
+        if (DIGRAPHS.includes(ending) && g.s.length === 2) { syls.push(buf); buf = g.s; }
+        else if (g.s.length >= 3 && DIGRAPHS.includes(g.s.slice(-2))) {
+          buf += g.s.slice(0, -2); syls.push(buf); buf = g.s.slice(-2);
+        } else { buf += g.s[0]; syls.push(buf); buf = g.s.slice(1); }
+      }
+    }
+  }
+  if (buf) syls.push(buf);
+  if (syls.length >= 2) {
+    const last = syls[syls.length-1];
+    if (/^[bcdfghjklmnpqrstvwxz]e$/.test(last) || last === 'e') {
+      syls[syls.length-2] += last; syls.pop();
+    }
+  }
+  while (syls.length >= 2 && !/[aeiouy]/.test(syls[syls.length-1])) {
+    syls[syls.length-2] += syls[syls.length-1]; syls.pop();
+  }
+  return syls.length ? syls : [w];
+}
+
+function pickStress(syls, full) {
+  const n = syls.length;
+  if (n <= 1) return 0;
+  const lower = full.toLowerCase();
+  if (n >= 3 && /(ity|ical|ically|opathy|ography|ology|onomy|ocracy)$/.test(lower)) return n - 3;
+  if (n >= 3 && /(ate|ize|ise|ify)$/.test(lower)) return n - 3;
+  if (/(tion|sion|cian|cial|tial|cious|tious|gious|ious|eous|ic|ial|ient|ience|graphy)$/.test(lower)) return Math.max(0, n - 2);
+  if (/(ee|eer|ese|esque|ique|aire|oon|een)$/.test(lower)) return n - 1;
+  if (n >= 2 && n <= 3 && UNSTRESSED_PREFIXES.includes(syls[0].toLowerCase())) return 1;
+  if (n === 2) return 0;
+  if (n === 3) return 0;
+  return 1;
+}
+
+function parseStressFromIPA(ipa, maxIdx) {
+  if (!ipa) return null;
+  const inner = String(ipa).replace(/[\/\[\]]/g, '').trim();
+  if (!inner.includes('ˈ')) return null;
+  const before = inner.split('ˈ')[0];
+  const clusters = before.match(/[aeiouɪɛæɑɒɔʊʌəɜɚyøœɨɯ]+/gi);
+  const idx = clusters ? clusters.length : 0;
+  return Math.min(idx, maxIdx);
+}
+
+function syllablesToBounds(syls) {
+  const bounds = []; let acc = 0;
+  for (let i = 0; i < syls.length - 1; i++) { acc += syls[i].length; bounds.push(acc - 1); }
+  return bounds;
+}
+
+function dictKey(en) { return String(en).toLowerCase().replace(/[^a-z]/g, ''); }
+function lookupDict(en) {
+  const dict = (typeof window !== 'undefined' && window.ROMAJI_DICT) || {};
+  return dict[dictKey(en)] || null;
+}
+
+let practiceState = null;
+
+function closePractice() {
+  if (!practiceState) return;
+  if (practiceState.card) practiceState.card.classList.remove('is-practicing');
+  if (practiceState.drawer && practiceState.drawer.parentNode) {
+    practiceState.drawer.parentNode.removeChild(practiceState.drawer);
+  }
+  practiceState = null;
+}
+
+function openPractice(card) {
+  closePractice();
+  const id = card.dataset.id;
+  const [catId, en] = id.split('::');
+  const d = getTermData(catId, en);
+  if (!d) return;
+  const dictEntry = lookupDict(en);
+  let answerSyls, answerRomaji, answerStressIdx, answerSource;
+  if (dictEntry) {
+    answerSyls = dictEntry.syls.slice();
+    answerRomaji = dictEntry.romaji.slice();
+    answerStressIdx = dictEntry.romaji.findIndex(r => r === r.toUpperCase() && /[A-Z]/.test(r));
+    if (answerStressIdx < 0) answerStressIdx = 0;
+    answerSource = 'dict';
+  } else {
+    answerSyls = syllabify(en);
+    const ipaIdx = parseStressFromIPA(d.phonetic, answerSyls.length - 1);
+    answerStressIdx = (ipaIdx !== null) ? ipaIdx : pickStress(answerSyls, en);
+    answerRomaji = answerSyls.map((s, i) => i === answerStressIdx ? s.toUpperCase() : s.toLowerCase());
+    answerSource = (ipaIdx !== null) ? 'ipa' : 'heuristic';
+  }
+  practiceState = {
+    card, id, catId, en,
+    letters: en.split(''),
+    answerSyls, answerRomaji, answerStressIdx, answerSource,
+    answerBounds: syllablesToBounds(answerSyls),
+    playerBounds: new Set(), playerStressIdx: -1, playerRomaji: [],
+    submitted: false
+  };
+  const drawer = document.createElement('div');
+  drawer.className = 'practice-drawer';
+  drawer.style.gridColumn = '1 / -1';
+  drawer.innerHTML =
+    '<div class="practice-head">' +
+      '<span class="practice-title">▶ 练:<strong>' + escapeHtml(en) + '</strong></span>' +
+      '<button class="practice-close" data-action="practice-close" aria-label="关闭">×</button>' +
+    '</div>' +
+    '<div class="practice-step">① 点字母之间的 · 切音节</div>' +
+    '<div class="practice-letters" data-role="letters"></div>' +
+    '<div class="practice-step">② 点音节卡标重音 (金色) · ③ 填罗马音</div>' +
+    '<div class="practice-preview" data-role="preview"></div>' +
+    '<div class="practice-actions">' +
+      '<button class="primary" data-action="practice-submit">▶ 提交</button>' +
+      '<button data-action="practice-reset">↻ 重切</button>' +
+    '</div>' +
+    '<div class="practice-result" data-role="result" style="display:none;"></div>';
+  card.parentNode.insertBefore(drawer, card.nextSibling);
+  card.classList.add('is-practicing');
+  practiceState.drawer = drawer;
+  renderPracticeLetters();
+  renderPracticePreview();
+  drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function renderPracticeLetters() {
+  if (!practiceState) return;
+  const row = practiceState.drawer.querySelector('[data-role="letters"]');
+  row.innerHTML = '';
+  practiceState.letters.forEach((ch, i) => {
+    const letterEl = document.createElement('span');
+    letterEl.className = 'p-letter';
+    letterEl.textContent = ch;
+    row.appendChild(letterEl);
+    if (i < practiceState.letters.length - 1) {
+      const gap = document.createElement('button');
+      const active = practiceState.playerBounds.has(i);
+      gap.className = 'p-gap' + (active ? ' active' : '');
+      gap.textContent = active ? '|' : '·';
+      gap.dataset.action = 'practice-split';
+      gap.dataset.i = i;
+      gap.disabled = practiceState.submitted;
+      row.appendChild(gap);
+    }
+  });
+}
+
+function getPracticePlayerSyls() {
+  const ps = practiceState;
+  const sorted = [...ps.playerBounds].sort((a, b) => a - b);
+  const syls = [];
+  let cur = '';
+  for (let i = 0; i < ps.letters.length; i++) {
+    cur += ps.letters[i];
+    if (sorted.includes(i) && i < ps.letters.length - 1) { syls.push(cur); cur = ''; }
+  }
+  if (cur) syls.push(cur);
+  return syls;
+}
+
+function renderPracticePreview() {
+  if (!practiceState) return;
+  const preview = practiceState.drawer.querySelector('[data-role="preview"]');
+  preview.innerHTML = '';
+  const syls = getPracticePlayerSyls();
+  if (syls.length === 1 && practiceState.playerBounds.size === 0) {
+    const hint = document.createElement('div');
+    hint.className = 'p-hint';
+    hint.textContent = '先切分上面的字母 (' + practiceState.letters.length + ' 个字母)';
+    preview.appendChild(hint);
+    return;
+  }
+  syls.forEach((s, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'p-slot';
+    const sylBtn = document.createElement('button');
+    sylBtn.className = 'p-syl' + (i === practiceState.playerStressIdx ? ' stress' : '');
+    sylBtn.textContent = s;
+    sylBtn.dataset.action = 'practice-stress';
+    sylBtn.dataset.i = i;
+    sylBtn.disabled = practiceState.submitted;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'p-romaji';
+    input.placeholder = '罗马音';
+    input.value = practiceState.playerRomaji[i] || '';
+    input.disabled = practiceState.submitted;
+    input.autocomplete = 'off';
+    input.spellcheck = false;
+    input.oninput = e => { practiceState.playerRomaji[i] = e.target.value; };
+    slot.appendChild(sylBtn);
+    slot.appendChild(input);
+    preview.appendChild(slot);
+  });
+}
+
+function submitPractice() {
+  if (!practiceState || practiceState.submitted) return;
+  practiceState.submitted = true;
+  const ps = practiceState;
+  const playerSyls = getPracticePlayerSyls();
+  const playerBounds = syllablesToBounds(playerSyls);
+  const aSet = new Set(ps.answerBounds);
+  const pSet = new Set(playerBounds);
+  const correctBounds = [...pSet].filter(b => aSet.has(b));
+  const extraBounds = [...pSet].filter(b => !aSet.has(b));
+  const missedBounds = [...aSet].filter(b => !pSet.has(b));
+  const boundPoints = correctBounds.length * 30;
+  const extraPenalty = extraBounds.length * 15;
+  const missedPenalty = missedBounds.length * 10;
+  const stressOK = (playerSyls.length === ps.answerSyls.length) && (ps.playerStressIdx === ps.answerStressIdx);
+  const stressPoints = stressOK ? 60 : 0;
+  const perfect = (correctBounds.length === ps.answerBounds.length && extraBounds.length === 0 && stressOK);
+  const perfectBonus = perfect ? 40 : 0;
+  const romajiFilled = ps.playerRomaji.slice(0, playerSyls.length).filter(r => r && r.trim()).length;
+  const romajiPoints = romajiFilled * 10;
+  const total = Math.max(0, boundPoints - extraPenalty - missedPenalty + stressPoints + perfectBonus + romajiPoints);
+  const maxPossible = ps.answerBounds.length * 30 + 60 + 40 + ps.answerSyls.length * 10;
+  const ratio = maxPossible > 0 ? total / maxPossible : 0;
+  let rank = 'D';
+  if (ratio >= 0.95) rank = 'S';
+  else if (ratio >= 0.80) rank = 'A';
+  else if (ratio >= 0.60) rank = 'B';
+  else if (ratio >= 0.40) rank = 'C';
+
+  renderPracticeLetters();
+  renderPracticePreview();
+
+  const result = ps.drawer.querySelector('[data-role="result"]');
+  result.style.display = '';
+  const yourCardsHtml = playerSyls.map((s, i) => {
+    const isExact = ps.answerSyls[i] && s.toLowerCase() === ps.answerSyls[i].toLowerCase();
+    const isStress = i === ps.playerStressIdx;
+    const cls = ['p-rc-syl'];
+    if (isExact) cls.push('match');
+    if (isStress) cls.push('stress');
+    if (isStress && !stressOK) cls.push('miss');
+    const txt = (ps.playerRomaji[i] || '').trim();
+    const romaji = txt ? escapeHtml(txt) : '—';
+    return '<div class="p-rc-slot"><div class="' + cls.join(' ') + '">' + escapeHtml(s) + '</div><div class="p-rc-romaji">' + romaji + '</div></div>';
+  }).join('');
+  const answerCardsHtml = ps.answerSyls.map((s, i) => {
+    const cls = ['p-rc-syl'];
+    if (i === ps.answerStressIdx) cls.push('stress');
+    return '<div class="p-rc-slot"><div class="' + cls.join(' ') + '">' + escapeHtml(s) + '</div><div class="p-rc-romaji answer">' + escapeHtml(ps.answerRomaji[i]) + '</div></div>';
+  }).join('');
+  const sourceLabel = ps.answerSource === 'dict' ? '字典' :
+                      ps.answerSource === 'ipa'  ? '依据你填的 IPA' :
+                                                   '启发式估算';
+  const rows = [];
+  rows.push('<div class="p-rb-row"><span>切分正确 ' + correctBounds.length + '/' + ps.answerBounds.length + '</span><span class="pos">+' + boundPoints + '</span></div>');
+  if (extraPenalty) rows.push('<div class="p-rb-row"><span>多切 ×' + extraBounds.length + '</span><span class="neg">-' + extraPenalty + '</span></div>');
+  if (missedPenalty) rows.push('<div class="p-rb-row"><span>漏切 ×' + missedBounds.length + '</span><span class="neg">-' + missedPenalty + '</span></div>');
+  rows.push('<div class="p-rb-row"><span>重音 ' + (stressOK ? '✓' : '✗') + '</span><span class="' + (stressOK ? 'pos' : '') + '">' + (stressOK ? '+' : '') + stressPoints + '</span></div>');
+  if (romajiPoints) rows.push('<div class="p-rb-row"><span>罗马音 ×' + romajiFilled + '</span><span class="pos">+' + romajiPoints + '</span></div>');
+  if (perfectBonus) rows.push('<div class="p-rb-row"><span>完美 bonus</span><span class="pos">+' + perfectBonus + '</span></div>');
+  rows.push('<div class="p-rb-row total"><span>TOTAL</span><span>' + total + '</span></div>');
+
+  result.innerHTML =
+    '<div class="p-rc-rank ' + rank.toLowerCase() + '">' + rank + '</div>' +
+    '<div class="p-rc-score">SCORE ' + total + '</div>' +
+    '<div class="p-rc-section">' +
+      '<div class="p-rc-label">你的拆分</div>' +
+      '<div class="p-rc-cards">' + yourCardsHtml + '</div>' +
+    '</div>' +
+    '<div class="p-rc-section">' +
+      '<div class="p-rc-label">参考答案 <span class="p-rc-src">· ' + sourceLabel + '</span></div>' +
+      '<div class="p-rc-cards">' + answerCardsHtml + '</div>' +
+    '</div>' +
+    '<div class="p-rc-breakdown">' + rows.join('') + '</div>' +
+    '<div class="p-rc-actions">' +
+      '<button data-action="practice-retry">↻ 再试</button>' +
+      '<button data-action="practice-close">完成</button>' +
+    '</div>';
+  result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function resetPractice() {
+  if (!practiceState) return;
+  practiceState.playerBounds = new Set();
+  practiceState.playerStressIdx = -1;
+  practiceState.playerRomaji = [];
+  practiceState.submitted = false;
+  const result = practiceState.drawer.querySelector('[data-role="result"]');
+  if (result) result.style.display = 'none';
+  renderPracticeLetters();
+  renderPracticePreview();
+}
+
 main.addEventListener('click', e => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
+
+  // practice mode actions (some have no card data-id, some do)
+  if (action === 'practice-close') { closePractice(); return; }
+  if (action === 'practice-submit') { submitPractice(); return; }
+  if (action === 'practice-reset' || action === 'practice-retry') { resetPractice(); return; }
+  if (action === 'practice-split') {
+    if (!practiceState || practiceState.submitted) return;
+    const i = parseInt(btn.dataset.i, 10);
+    if (practiceState.playerBounds.has(i)) practiceState.playerBounds.delete(i);
+    else practiceState.playerBounds.add(i);
+    practiceState.playerStressIdx = -1;
+    renderPracticeLetters();
+    renderPracticePreview();
+    return;
+  }
+  if (action === 'practice-stress') {
+    if (!practiceState || practiceState.submitted) return;
+    const i = parseInt(btn.dataset.i, 10);
+    practiceState.playerStressIdx = (practiceState.playerStressIdx === i) ? -1 : i;
+    renderPracticePreview();
+    return;
+  }
 
   // add-term flow doesn't have a card data-id
   if (action === 'add-save') {
@@ -1188,6 +1727,11 @@ main.addEventListener('click', e => {
   const id = card.dataset.id;
   if (!id) return;
   const [catId, en] = id.split('::');
+
+  if (action === 'play') {
+    openPractice(card);
+    return;
+  }
 
   if (action === 'speak') {
     speakTerm(en, btn);
