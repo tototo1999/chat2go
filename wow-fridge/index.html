@@ -361,45 +361,66 @@
     margin-top: 2px;
   }
   
-  /* Expressive Q-style Cartoon Robot Eyes Screen */
-  .robot-eyes-screen {
+  /* Minion-style Single Cute Blinking Eye Screen */
+  .minion-eye-screen {
     width: 100%; height: 100%;
-    background: #0e1017; /* Charcoal black high-contrast digital screen */
+    background: #ffd300; /* Pure Minion Yellow */
     display: flex; flex-direction: column;
     justify-content: center; align-items: center;
     position: absolute; top: 0; left: 0;
   }
-  .robot-eyes-container {
-    display: flex; gap: 12px;
+  .minion-eyes-container {
+    display: flex;
     align-items: center; justify-content: center;
-    margin-top: -6px;
+    margin-top: -4px;
   }
-  .robot-eye {
-    width: 22px; height: 28px;
-    background: radial-gradient(circle at 35% 35%, #90e0ef 0%, #0077b6 40%, #03045e 85%);
+  .minion-goggles {
+    width: 32px; height: 32px;
+    background: #e5e5e5; /* Silver grey frame */
+    border: 1.5px solid var(--coffee-dark);
+    border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15), inset -1px -1px 3px rgba(0,0,0,0.2);
+  }
+  .minion-eyeball {
+    width: 24px; height: 24px;
+    background: #ffffff;
+    border: 1px solid var(--coffee-dark);
     border-radius: 50%;
     position: relative;
-    box-shadow: 0 0 8px rgba(0, 180, 216, 0.7), 0 0 16px rgba(114, 9, 183, 0.4), inset -2px -2px 4px rgba(0,0,0,0.6);
-    animation: robot-eye-blink 4s infinite ease-in-out;
+    display: flex; justify-content: center; align-items: center;
+    animation: minion-eye-blink 4s infinite ease-in-out;
+    overflow: hidden;
   }
-  .robot-eye::before {
-    content: '';
-    position: absolute;
-    top: 5px; left: 5px;
-    width: 6px; height: 6px;
-    background: #ffffff;
+  .minion-iris {
+    width: 12px; height: 12px;
+    background: radial-gradient(circle, #291507 20%, #8b5a2b 55%, #b58253 90%);
     border-radius: 50%;
-    filter: drop-shadow(0 0 1px rgba(255,255,255,0.8));
+    position: relative;
+    display: flex; justify-content: center; align-items: center;
   }
-  .robot-eye::after {
+  .minion-pupil {
+    width: 6px; height: 6px;
+    background: #1c1c1c;
+    border-radius: 50%;
+  }
+  .minion-iris::before {
     content: '';
     position: absolute;
-    bottom: 5px; right: 5px;
+    top: 2px; left: 2px;
     width: 3px; height: 3px;
     background: #ffffff;
     border-radius: 50%;
   }
-  @keyframes robot-eye-blink {
+  .minion-iris::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 1.5px; height: 1.5px;
+    background: #ffffff;
+    border-radius: 50%;
+  }
+  @keyframes minion-eye-blink {
     0%, 90%, 100% { transform: scaleY(1); }
     95% { transform: scaleY(0.1); }
   }
@@ -409,6 +430,7 @@
     background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark);
     border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold;
     white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif;
+    z-index: 10;
   }
   
   /* Speaker lines at bottom */
@@ -911,13 +933,11 @@
             <div class="fridge-magnet shape-circle" id="mag-kid" onclick="selectMagnet('kid')" style="background: var(--dopa-blue-light); border-color: var(--dopa-blue); transform: rotate(-2deg);">
               <div class="magnet-lens"></div>
               <div class="magnet-window">
-                <div class="robot-eyes-screen">
-                  <div class="robot-eyes-container">
-                    <div class="robot-eye"></div>
-                  </div>
-                  <div class="screen-overlay-tag">
-                    👧 宝贝学拼读 🌟
-                  </div>
+                <video autoplay loop muted playsinline class="screen-card-box" style="object-fit: cover; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                  <source src="../assets/lexi_30s_campaign_vlog.mp4" type="video/mp4">
+                </video>
+                <div style="position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.85); border: 1.5px solid var(--coffee-dark); border-radius: 8px; padding: 2px 6px; font-size: 6px; font-weight: bold; white-space: nowrap; color: var(--coffee-dark); font-family: 'Fredoka', sans-serif; z-index: 10;">
+                  👧 宝贝 VLOG 🌟
                 </div>
               </div>
               <div class="magnet-grill">
@@ -930,10 +950,16 @@
               <div class="magnet-lens"></div>
               <div class="magnet-window">
                 
-                <!-- Normal view: Blinking AI robot eyes -->
-                <div class="robot-eyes-screen" id="agent-normal-view">
-                  <div class="robot-eyes-container">
-                    <div class="robot-eye"></div>
+                <!-- Normal view: Blinking Minion Eye -->
+                <div class="minion-eye-screen" id="agent-normal-view">
+                  <div class="minion-eyes-container">
+                    <div class="minion-goggles">
+                      <div class="minion-eyeball">
+                        <div class="minion-iris">
+                          <div class="minion-pupil"></div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div class="screen-overlay-tag">
                     🤖 AI 智能体 ⚙️
