@@ -225,6 +225,62 @@ section h2 .count {
   margin-left: auto; color: #ef4444; border-color: transparent;
 }
 .edit-actions button:hover { opacity: 0.85; }
+
+/* ───── Sentence practice (造句) inside edit form ───── */
+.edit-form .sentence-section {
+  padding-top: 12px; margin-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+.sentence-prompt-row {
+  display: flex; gap: 8px; align-items: stretch;
+  margin-bottom: 6px;
+}
+.sentence-prompt {
+  flex: 1; padding: 8px 12px;
+  background: var(--accent-soft); color: var(--text);
+  border-left: 3px solid var(--accent);
+  font-size: 12px; line-height: 1.5;
+  border-radius: 0 5px 5px 0;
+}
+.sentence-prompt b { color: var(--accent); font-family: 'SF Mono', Menlo, monospace; font-weight: 700; }
+.sentence-rotate {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-dim); width: 30px; height: 30px;
+  border-radius: 50%; cursor: pointer;
+  font-size: 14px; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sentence-rotate:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.sentence-save {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 5px;
+  padding: 6px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; letter-spacing: 1px;
+  margin-top: 4px; align-self: flex-start;
+}
+.sentence-save:hover { opacity: 0.88; }
+.past-sentences {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-top: 10px;
+}
+.past-sentences:empty { display: none; }
+.past-sentence {
+  font-size: 12px; color: var(--text);
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  padding: 6px 10px;
+  border-radius: 0 5px 5px 0;
+  display: flex; gap: 6px; align-items: center;
+  font-family: -apple-system, sans-serif; line-height: 1.5;
+}
+.past-sentence .text { flex: 1; }
+.past-sentence .del-sentence {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 14px;
+  padding: 0 4px; line-height: 1;
+}
+.past-sentence .del-sentence:hover { color: #ef4444; }
 .add-term-btn {
   background: rgba(29,158,117,0.06);
   border: 1px dashed var(--accent);
@@ -1056,9 +1112,28 @@ function getTermData(catId, en) {
     hint: edit.hint !== undefined ? edit.hint : (orig[2] || ''),
     phonetic: edit.phonetic !== undefined ? edit.phonetic : dictRomaji,
     note: edit.note || '',
+    sentences: Array.isArray(edit.sentences) ? edit.sentences : [],
     edited: Object.keys(edit).length > 0,
     dictRomaji
   };
+}
+
+/* 造句题模板 — 每次"换一题"轮换 */
+const SENTENCE_PROMPTS = [
+  '用 <b>{en}</b> 造一个英文句子。',
+  '用 <b>{en}</b> 写一句和工作 / 学习相关的话。',
+  '造一句包含 <b>{en}</b> 的过去时句子(过去发生的事)。',
+  '造一句包含 <b>{en}</b> 的疑问句。',
+  '用 <b>{en}</b> 描述一个最近的经历。',
+  '把 <b>{en}</b> 放进一个 15-20 字的英文长句里。',
+  '用 <b>{en}</b> 造一个对话回答 (someone asks you...) 。',
+  '用 <b>{en}</b> + 形容词,造一个表达观点的句子。'
+];
+function buildSentencePrompt(idx, en, zh) {
+  const tpl = SENTENCE_PROMPTS[idx % SENTENCE_PROMPTS.length];
+  let s = tpl.replace('{en}', escapeHtml(en));
+  if (zh) s += ' <span style="color:var(--text-dim);">(中文:' + escapeHtml(zh) + ')</span>';
+  return s;
 }
 
 function searchKey(d) {
@@ -1107,6 +1182,21 @@ function renderEditForm(card) {
       '<div class="edit-row"><label>中文</label><input type="text" name="zh" value="' + escapeHtml(d.zh) + '"></div>' +
       '<div class="edit-row"><label>解释</label><textarea name="hint" rows="2">' + escapeHtml(d.hint) + '</textarea></div>' +
       '<div class="edit-row"><label>个人笔记</label><textarea name="note" rows="3" placeholder="例句 / 关联词 / 记忆方法…">' + escapeHtml(d.note) + '</textarea></div>' +
+      '<div class="edit-row sentence-section">' +
+        '<label>造句练习</label>' +
+        '<div class="sentence-prompt-row">' +
+          '<div class="sentence-prompt" data-tpl="0">' + buildSentencePrompt(0, d.en, d.zh) + '</div>' +
+          '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
+        '</div>' +
+        '<textarea name="sentence-input" rows="2" placeholder="写一句包含 ' + escapeHtml(d.en) + ' 的英文…" spellcheck="false"></textarea>' +
+        '<button type="button" class="sentence-save" data-action="save-sentence">✓ 记下这句</button>' +
+        '<div class="past-sentences" data-role="past-sentences">' +
+          d.sentences.map((s, i) =>
+            '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
+            '<button class="del-sentence" data-action="del-sentence" data-i="' + i + '" title="删除">×</button></div>'
+          ).join('') +
+        '</div>' +
+      '</div>' +
       '<div class="edit-actions">' +
         '<button type="button" data-action="save">保存</button>' +
         '<button type="button" data-action="cancel">取消</button>' +
@@ -1757,6 +1847,66 @@ main.addEventListener('click', e => {
     return;
   }
 
+  // 造句 — 换一题
+  if (action === 'rotate-prompt') {
+    const promptEl = card.querySelector('.sentence-prompt');
+    if (!promptEl) return;
+    const cur = parseInt(promptEl.dataset.tpl, 10) || 0;
+    const next = (cur + 1) % SENTENCE_PROMPTS.length;
+    const d = getTermData(catId, en);
+    promptEl.dataset.tpl = next;
+    promptEl.innerHTML = buildSentencePrompt(next, d.en, d.zh);
+    return;
+  }
+
+  // 造句 — 记下一句
+  if (action === 'save-sentence') {
+    const ta = card.querySelector('[name=sentence-input]');
+    if (!ta) return;
+    const sentence = ta.value.trim();
+    if (!sentence) { ta.focus(); return; }
+    const existing = state.edits[id] || {};
+    const sentences = Array.isArray(existing.sentences) ? existing.sentences.slice() : [];
+    sentences.unshift(sentence);  // newest first
+    state.edits[id] = Object.assign({}, existing, { sentences });
+    save();
+    ta.value = '';
+    // re-render past sentences list in place
+    const past = card.querySelector('[data-role="past-sentences"]');
+    if (past) {
+      past.innerHTML = sentences.map((s, i) =>
+        '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
+        '<button class="del-sentence" data-action="del-sentence" data-i="' + i + '" title="删除">×</button></div>'
+      ).join('');
+    }
+    return;
+  }
+
+  // 造句 — 删一句
+  if (action === 'del-sentence') {
+    const i = parseInt(btn.dataset.i, 10);
+    const existing = state.edits[id] || {};
+    if (!Array.isArray(existing.sentences) || !existing.sentences[i]) return;
+    const sentences = existing.sentences.slice();
+    sentences.splice(i, 1);
+    if (sentences.length) state.edits[id] = Object.assign({}, existing, { sentences });
+    else {
+      const copy = Object.assign({}, existing);
+      delete copy.sentences;
+      if (Object.keys(copy).length === 0) delete state.edits[id];
+      else state.edits[id] = copy;
+    }
+    save();
+    const past = card.querySelector('[data-role="past-sentences"]');
+    if (past) {
+      past.innerHTML = sentences.map((s, idx) =>
+        '<div class="past-sentence"><span class="text">' + escapeHtml(s) + '</span>' +
+        '<button class="del-sentence" data-action="del-sentence" data-i="' + idx + '" title="删除">×</button></div>'
+      ).join('');
+    }
+    return;
+  }
+
   if (action === 'speak') {
     speakTerm(en, btn);
     return;
@@ -1808,6 +1958,9 @@ main.addEventListener('click', e => {
     if (zh && zh !== orig[1]) edit.zh = zh;
     if (hint !== (orig[2] || '')) edit.hint = hint;
     if (note) edit.note = note;
+    // 保留已记的造句句子(save-sentence 单独写入 state.edits[id].sentences)
+    const prevEdit = state.edits[id] || {};
+    if (Array.isArray(prevEdit.sentences) && prevEdit.sentences.length) edit.sentences = prevEdit.sentences;
     if (Object.keys(edit).length === 0) delete state.edits[id];
     else state.edits[id] = edit;
     save();
