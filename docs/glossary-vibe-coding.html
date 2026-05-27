@@ -288,6 +288,17 @@ section h2 .count {
   transition: background 0.15s;
 }
 .add-term-btn:hover { background: rgba(29,158,117,0.12); }
+.recover-btn {
+  background: rgba(245,158,11,0.06);
+  border: 1px dashed #f59e0b;
+  color: #b45309;
+  font-family: inherit;
+  font-size: 11px; font-weight: 500;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.recover-btn:hover { background: rgba(245,158,11,0.14); }
 .term.is-user::before {
   content: '✚'; position: absolute; top: -6px; right: -6px;
   background: var(--accent); color: #fff;
@@ -705,7 +716,9 @@ function save() {
 function getMergedTerms(cat) {
   const builtin = cat.terms.slice();
   const user = state.userTerms[cat.id] || [];
-  return builtin.concat(user.map(t => [t.en, t.zh, t.hint || '']));
+  const all = builtin.concat(user.map(t => [t.en, t.zh, t.hint || '']));
+  // 过滤掉已硬删的(state.deleted),tab badge / 卡片渲染都跟实际可见数对齐
+  return all.filter(([en]) => !state.deleted.has(cat.id + '::' + en));
 }
 
 function isUserTerm(catId, en) {
@@ -1005,6 +1018,28 @@ function renderCategorySection(cat) {
   addBtn.dataset.cat = cat.id;
   addBtn.onclick = () => openAddTermForm(cat.id, addBtn);
   grid.appendChild(addBtn);
+  // Recover deleted (if any) — escape hatch when 误删
+  const deletedInCat = [...state.deleted].filter(id => id.startsWith(cat.id + '::')).length;
+  if (deletedInCat > 0) {
+    const recover = document.createElement('button');
+    recover.className = 'recover-btn';
+    recover.textContent = '↺ 恢复 ' + deletedInCat + ' 个被删的词';
+    recover.onclick = () => {
+      if (!confirm('恢复 "' + cat.title + '" 下 ' + deletedInCat + ' 个被删的词?')) return;
+      [...state.deleted].forEach(id => {
+        if (id.startsWith(cat.id + '::')) state.deleted.delete(id);
+      });
+      save();
+      const newSection = renderCategorySection(cat);
+      const old = document.getElementById('cat-' + cat.id);
+      if (old) old.replaceWith(newSection);
+      updateCatNavCount(cat.id);
+      // Reapply active-cat class after replace
+      if (document.body.dataset.activeCat === cat.id) newSection.classList.add('active-cat');
+      applySearch();
+    };
+    grid.appendChild(recover);
+  }
   section.appendChild(grid);
   return section;
 }
@@ -1668,6 +1703,7 @@ main.addEventListener('click', e => {
     save();
     document.querySelectorAll('.term[data-id="' + CSS.escape(id) + '"]').forEach(t => t.remove());
     rebuildFavorites();
+    updateCatNavCount(catId);  // tab badge 跟着减
     applySearch();
   }
 });
