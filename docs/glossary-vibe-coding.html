@@ -733,23 +733,120 @@ function getTermData(catId, en) {
   };
 }
 
-/* 造句题模板 — 每次"换一题"轮换 */
-const SENTENCE_PROMPTS = [
-  '用 <b>{en}</b> 造一个英文句子。',
-  '用 <b>{en}</b> 写一句和工作 / 学习相关的话。',
-  '造一句包含 <b>{en}</b> 的过去时句子(过去发生的事)。',
-  '造一句包含 <b>{en}</b> 的疑问句。',
-  '用 <b>{en}</b> 描述一个最近的经历。',
-  '把 <b>{en}</b> 放进一个 15-20 字的英文长句里。',
-  '用 <b>{en}</b> 造一个对话回答 (someone asks you...) 。',
-  '用 <b>{en}</b> + 形容词,造一个表达观点的句子。'
+/* 造句题:100 句通用中文语式 — 翻译成英文,用上目标词 */
+const SENTENCE_BANK = [
+  // ── 疑问句 40 ──
+  '你听说过 {zh} 吗?',
+  '你知道什么是 {zh} 吗?',
+  '你能解释一下 {zh} 吗?',
+  '什么是 {zh}?',
+  '怎么用 {zh}?',
+  '你用过 {zh} 吗?',
+  '{zh} 是什么意思?',
+  '你能教我 {zh} 吗?',
+  '{zh} 难学吗?',
+  '你为什么学 {zh}?',
+  '哪里可以学 {zh}?',
+  '学 {zh} 要多久?',
+  '你做 {zh} 多久了?',
+  '谁发明了 {zh}?',
+  '为什么大家都在讨论 {zh}?',
+  '你为什么对 {zh} 感兴趣?',
+  '{zh} 是什么时候出现的?',
+  '你下次还会用 {zh} 吗?',
+  '没有 {zh} 你能做这个吗?',
+  '{zh} 跟以前版本有什么不同?',
+  '{zh} 的好处是什么?',
+  '{zh} 的缺点是什么?',
+  '你觉得 {zh} 怎么样?',
+  '{zh} 适合初学者吗?',
+  '这个项目用了 {zh} 吗?',
+  '{zh} 是免费的吗?',
+  '我应该先学 {zh} 吗?',
+  '{zh} 还有别的用法吗?',
+  '怎么测试 {zh}?',
+  '怎么调试 {zh}?',
+  '{zh} 的英文怎么念?',
+  '你能用一句话解释 {zh} 吗?',
+  '在哪些场景会用到 {zh}?',
+  '用 {zh} 解决了什么问题?',
+  '{zh} 是个工具吗?',
+  '{zh} 已经过时了吗?',
+  '你们公司用 {zh} 吗?',
+  '老师讲的就是 {zh} 吗?',
+  '你能写一个 {zh} 的例子吗?',
+  '我们应该用 {zh} 吗?',
+  // ── 陈述句 60 ──
+  '我今天学了 {zh}。',
+  '我每天都在用 {zh}。',
+  '{zh} 是一个常用的概念。',
+  '我喜欢 {zh}。',
+  '我刚开始学 {zh}。',
+  '我已经学会了 {zh}。',
+  '{zh} 比我想的难。',
+  '{zh} 比我想的简单。',
+  '这个项目用了 {zh}。',
+  '我们正在评估 {zh}。',
+  '团队决定用 {zh}。',
+  '上次会议讨论了 {zh}。',
+  '老师重点讲了 {zh}。',
+  '这本书有一章是关于 {zh} 的。',
+  '我把 {zh} 加到了简历里。',
+  '没有 {zh} 就没办法做这个。',
+  '{zh} 让一切变简单了。',
+  '{zh} 改变了我的工作方式。',
+  '我会推荐 {zh} 给朋友。',
+  '我们公司不用 {zh}。',
+  '{zh} 适合大型项目。',
+  '{zh} 适合小型项目。',
+  '这是我第一次接触 {zh}。',
+  '{zh} 是面试常考的点。',
+  '{zh} 的文档很详细。',
+  '我们昨天用了 {zh}。',
+  '{zh} 是开源的。',
+  '{zh} 的社区很活跃。',
+  '我打算下个月深入学 {zh}。',
+  '{zh} 比预期更稳定。',
+  '{zh} 还有很多 bug。',
+  '{zh} 是这个领域的标准。',
+  '我已经习惯用 {zh} 了。',
+  '我从同事那里学到了 {zh}。',
+  '我在视频教程里看到了 {zh}。',
+  '{zh} 让代码更整洁。',
+  '{zh} 让团队效率翻倍。',
+  '这就是 {zh}。',
+  '那不是真正的 {zh}。',
+  '{zh} 需要练习才能掌握。',
+  '我刚才在 {zh} 上花了三小时。',
+  '我对 {zh} 很有信心。',
+  '这次面试问到了 {zh}。',
+  '{zh} 是基础知识。',
+  '{zh} 是高级概念。',
+  '我经常忘记 {zh} 怎么用。',
+  '{zh} 跟我以前用的不一样。',
+  '我可以用例子说明 {zh}。',
+  '{zh} 出现在每个教程里。',
+  '{zh} 不适合所有场景。',
+  '总有一天会用上 {zh}。',
+  '我已经收藏了 {zh}。',
+  '我用 {zh} 写了一个小项目。',
+  '{zh} 是我最近学到的最有用的东西。',
+  '{zh} 让我对编程有了新理解。',
+  '我刚好用到 {zh}。',
+  '我对 {zh} 还不熟。',
+  '学 {zh} 之前要先懂基础。',
+  '{zh} 比想象中实用。',
+  '没人不知道 {zh}。',
+  '我把 {zh} 教给了我朋友。'
 ];
 function buildSentencePrompt(idx, en, zh) {
-  const tpl = SENTENCE_PROMPTS[idx % SENTENCE_PROMPTS.length];
-  let s = tpl.replace('{en}', escapeHtml(en));
-  if (zh) s += ' <span style="color:var(--text-dim);">(中文:' + escapeHtml(zh) + ')</span>';
-  return s;
+  const tpl = SENTENCE_BANK[idx % SENTENCE_BANK.length];
+  const term = zh || en;
+  const s = tpl.replace(/\{zh\}/g, '<b>' + escapeHtml(term) + '</b>');
+  return s + ' <span style="color:var(--text-dim);font-size:11px;">(译成英文,需含 ' + escapeHtml(en) + ')</span>';
 }
+// 旧名兼容(防外部引用)
+const SENTENCE_PROMPTS = SENTENCE_BANK;
 
 function searchKey(d) {
   return [d.en, d.zh, d.hint, d.phonetic, d.note].join(' ').toLowerCase();
@@ -773,7 +870,7 @@ function renderCardContent(card) {
       '<span class="zh">' + escapeHtml(d.zh) + '</span>' +
       '<div class="actions">' +
         '<button class="speak" data-action="speak" title="朗读" aria-label="朗读">🔊</button>' +
-        '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">▶</button>' +
+        '<button class="play" data-action="play" title="练:拆音节+标重音+填罗马音" aria-label="练">🎮</button>' +
         '<button class="fav' + (isFav ? ' is-on' : '') + '" data-action="fav" title="' + (isFav ? '取消收藏' : '收藏置顶') + '" aria-label="收藏">★</button>' +
         '<button class="edit" data-action="edit" title="编辑/加罗马注音笔记" aria-label="编辑">✎</button>' +
         '<button class="del" data-action="del" title="删除" aria-label="删除">✕</button>' +
@@ -797,12 +894,15 @@ function renderEditForm(card) {
       '<div class="edit-row"><label>解释</label><textarea name="hint" rows="2">' + escapeHtml(d.hint) + '</textarea></div>' +
       '<div class="edit-row"><label>个人笔记</label><textarea name="note" rows="3" placeholder="例句 / 关联词 / 记忆方法…">' + escapeHtml(d.note) + '</textarea></div>' +
       '<div class="edit-row sentence-section">' +
-        '<label>造句练习</label>' +
+        '<label>造句练习 — 把中文译成英文</label>' +
         '<div class="sentence-prompt-row">' +
-          '<div class="sentence-prompt" data-tpl="0">' + buildSentencePrompt(0, d.en, d.zh) + '</div>' +
+          (function() {
+            const initIdx = Math.floor(Math.random() * SENTENCE_BANK.length);
+            return '<div class="sentence-prompt" data-tpl="' + initIdx + '">' + buildSentencePrompt(initIdx, d.en, d.zh) + '</div>';
+          })() +
           '<button type="button" class="sentence-rotate" data-action="rotate-prompt" title="换一题">↻</button>' +
         '</div>' +
-        '<textarea name="sentence-input" rows="2" placeholder="写一句包含 ' + escapeHtml(d.en) + ' 的英文…" spellcheck="false"></textarea>' +
+        '<textarea name="sentence-input" rows="2" placeholder="把上面的中文译成英文…" spellcheck="false"></textarea>' +
         '<button type="button" class="sentence-save" data-action="save-sentence">✓ 记下这句</button>' +
         '<div class="past-sentences" data-role="past-sentences">' +
           d.sentences.map((s, i) =>
@@ -909,6 +1009,8 @@ function setActiveCat(catId) {
     a.classList.toggle('inactive', a.dataset.cat !== catId);
   });
   try { localStorage.setItem('glossary-active-cat', catId); } catch (e) {}
+  // 收藏区按当前 tab 过滤,切 tab 时刷新
+  if (typeof rebuildFavorites === 'function') rebuildFavorites();
 }
 
 DATA.forEach(cat => {
@@ -951,7 +1053,9 @@ function openAddTermForm(catId, btn) {
 
 function rebuildFavorites() {
   favGrid.innerHTML = '';
-  const ids = [...state.favorites];
+  const activeCat = document.body.dataset.activeCat;
+  // 收藏按当前活动 tab 过滤(每个 tab 一套收藏视图)
+  const ids = [...state.favorites].filter(id => !activeCat || id.split('::')[0] === activeCat);
   favCountEl.textContent = ids.length + ' 个';
   if (ids.length === 0) {
     favSection.classList.remove('show');
@@ -1189,6 +1293,7 @@ function renderPracticeLetters() {
       gap.dataset.action = 'practice-split';
       gap.dataset.i = i;
       gap.disabled = practiceState.submitted;
+      gap.tabIndex = -1;  // Tab 跳过,只在罗马音输入框间循环
       row.appendChild(gap);
     }
   });
@@ -1228,6 +1333,7 @@ function renderPracticePreview() {
     sylBtn.dataset.action = 'practice-stress';
     sylBtn.dataset.i = i;
     sylBtn.disabled = practiceState.submitted;
+    sylBtn.tabIndex = -1;  // Tab 跳过音节卡,只在罗马音输入框间循环
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'p-romaji';
@@ -1412,12 +1518,15 @@ main.addEventListener('click', e => {
     return;
   }
 
-  // 造句 — 换一题
+  // 造句 — 换一题 (从 100 句里随机抽,跳过当前)
   if (action === 'rotate-prompt') {
     const promptEl = card.querySelector('.sentence-prompt');
     if (!promptEl) return;
     const cur = parseInt(promptEl.dataset.tpl, 10) || 0;
-    const next = (cur + 1) % SENTENCE_PROMPTS.length;
+    let next = cur;
+    if (SENTENCE_BANK.length > 1) {
+      do { next = Math.floor(Math.random() * SENTENCE_BANK.length); } while (next === cur);
+    }
     const d = getTermData(catId, en);
     promptEl.dataset.tpl = next;
     promptEl.innerHTML = buildSentencePrompt(next, d.en, d.zh);
