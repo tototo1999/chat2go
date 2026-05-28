@@ -3,6 +3,66 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-27
+
+### 已完成
+
+- [x] **DROP `bridge_state` schema 残留**:`bridge_state` 表 + `bridge_pong()` + `request_bridge_restart()` RPC 全部 drop;`admin_bridge_status()` 保留(实查 `model_usage`,与名字相反)。migration `supabase/migrations/20260527100000_drop_bridge_state_residue.sql`
+- [x] **本地 `~/.hermes*` 清盘**:`~/.hermes` (2.1G) + `~/.hermes-speak2go` (1.8G) + 2 个 launchd plist rm 干净
+- [x] **well2go 默认 todo 切康复治疗中文**:拆 `DEFAULT_TODO_PAYLOAD_SPEAK2GO` / `_WELL2GO`,well2go 走 **「康复治疗 — 核心计划」** 10 组中文模板(评估建档/康复目标/训练计划/疼痛管理/姿势矫正/日常活动/物理因子/居家训练/阶段复评/长期维护),speak2go 保留 English Speaking - Core。运行时按 `_IS_WELL2GO` 选。speak2go 仓库 commit `8b02555`,well2go 仓库 commit `475f08f`
+- [x] **验证 DB 老 schema 残留**:`messages.lesson_session_id` 列不在、`lesson_sessions` 表不在(早期 cutover 已清);`room_members` 当前只 8 行(每房 1-2 人),52 user 历史污染问题已被清理 — 都是 no-op,无需新 migration
+
+### 🌱 新 idea — wooooow.ai 中文 vibe coding 穿戴开源社区(待启动)
+
+> 详细 plan:`~/.claude/plans/merry-questing-elephant.md`(出 plan mode 时保存,审批通过未启动)
+
+**域名锁定**:[wooooow.ai](https://wooooow.ai)(「哇~~」拉长版,中文极客感拉满)— **未注册,实施前 check 可用性 + 注册**
+
+**一句话**:做一个完全独立的中文开源社区站,服务"想在智能穿戴(眼镜/耳机/手环/胸针 PIN)上写自己 App 的中文 vibe coder 极客"。
+
+**已锁定的 7 个 high-level 决策**:
+
+| # | 维度 | 选项 |
+|---|---|---|
+| 1 | 目标用户 | 中文 vibe coder 极客(会基础编程) |
+| 2 | 硬件长期 | 自营矩阵(MVP 阶段借) |
+| 3 | MVP 切口 | vibe coding 工坊接 1 款硬件 |
+| 4 | 站点架构 | 完全独立的开源社区站(新域 + 新仓库) |
+| 5 | 首阶段硬件 | ⚠️ **重审中** — 原锁定 [Mentra Live](https://mentra.glass/) $299,但 [xiaozhi-esp32](https://github.com/78/xiaozhi-esp32)(26k★/中文/¥40-300)可能更优 |
+| 6 | 技术栈 | Astro 静态站 + GH Pages + Supabase 复用(独立 schema `wooooow`) |
+| 7 | 域名 | **wooooow.ai** |
+
+**赛道关键事实(2026-05 调研)**:
+
+- vibe coding 已是 Collins 2025 年度词,Karpathy 2025-02 起爆
+- 开源穿戴龙头:[Omi 12.6k★](https://github.com/BasedHardware/omi) / [MentraOS 2k★](https://github.com/Mentra-Community/MentraOS) / [Bangle.js](https://banglejs.com)
+- MentraOS 已有 miniapp App Store(TypeScript bundle),但需要懂 TS
+- 3 个明显空白:① **中文自然语言 → 穿戴 App 端到端无人做** ② 中文 DIY 穿戴黑客文化几乎为零 ③ 手环手表 App 生态空白
+
+**MVP 范围**(4 件事,3-4 周):
+
+1. 新域名 + Astro 静态站上线(候选 `vibewear.dev`,实施前确认)
+2. **vibe coding 工坊**:用户跟 AI 大咖对话 → AI 生成 MentraOS miniapp TS 代码 → 一键下载 .ts → 用户本地 `mentra-miniapp dev` 推到自己眼镜
+3. **作品广场**:用户上传自己 vibe-coded 的 miniapp(带 demo 视频/截图),其他人可 fork
+4. **Discord + 微信群**圈 100 人种子
+
+**核心 trick**:vibe coding 工坊本质是 `chat2go-worker` 加一个新 industry `wooooow` + 新 system prompt,**不**重建 chat 引擎。新 repo `tototo1999/wooooow` 的 chat.html 从 speak2go 复制 + runtime `host.includes('wooooow')` 切 brand(跟 well2go 同套路)。后端复用 Supabase project `qjnagbzqhoansixqharb` 的新 schema `wooooow`,跟 public schema RLS 隔离。
+
+**2026-05-27 国内开源硬件调研发现**(plan 后续 research note):
+- **颠覆性发现**:[xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) **26k★**,中文社区,MIT,¥40-300,支持豆包/Qwen/DeepSeek REST API。**比 MentraOS (2k★) 大 10 倍,比 Omi (12.6k★) 大 1 倍** — 中文极客早已在这里聚集
+- **国内 3 个明确空白**:① AI 摆件/挂件(CES 2026 展 30+ 款国产 AI 陪伴机器人,0 个开 SDK,Omi 国内无对标)② 手环 Health API 名义开放但个人难审过 ③ 录音设备「硬件闭源 + 云 API 全开」裂缝(讯飞)
+- **Phase 2-3 候选硬件矩阵**:[xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) / [M5Stack LLM630](https://docs.m5stack.com/zh_CN/core/LLM630%20Compute%20Kit) / [TuyaOpen](https://github.com/tuya/TuyaOpen) / [雷鸟 X2](https://open.rayneo.cn/) / [Rokid Glasses](https://ar.rokid.com/sdk) / [FoloToy](https://github.com/FoloToy)
+- **Phase 3 自研「胸针 PIN」(ESP32-S3 + 麦 + 蓝牙)正是填 AI 摆件空白的最优切入点**
+
+**MVP 不做**:支付 / 评论 / 真硬件 / 第二款硬件 / 自研 PIN 胸针(Phase 3)/ 教育市场(Phase 4)。
+
+**待启动前最后一步**:
+- [ ] 域名 `wooooow.ai` 可用性 check + 注册
+- [ ] 决策:首阶段硬件保持 Mentra Live,还是切到 xiaozhi-esp32,还是两条并行?
+- [ ] 用户给绿灯启动 Week 1 实施
+
+---
+
 ## 2026-05-23
 
 ### 🔥 转写进度条(上传录音 → transcript 全链路 9-10 min 体验补)
