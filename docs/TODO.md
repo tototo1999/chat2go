@@ -37,6 +37,13 @@
   - 句型卡片支持:套用造句练习(接上面"造句接 practice_patterns")、TTS 朗读、收藏、艾宾浩斯复习(句型也遗忘)。
   - 句型库 = 造句游戏的题源,跟 vocab 单词表形成"词 + 句"双库闭环。
 
+- [ ] **词库/句型库本地部署 — 离线也能练(plan)** — 现状:页面靠 localStorage + 外部 `romanizer-dict.js`,footer 写「单文件离线可用」其实不严谨(查词/AI 评分都要联网,romanizer 还是独立文件)。目标:**装到本地/手机,断网也能完整练习**。
+  - **离线/在线降级矩阵**(先想清楚哪些能离线):
+    - ✅ 离线可用:浏览词库/句型库、艾宾浩斯复习调度(纯 localStorage)、**造句本地规则评分**(`gradeTranslation()` 已存在,AI 评分断网自动降级)、默写校验(纯字符串比对)、🎮 拆音节练习、TTS 朗读(浏览器原生)。
+    - 🌐 必须联网:联网查新词(`glossary-lookup`/Gemini)、AI 造句评分(`glossary-grade`,降级到本地评分)、跨设备同步。
+  - **部署方案**:① PWA — 加 `manifest.json` + service worker(app shell + `romanizer-dict.js` + vendor 全 cache-first),可"添加到主屏幕"装成离线 App,手机/桌面都行;② 或 单文件打包 — inline `romanizer-dict.js` 进 HTML,做成真·双击即用的离线包。
+  - **联网恢复**:`navigator.onLine` 检测,断网时 AI 按钮灰显/提示走本地,恢复后自动启用 + 可选回传同步。
+
 ### 🗂️ speak2go 单词表 — 搜不到的词一键联网查并加入(上线)
 
 - [x] **glossary 联网查词加词闭环**:搜索无结果时出现「🌐 在网络上查 X 并加入「当前分类」」按钮,一键 → 联网查 → 去重 → 加进当前 tab → 清搜索 → 跳新词高亮。
