@@ -502,6 +502,7 @@
 +                except Exception as e:
 +                    logger.exception("Chat2GO vision pre-process 整体异常,降级直传图给 main: %s", e)
 +
++            _is_audio_upload = False
 +            # 非图片附件：直接预提取文本（PDF/DOCX/TXT 等）追加到 content
 +            # 不让 AI 用 execute_code 解析，避免触发 hermes 的命令审批拦截
 +            if non_image_attachments:
@@ -512,6 +513,7 @@
 +                    # MVP 进度反馈:speak2go audio 文件转写前 INSERT 占位消息,让用户立刻看到"在转"
 +                    # (转写完原流程会写 transcript/todo 消息,新消息自然覆盖占位的语义)
 +                    if name.lower().endswith(_AUDIO_EXTS) and room.get("product") == "speak2go":
++                        _is_audio_upload = True
 +                        try:
 +                            # 不塞 attachments — 前端会把它渲染成附件卡片显示 "undefined 0B"
 +                            _pl_r = await self._sb.table("messages").insert({
@@ -660,6 +662,10 @@
 +                    "Never say \"Chat2Go\" — say \"our chat\" / \"this class\".]"
 +                )
 +                content = f"{_en_hint}\n\n{content}"
++
++            if _is_audio_upload and room.get("product") == "speak2go":
++                logger.info("speak2go: audio upload detected, skipping main brain dispatch.")
++                return
 +
 +            event = MessageEvent(
 +                text=content,
