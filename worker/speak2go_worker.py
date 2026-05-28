@@ -86,7 +86,7 @@ SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面
   "vocab_top20": [
     {
       "en": "accommodate",
-      "phonetic": "/əˈkɒmədeɪt/",
+      "phonetic": "e·KOM·e·deit",
       "zh": "容纳, 适应",
       "frequency": 3,
       "importance": "high",
@@ -112,7 +112,12 @@ SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面
   - `medium` = 提到 + 简短解释
   - `low` = 仅 1 次但 AI 认为有学习价值(如生僻词、固定搭配、本课主题词)
 - **总数 ≤ 20**;排序优先级:`high → medium → low`,同档内 frequency 降序
-- `phonetic` 用 IPA 国际音标(/.../ 格式)
+- `phonetic` 用**罗马注音**(中国学生友好,不用 IPA 国际音标):
+  - 全小写 ASCII;音节之间用 `·` 分隔;重读音节**全大写**;单音节词整词大写
+  - 元音映射:ə→e, ɪ→i, ʌ→u, eɪ→ei, aɪ→ai, aʊ→au, oʊ→o, iː→i, uː→u/oo, ɔː→o, ɑː→a, æ→a, ɒ→o
+  - 后缀映射:tion/sion → shen;ture → cher;sure → zher;ing → ing
+  - 例:accommodate → `e·KOM·e·deit`;snake → `SNEIK`;bathing → `BEI·thing`;suit → `SOOT`;component → `kem·PO·nent`
+  - 不要 IPA 符号(ɪ ʌ ə ð θ ŋ ː ˈ ˌ 等),不要前后斜杠 `/`,不要 `r` 卷舌符号
 - `zh` 简洁,2-8 字中文释义(可加多个义项用「,」分隔)
 - `example` 必须**直接从 transcript 抽真实出现的句子**,不要 AI 编造;如果 transcript 里出现的句子不完整,可以用 transcript 上下文补全到完整短句
 - `context_time` 标该词第一次出现的时间戳(m:ss 格式),帮学生回到原文
