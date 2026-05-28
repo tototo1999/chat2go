@@ -322,11 +322,12 @@ def _append_to_todo_template(sb, room_id: str,
 _IMPORTANCE_LABEL = {"high": "高频", "medium": "中频", "low": "低频"}
 
 
-def _build_glossary_import_url(vocab_top20: list[dict]) -> str:
+def _build_glossary_import_url(vocab_top20: list[dict], lesson_date: str = "") -> str:
     """把 20 词打包成 glossary-vibe-coding.html 能消费的深链。
 
     glossary 数据结构: [{en, zh, hint}, ...]
-    我们把 example + frequency 拼进 hint 字段,这样学生在词表里就看到例句 + 频次。
+    把 example + frequency 拼进 hint 字段,学生在词表里就看到例句 + 频次。
+    lesson_date 参数(YYYY-MM-DD)让 glossary 按课次/日期分组成胶囊。
     """
     if not vocab_top20:
         return ""
@@ -356,7 +357,10 @@ def _build_glossary_import_url(vocab_top20: list[dict]) -> str:
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
     encoded = urllib.parse.quote(b64, safe="")
-    return f"{GLOSSARY_IMPORT_BASE_URL}?import={encoded}"
+    url = f"{GLOSSARY_IMPORT_BASE_URL}?import={encoded}"
+    if lesson_date:
+        url += f"&date={urllib.parse.quote(lesson_date, safe='')}"
+    return url
 
 
 def _build_summary_card(parsed: dict, audio_name: str) -> str:
@@ -421,10 +425,12 @@ def _build_summary_card(parsed: dict, audio_name: str) -> str:
                     lines.append(f"  - {ex_s}")
         lines.append("")
 
-    # 一键导入深链 (CTA)
-    import_url = _build_glossary_import_url(vocab)
+    # 一键导入深链 (CTA) — 带 lesson_date 让 glossary 按日期分组
+    from datetime import datetime, timezone, timedelta
+    lesson_date = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d")  # 北京时间
+    import_url = _build_glossary_import_url(vocab, lesson_date)
     if import_url:
-        lines.append(f"[📚 一键加进 NYC Global Center 单词表 →]({import_url})")
+        lines.append(f"[📚 一键加进 NYC Global Center 单词表({lesson_date}) →]({import_url})")
         lines.append("")
 
     # 课程摘要(可选,在末尾)
