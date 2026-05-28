@@ -263,18 +263,45 @@ def _call_gemini_summary(transcript_md: str,
     for blob, mime in photo_blobs:
         parts.append(types.Part.from_bytes(data=blob, mime_type=mime))
 
-    resp = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=parts,
-        config=types.GenerateContentConfig(
-            system_instruction=SUMMARY_PROMPT,
-            response_mime_type="application/json",
-            temperature=0.3,
-            max_output_tokens=16000,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        ),
+    config = types.GenerateContentConfig(
+        system_instruction=SUMMARY_PROMPT,
+        response_mime_type="application/json",
+        temperature=0.3,
+        max_output_tokens=16000,
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
     )
-    return json.loads(resp.text)
+
+    # Retry + fallback model chain — Gemini 503 high demand 是常见临时拥堵
+    # 主选 flash → 失败转 flash-lite(更便宜但同样可用)
+    MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"]
+    RETRYABLE = ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "high demand", "overloaded")
+    last_err: Exception | None = None
+    for model_name in MODELS:
+        for attempt in range(3):  # 每个 model 最多 3 次
+            try:
+                resp = client.models.generate_content(
+                    model=model_name,
+                    contents=parts,
+                    config=config,
+                )
+                if model_name != MODELS[0] or attempt > 0:
+                    print(f"[gemini] ✓ success on {model_name} attempt {attempt+1}/3")
+                return json.loads(resp.text)
+            except Exception as e:
+                last_err = e
+                err_str = str(e)
+                is_retryable = any(s in err_str for s in RETRYABLE)
+                if not is_retryable:
+                    print(f"[gemini] {model_name} non-retryable error: {type(e).__name__} {err_str[:200]}")
+                    break  # 跳到下一个 model
+                wait_s = (attempt + 1) * 4  # 4s, 8s, 12s
+                print(f"[gemini] {model_name} attempt {attempt+1}/3 failed (retryable): {type(e).__name__} — sleep {wait_s}s")
+                time.sleep(wait_s)
+        else:
+            # 内层 for 循环走完(3 次都失败但都 retryable)→ 试下一个 model
+            print(f"[gemini] {model_name} exhausted 3 retries, falling back to next model")
+    # 所有 model 都失败
+    raise last_err if last_err else RuntimeError("Gemini summary failed without exception")
 
 
 def _update_placeholder(sb, placeholder_id: str, content: str) -> None:
