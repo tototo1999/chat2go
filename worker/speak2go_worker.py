@@ -41,9 +41,10 @@ from typing import Any
 import modal
 
 # glossary 单词表深链(导入 NYC Global Center)
+# speak2go.ai 原生托管,跟 speak2go.ai/chat.html 同站,品牌一致 + localStorage 跟 chat 同 origin
 GLOSSARY_IMPORT_BASE_URL = os.environ.get(
     "GLOSSARY_IMPORT_BASE_URL",
-    "https://chat2go.cn/docs/glossary-vibe-coding.html",
+    "https://speak2go.ai/glossary.html",
 )
 
 # ── Modal app + image ────────────────────────────────────────────────────────
