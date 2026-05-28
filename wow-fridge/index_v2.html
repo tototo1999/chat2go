@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voilà AI 冰箱贴 · 概念长卷 v2 🎈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;600;700;800&family=Quicksand:wght@500;700&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-cream: #fefaf4;
+    --bg-paper: #faf6ee;
+    --coffee-dark: #292524;
+    --coffee-medium: #57534e;
+    --coffee-light: #78716c;
+
+    --dopa-pink: #f472b6;
+    --dopa-pink-light: #fce7f3;
+    --dopa-pink-deep: #db2777;
+
+    --dopa-orange: #fb923c;
+    --dopa-orange-light: #ffedd5;
+
+    --dopa-yellow: #facc15;
+    --dopa-yellow-light: #fef9c3;
+
+    --dopa-green: #34d399;
+    --dopa-green-light: #d1fae5;
+    --dopa-green-deep: #059669;
+
+    --dopa-blue: #38bdf8;
+    --dopa-blue-light: #e0f2fe;
+    --dopa-blue-deep: #0284c7;
+
+    --dopa-purple: #c084fc;
+    --dopa-purple-light: #f3e8ff;
+
+    --dopa-peach: #fda4af;
+    --dopa-mint: #a7f3d0;
+    --dopa-honey: #fcd34d;
+    --dopa-lavender: #ddd6fe;
+
+    --border-chunky: 3px solid #292524;
+    --border-thin: 2px solid #292524;
+    --radius-sm: 8px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+
+    --shadow-chunky: 4px 4px 0px #292524;
+    --shadow-chunky-hover: 8px 8px 0px #292524;
+    --shadow-chunky-deep: 6px 6px 0px #292524;
+    --shadow-soft: 0 10px 25px rgba(41, 37, 36, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; background-color: #dfdcd6; }
+  body {
+    background-color: var(--bg-cream);
+    color: var(--coffee-dark);
+    font-family: 'Nunito', -apple-system, "PingFang SC", sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    max-width: 1280px;
+    margin: 0 auto;
+    position: relative;
+    min-height: 100vh;
+    box-shadow: 0 0 60px rgba(41, 37, 36, 0.12);
+  }
+  @media (min-width: 1281px) {
+    body { border-left: var(--border-chunky); border-right: var(--border-chunky); }
+  }
+
+  /* ===== Background blobs (the "happy weather") ===== */
+  .bg-blob {
+    position: absolute; pointer-events: none; z-index: -1; opacity: 0.55;
+  }
+  .blob-1 { width: 600px; height: 600px; top: -180px; right: -120px; background: radial-gradient(circle, var(--dopa-pink-light) 0%, transparent 70%); }
+  .blob-2 { width: 500px; height: 500px; top: 480px; left: -160px; background: radial-gradient(circle, var(--dopa-blue-light) 0%, transparent 70%); }
+  .blob-3 { width: 720px; height: 720px; top: 1800px; right: -260px; background: radial-gradient(circle, var(--dopa-purple-light) 0%, transparent 70%); }
+  .blob-4 { width: 560px; height: 560px; top: 3200px; left: -180px; background: radial-gradient(circle, var(--dopa-green-light) 0%, transparent 70%); }
+  .blob-5 { width: 620px; height: 620px; top: 4800px; right: -200px; background: radial-gradient(circle, var(--dopa-yellow-light) 0%, transparent 70%); }
+  .blob-6 { width: 560px; height: 560px; top: 6400px; left: -180px; background: radial-gradient(circle, var(--dopa-orange-light) 0%, transparent 70%); }
+
+  /* ===== Nav ===== */
+  nav.top {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(254, 250, 244, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: var(--border-chunky);
+  }
+  .nav-inner {
+    max-width: 1180px; margin: 0 auto;
+    padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700; font-size: 22px;
+    color: var(--coffee-dark);
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none;
+  }
+  .nav-brand .logo-bubble {
+    background: var(--dopa-pink); color: #ffffff;
+    padding: 3px 12px; border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    border: 2px solid var(--coffee-dark);
+  }
+  .nav-brand .v2-chip {
+    background: var(--dopa-yellow); color: var(--coffee-dark);
+    padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
+    border: 2px solid var(--coffee-dark);
+    transform: rotate(-4deg);
+  }
+  .nav-links { display: flex; gap: 26px; font-size: 14px; font-weight: 700; font-family: 'Fredoka', sans-serif; }
+  .nav-links a { color: var(--coffee-medium); text-decoration: none; transition: all 0.2s; }
+  .nav-links a:hover { color: var(--dopa-pink); transform: translateY(-1px); }
+  .nav-status {
+    background: var(--dopa-green-light);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-family: 'Fredoka', sans-serif; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .status-dot { width: 8px; height: 8px; background: var(--dopa-green); border-radius: 50%; animation: pulse 2s infinite ease-in-out; }
+  @keyframes pulse { 0%,100%{ transform:scale(0.8); opacity:0.6 } 50%{ transform:scale(1.25); opacity:1 } }
+
+  /* ===== Hero ===== */
+  .hero {
+    padding: 80px 28px 40px;
+    text-align: center;
+    position: relative;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--dopa-yellow-light);
+    border: 2px solid var(--coffee-dark);
+    padding: 6px 16px; border-radius: 999px;
+    margin-bottom: 22px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 13px;
+  }
+  h1.hero-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(40px, 6vw, 76px);
+    font-weight: 700;
+    line-height: 1.05;
+    margin-bottom: 24px;
+    color: var(--coffee-dark);
+  }
+  h1.hero-title .hl {
+    color: var(--dopa-pink); position: relative; display: inline-block;
+  }
+  h1.hero-title .hl::after {
+    content: ""; position: absolute;
+    width: 100%; height: 10px;
+    background: var(--dopa-yellow);
+    bottom: 8px; left: 0; z-index: -1; border-radius: 5px;
+  }
+  h1.hero-title .hl-mint { color: var(--dopa-green-deep); position: relative; display: inline-block; }
+  h1.hero-title .hl-mint::after {
+    content: ""; position: absolute;
+    width: 100%; height: 10px;
+    background: var(--dopa-mint);
+    bottom: 8px; left: 0; z-index: -1; border-radius: 5px;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 1.8vw, 20px);
+    font-weight: 400;
+    color: var(--coffee-medium);
+    max-width: 820px; margin: 0 auto 36px;
+    line-height: 1.55;
+  }
+  .hero-sub code {
+    background: var(--dopa-blue-light); color: var(--coffee-dark);
+    padding: 1px 8px; border-radius: 6px;
+    font-family: 'Quicksand', monospace; font-size: 0.92em;
+    border: 2px dashed var(--dopa-blue);
+  }
+  .btn-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 28px; }
+  .btn-dopa {
+    display: inline-block; padding: 14px 32px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 16px; font-weight: 700;
+    text-decoration: none; border-radius: 999px;
+    border: var(--border-chunky);
+    box-shadow: var(--shadow-chunky);
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer; color: var(--coffee-dark);
+  }
+  .btn-dopa:hover { transform: translateY(-3px) scale(1.02) rotate(1deg); box-shadow: var(--shadow-chunky-hover); }
+  .btn-dopa:active { transform: translateY(2px) scale(0.98); box-shadow: 2px 2px 0 var(--coffee-dark); }
+  .btn-pink { background: var(--dopa-pink); color: #ffffff; }
+  .btn-cream { background: #ffffff; }
+  .btn-mint { background: var(--dopa-mint); }
+  .btn-honey { background: var(--dopa-honey); }
+
+  .tech-pills { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .tech-pill {
+    font-family: 'Fredoka', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--coffee-medium);
+    background: #ffffff;
+    border: 2px solid var(--coffee-dark);
+    padding: 6px 14px; border-radius: 999px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+
+  /* ===== Hero concept strip (rotating tape of concept thumbnails) ===== */
+  .hero-strip {
+    margin-top: 64px;
+    overflow: hidden;
+    border-top: var(--border-chunky);
+    border-bottom: var(--border-chunky);
+    background: var(--dopa-yellow-light);
+    padding: 14px 0;
+    position: relative;
+  }
+  .hero-strip::before, .hero-strip::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 80px; z-index: 2;
+    pointer-events: none;
+  }
+  .hero-strip::before { left: 0; background: linear-gradient(90deg, var(--dopa-yellow-light), transparent); }
+  .hero-strip::after { right: 0; background: linear-gradient(-90deg, var(--dopa-yellow-light), transparent); }
+  .marquee-track {
+    display: flex; gap: 24px;
+    animation: marquee 38s linear infinite;
+    width: max-content;
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0) }
+    100% { transform: translateX(-50%) }
+  }
+  .marquee-tile {
+    width: 220px; height: 140px;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #fff;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-chunky);
+    position: relative;
+    transform: rotate(-1deg);
+  }
+  .marquee-tile:nth-child(even) { transform: rotate(1.5deg); }
+  .marquee-tile img { width: 100%; height: 100%; object-fit: cover; }
+  .marquee-tile .tile-label {
+    position: absolute; bottom: 8px; left: 8px;
+    background: var(--dopa-pink); color: #fff;
+    font-family: 'Fredoka', sans-serif; font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px;
+    border: 2px solid var(--coffee-dark);
+  }
+
+  /* ===== Section base ===== */
+  section.lane {
+    padding: 80px 28px;
+    border-bottom: var(--border-chunky);
+    position: relative;
+  }
+  section.lane.tinted { background: var(--bg-paper); }
+  section.lane.peach { background: #fff5f1; }
+  section.lane.mint { background: #f0fdf6; }
+  section.lane.lavender { background: #f8f4ff; }
+  section.lane.honey { background: #fffbeb; }
+  .lane-inner { max-width: 1180px; margin: 0 auto; }
+
+  .eyebrow-section {
+    display: inline-block;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700; font-size: 12px;
+    letter-spacing: 0.12em;
+    background: var(--dopa-pink-light);
+    color: var(--dopa-pink-deep);
+    border: 2px solid var(--coffee-dark);
+    padding: 5px 14px; border-radius: 999px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    margin-bottom: 18px;
+  }
+  h2.lane-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--coffee-dark);
+    margin-bottom: 14px;
+  }
+  .lane-sub {
+    font-size: 17px; font-weight: 400;
+    color: var(--coffee-medium);
+    max-width: 760px;
+    line-height: 1.6;
+  }
+
+  /* ====================================================== */
+  /*  ACT 1 — CONCEPT VISION BOARD                          */
+  /*  big asymmetric mosaic using all 6 gamma_concept       */
+  /* ====================================================== */
+  .vision-mosaic {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: 180px;
+    gap: 18px;
+  }
+  .v-tile {
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-chunky);
+    transition: all 0.25s;
+  }
+  .v-tile:hover { transform: translateY(-4px) rotate(-0.5deg); box-shadow: var(--shadow-chunky-hover); }
+  .v-tile img { width: 100%; height: 100%; object-fit: cover; }
+  .v-tile-cap {
+    position: absolute; left: 14px; bottom: 14px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 2px solid var(--coffee-dark);
+    padding: 5px 12px; border-radius: 999px;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 12px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .v-tile-tag {
+    position: absolute; top: 12px; left: 12px;
+    background: var(--dopa-honey);
+    border: 2px solid var(--coffee-dark);
+    padding: 3px 9px; border-radius: 6px;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 10px;
+    transform: rotate(-3deg);
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  /* asymmetric placement */
+  .v-tile.t1 { grid-column: span 3; grid-row: span 2; }
+  .v-tile.t2 { grid-column: span 3; grid-row: span 1; }
+  .v-tile.t3 { grid-column: span 2; grid-row: span 1; }
+  .v-tile.t4 { grid-column: span 2; grid-row: span 2; }
+  .v-tile.t5 { grid-column: span 2; grid-row: span 1; }
+  .v-tile.t6 { grid-column: span 3; grid-row: span 1; }
+  .v-tile.t7 { grid-column: span 3; grid-row: span 1; }
+  @media (max-width: 900px) {
+    .vision-mosaic { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 160px; }
+    .v-tile.t1, .v-tile.t2, .v-tile.t3, .v-tile.t4, .v-tile.t5, .v-tile.t6, .v-tile.t7 {
+      grid-column: span 2; grid-row: span 1;
+    }
+  }
+
+  /* Sticky note overlay */
+  .sticky-note {
+    position: absolute; top: -18px; right: -18px;
+    background: var(--dopa-yellow);
+    border: 2px solid var(--coffee-dark);
+    padding: 10px 14px;
+    width: 130px;
+    font-family: 'Caveat', cursive;
+    font-size: 17px; font-weight: 700;
+    color: var(--coffee-dark);
+    box-shadow: var(--shadow-chunky);
+    transform: rotate(5deg);
+    z-index: 5;
+  }
+  .sticky-note.pink { background: var(--dopa-pink-light); }
+  .sticky-note.blue { background: var(--dopa-blue-light); }
+  .sticky-note.green { background: var(--dopa-green-light); }
+
+  /* ====================================================== */
+  /*  ACT 2 — MATERIAL & CRAFT SPECIMENS (SVG/CSS-drawn)    */
+  /* ====================================================== */
+  .specimen-grid {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 1000px) { .specimen-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .specimen-grid { grid-template-columns: 1fr; } }
+  .spec-card {
+    background: #fff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-chunky);
+    padding: 22px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .spec-card:hover { transform: translateY(-4px) rotate(-0.3deg); box-shadow: var(--shadow-chunky-hover); }
+  .spec-label {
+    font-family: 'Quicksand', monospace;
+    font-size: 10px; font-weight: 700;
+    color: var(--coffee-light);
+    letter-spacing: 0.14em;
+    margin-bottom: 8px;
+  }
+  .spec-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--coffee-dark);
+  }
+  .spec-desc {
+    font-size: 13px; color: var(--coffee-medium); line-height: 1.55;
+    margin-top: 12px;
+  }
+
+  /* Color palette swatch */
+  .palette-row { display: flex; gap: 6px; margin-bottom: 4px; }
+  .swatch {
+    flex: 1; aspect-ratio: 1;
+    border: 2px solid var(--coffee-dark);
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .swatch-tag {
+    position: absolute; bottom: -7px; right: -7px;
+    background: #fff; border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    font-family: 'Quicksand', monospace; font-size: 9px; font-weight: 700;
+    padding: 1px 6px;
+  }
+
+  /* Material chip */
+  .material-stack {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .material-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    border: 2px solid var(--coffee-dark);
+    border-radius: 10px;
+    background: var(--dopa-yellow-light);
+    font-family: 'Fredoka', sans-serif;
+    font-size: 12px; font-weight: 600;
+  }
+  .material-chip .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--coffee-dark); flex-shrink: 0; }
+
+  /* Audio waveform */
+  .waveform-card { padding: 22px; }
+  .waveform {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 80px; gap: 3px; margin: 14px 0;
+  }
+  .wave-bar {
+    flex: 1;
+    background: var(--dopa-pink);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 4px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    animation: wavepulse 1.6s infinite ease-in-out;
+  }
+  @keyframes wavepulse {
+    0%, 100% { transform: scaleY(0.4) }
+    50% { transform: scaleY(1) }
+  }
+
+  /* Sensor topology */
+  .topology-card { padding: 22px; }
+  .topology-svg { width: 100%; height: 180px; }
+
+  /* Concentric ring */
+  .rings-card { padding: 22px; }
+  .rings-svg { width: 100%; height: 200px; }
+
+  /* ====================================================== */
+  /*  ACT 3 — ANNOTATED CONCEPT JOURNEY                     */
+  /*  6 storyboards with annotation arrows                  */
+  /* ====================================================== */
+  .journey-board {
+    margin-top: 48px;
+    display: flex; flex-direction: column; gap: 56px;
+  }
+  .journey-row {
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 36px;
+    align-items: center;
+  }
+  .journey-row.flip { grid-template-columns: 1fr 1.05fr; }
+  .journey-row.flip .jr-image { order: 2; }
+  .journey-row.flip .jr-copy { order: 1; }
+  @media (max-width: 900px) {
+    .journey-row, .journey-row.flip { grid-template-columns: 1fr; }
+    .journey-row.flip .jr-image, .journey-row.flip .jr-copy { order: unset; }
+  }
+  .jr-image {
+    position: relative;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-chunky-deep);
+    background: #fff;
+  }
+  .jr-image img { width: 100%; height: auto; display: block; }
+  .jr-frame-tag {
+    position: absolute; top: 14px; left: 14px;
+    background: var(--dopa-pink); color: #fff;
+    border: 2px solid var(--coffee-dark);
+    border-radius: 8px;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 12px;
+    padding: 5px 12px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .jr-annotation {
+    position: absolute;
+    background: var(--dopa-yellow-light);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-family: 'Caveat', cursive;
+    font-size: 18px; font-weight: 700;
+    color: var(--coffee-dark);
+    box-shadow: var(--shadow-chunky);
+    transform: rotate(-2deg);
+    max-width: 180px;
+    line-height: 1.2;
+  }
+  .jr-annotation.tr { top: 18px; right: -30px; transform: rotate(4deg); }
+  .jr-annotation.bl { bottom: 24px; left: -32px; transform: rotate(-5deg); }
+  .jr-annotation.br { bottom: 24px; right: -30px; transform: rotate(3deg); }
+  @media (max-width: 1000px) {
+    .jr-annotation.tr, .jr-annotation.br { right: 10px; }
+    .jr-annotation.bl { left: 10px; }
+  }
+
+  .jr-copy h3 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 28px; font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    color: var(--coffee-dark);
+  }
+  .jr-copy h3 .num {
+    display: inline-block;
+    background: var(--dopa-pink);
+    color: #fff;
+    border: 2px solid var(--coffee-dark);
+    padding: 2px 12px;
+    border-radius: 999px;
+    font-size: 18px;
+    margin-right: 10px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    transform: translateY(-3px);
+  }
+  .jr-copy .jr-tag {
+    display: inline-block;
+    background: var(--dopa-blue-light);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 12px; font-weight: 700;
+    color: var(--coffee-dark);
+    margin-bottom: 12px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .jr-copy p { font-size: 15px; color: var(--coffee-medium); line-height: 1.65; }
+  .jr-spec {
+    margin-top: 16px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    font-family: 'Quicksand', monospace;
+    font-size: 11px; color: var(--coffee-light);
+  }
+  .jr-spec div {
+    background: #fff; border: 2px solid var(--coffee-dark);
+    padding: 6px 10px; border-radius: 8px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+  }
+  .jr-spec div b { color: var(--dopa-pink-deep); font-weight: 700; }
+
+  /* ====================================================== */
+  /*  ACT 4 — FAMILY MOMENTS COLLAGE                        */
+  /* ====================================================== */
+  .moments-collage {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: 100px;
+    gap: 16px;
+  }
+  .moment {
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #fff;
+    box-shadow: var(--shadow-chunky);
+    position: relative;
+    transition: all 0.25s;
+  }
+  .moment:hover { transform: translateY(-3px) rotate(0.5deg); box-shadow: var(--shadow-chunky-hover); }
+  .moment img { width: 100%; height: 100%; object-fit: cover; }
+  .moment .m-cap {
+    position: absolute; left: 12px; bottom: 12px;
+    background: rgba(255,255,255,0.95);
+    border: 2px solid var(--coffee-dark);
+    padding: 4px 10px; border-radius: 999px;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 11px;
+  }
+  .moment.m1 { grid-column: span 5; grid-row: span 4; }
+  .moment.m2 { grid-column: span 4; grid-row: span 2; }
+  .moment.m3 { grid-column: span 3; grid-row: span 2; }
+  .moment.m4 { grid-column: span 4; grid-row: span 2; }
+  .moment.m5 { grid-column: span 3; grid-row: span 2; }
+  .moment.m6 { grid-column: span 4; grid-row: span 3; }
+  .moment.m7 { grid-column: span 4; grid-row: span 3; }
+  .moment.m8 { grid-column: span 4; grid-row: span 3; }
+  @media (max-width: 900px) {
+    .moments-collage { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 140px; }
+    .moment.m1, .moment.m2, .moment.m3, .moment.m4, .moment.m5, .moment.m6, .moment.m7, .moment.m8 {
+      grid-column: span 2; grid-row: span 1;
+    }
+  }
+  /* Text-only moment cards */
+  .moment.text-card {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 22px;
+    background: var(--dopa-yellow-light);
+  }
+  .moment.text-card.pink { background: var(--dopa-pink-light); }
+  .moment.text-card.mint { background: var(--dopa-green-light); }
+  .moment.text-card.blue { background: var(--dopa-blue-light); }
+  .moment.text-card .m-quote {
+    font-family: 'Caveat', cursive;
+    font-size: 28px; font-weight: 700;
+    line-height: 1.15;
+    color: var(--coffee-dark);
+  }
+  .moment.text-card .m-from {
+    margin-top: 8px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 13px; font-weight: 600;
+    color: var(--coffee-medium);
+  }
+
+  /* ====================================================== */
+  /*  ACT 5 — SYSTEM TOPOLOGY (SVG mesh)                    */
+  /* ====================================================== */
+  .topology-wrap {
+    margin-top: 48px;
+    background: #fff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-chunky-deep);
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .topology-wrap::before {
+    content: "MESH · 06"; position: absolute; top: 18px; right: 24px;
+    font-family: 'Quicksand', monospace; font-size: 11px; font-weight: 700;
+    color: var(--coffee-light); letter-spacing: 0.16em;
+  }
+  .mesh-svg { width: 100%; height: 480px; display: block; }
+  @media (max-width: 800px) { .mesh-svg { height: 380px; } }
+
+  /* ====================================================== */
+  /*  DEVICES                                               */
+  /* ====================================================== */
+  .devices {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+  @media (max-width: 800px) { .devices { grid-template-columns: 1fr; } }
+  .device-card {
+    background: #fff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-chunky-deep);
+    padding: 28px;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .device-card:hover { transform: translateY(-5px) rotate(0.3deg); box-shadow: 10px 10px 0 var(--coffee-dark); }
+  .device-img-frame {
+    background: var(--dopa-yellow-light);
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .device-card.peach .device-img-frame { background: var(--dopa-pink-light); }
+  .device-img-frame img { width: 100%; height: 100%; object-fit: contain; padding: 18px; }
+  .device-name {
+    font-family: 'Fredoka', sans-serif; font-size: 24px; font-weight: 700;
+    color: var(--coffee-dark);
+    margin-bottom: 6px;
+  }
+  .device-tagline {
+    font-family: 'Caveat', cursive; font-size: 20px;
+    color: var(--dopa-pink-deep);
+    margin-bottom: 14px;
+  }
+  .device-spec {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin-top: 14px;
+  }
+  .device-spec div {
+    border: 2px solid var(--coffee-dark);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'Quicksand', monospace;
+    font-size: 11px; color: var(--coffee-medium);
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    background: #fff;
+  }
+  .device-spec b { color: var(--dopa-pink-deep); font-weight: 700; font-family: 'Fredoka', sans-serif; }
+
+  /* ====================================================== */
+  /*  SCENARIO GRID (10 stories)                            */
+  /* ====================================================== */
+  .scenes {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+  @media (max-width: 800px) { .scenes { grid-template-columns: 1fr; } }
+  .scene {
+    background: #fff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-chunky);
+    padding: 24px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .scene::before {
+    content: ""; position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    opacity: 0.5;
+  }
+  .scene:nth-child(1)::before { background: var(--dopa-pink-light); }
+  .scene:nth-child(2)::before { background: var(--dopa-blue-light); }
+  .scene:nth-child(3)::before { background: var(--dopa-green-light); }
+  .scene:nth-child(4)::before { background: var(--dopa-yellow-light); }
+  .scene:nth-child(5)::before { background: var(--dopa-purple-light); }
+  .scene:nth-child(6)::before { background: var(--dopa-orange-light); }
+  .scene:nth-child(7)::before { background: var(--dopa-pink-light); }
+  .scene:nth-child(8)::before { background: var(--dopa-mint); }
+  .scene:nth-child(9)::before { background: #fecaca; }
+  .scene:nth-child(10)::before { background: var(--dopa-lavender); }
+  .scene:hover { transform: translateY(-4px) rotate(-0.4deg); box-shadow: var(--shadow-chunky-hover); }
+  .scene-num {
+    display: inline-block;
+    background: var(--dopa-honey);
+    border: 2px solid var(--coffee-dark);
+    border-radius: 999px;
+    padding: 2px 12px;
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700; font-size: 13px;
+    box-shadow: 2px 2px 0 var(--coffee-dark);
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+  }
+  .scene-title {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 19px; font-weight: 700;
+    margin-bottom: 8px;
+    position: relative; z-index: 1;
+  }
+  .scene-modal {
+    font-family: 'Quicksand', monospace;
+    font-size: 11px; color: var(--coffee-light);
+    margin-bottom: 12px;
+    position: relative; z-index: 1;
+  }
+  .scene-story {
+    font-size: 14px; color: var(--coffee-medium); line-height: 1.65;
+    position: relative; z-index: 1;
+  }
+
+  /* ====================================================== */
+  /*  COMPARISON                                            */
+  /* ====================================================== */
+  .comparison-wrap {
+    margin-top: 48px;
+    background: #fff;
+    border: var(--border-chunky);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-chunky-deep);
+    overflow: hidden;
+  }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    border-bottom: 2px solid var(--coffee-dark);
+  }
+  .compare-row:last-child { border-bottom: none; }
+  .compare-row.head {
+    background: var(--dopa-yellow);
+    border-bottom: var(--border-chunky);
+  }
+  .compare-cell {
+    padding: 18px 22px;
+    border-right: 2px solid var(--coffee-dark);
+    font-size: 14px;
+    color: var(--coffee-medium);
+  }
+  .compare-cell:last-child { border-right: none; }
+  .compare-row.head .compare-cell {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700; font-size: 16px;
+    color: var(--coffee-dark);
+  }
+  .compare-row .compare-cell.label {
+    font-family: 'Fredoka', sans-serif;
+    font-weight: 700; color: var(--coffee-dark);
+    background: var(--bg-paper);
+  }
+  .compare-cell.us {
+    background: var(--dopa-pink-light);
+    color: var(--coffee-dark);
+    font-weight: 600;
+  }
+  .compare-cell .check { color: var(--dopa-green-deep); font-weight: 700; }
+  .compare-cell .cross { color: var(--coffee-light); }
+
+  /* ====================================================== */
+  /*  CTA + FOOTER                                          */
+  /* ====================================================== */
+  .cta-final {
+    margin-top: 48px;
+    background: var(--dopa-pink);
+    border: var(--border-chunky);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-chunky-deep);
+    padding: 60px 32px;
+    text-align: center;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-final::before {
+    content: "🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈🎈";
+    position: absolute; top: 12px; left: 0; right: 0;
+    text-align: center; font-size: 22px;
+    opacity: 0.3; letter-spacing: 4px;
+    pointer-events: none;
+  }
+  .cta-final h2 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #fff;
+  }
+  .cta-final p {
+    font-size: 17px;
+    margin-bottom: 32px;
+    max-width: 680px; margin-left: auto; margin-right: auto;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 1.6;
+  }
+  .cta-form {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    max-width: 560px; margin: 0 auto;
+  }
+  .cta-form input {
+    flex: 1; min-width: 240px;
+    padding: 14px 20px;
+    border: var(--border-chunky);
+    border-radius: 999px;
+    font-family: 'Fredoka', sans-serif;
+    font-size: 15px;
+    background: #fff;
+    box-shadow: var(--shadow-chunky);
+    color: var(--coffee-dark);
+  }
+
+  footer {
+    padding: 50px 28px 36px;
+    text-align: center;
+    background: var(--coffee-dark);
+    color: #f5f1ea;
+  }
+  footer h4 {
+    font-family: 'Fredoka', sans-serif;
+    font-size: 24px;
+    margin-bottom: 14px;
+    color: var(--dopa-honey);
+  }
+  footer .foot-links {
+    display: flex; gap: 22px; justify-content: center;
+    margin: 16px 0 22px; flex-wrap: wrap;
+  }
+  footer .foot-links a {
+    color: #fff; text-decoration: none;
+    font-family: 'Fredoka', sans-serif; font-size: 14px;
+    border-bottom: 2px dashed var(--dopa-honey);
+    padding-bottom: 2px;
+  }
+  footer .foot-meta {
+    font-family: 'Quicksand', monospace;
+    font-size: 11px; letter-spacing: 0.14em;
+    color: rgba(245, 241, 234, 0.6);
+  }
+
+  /* Tiny helpers */
+  .center { text-align: center; }
+  .mt-4 { margin-top: 32px; }
+  .mt-6 { margin-top: 48px; }
+</style>
+</head>
+<body>
+  <div class="bg-blob blob-1"></div>
+  <div class="bg-blob blob-2"></div>
+  <div class="bg-blob blob-3"></div>
+  <div class="bg-blob blob-4"></div>
+  <div class="bg-blob blob-5"></div>
+  <div class="bg-blob blob-6"></div>
+
+  <!-- ===================== NAV ===================== -->
+  <nav class="top">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        🎈 Voilà AI 冰箱贴
+        <span class="logo-bubble">wooooow.ai</span>
+        <span class="v2-chip">概念长卷 V2</span>
+      </a>
+      <div class="nav-links">
+        <a href="#vision">愿景画板</a>
+        <a href="#craft">材质标本</a>
+        <a href="#journey">概念剖析</a>
+        <a href="#scenarios">家庭场景</a>
+        <a href="#topology">拓扑大图</a>
+        <a href="#waitlist">抢先报名</a>
+      </div>
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        124 个智能体在线
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===================== HERO ===================== -->
+  <section class="hero">
+    <div class="eyebrow">🎨 GAMMA AI · CONCEPT SCROLLPAGE · 2026</div>
+    <h1 class="hero-title">
+      把家人的爱<br>
+      <span class="hl">写进硬件</span>，再贴回 <span class="hl-mint">冰箱门</span> 🏡
+    </h1>
+    <p class="hero-sub">
+      Voilà AI 是一颗会说话的冰箱贴。把妈妈出差时的叮咛、爸爸深夜的关怀、奶奶的吃药提醒都"克隆"进去——
+      <br>用 <code>Claude Code</code> / <code>Codex</code> / <code>Antigravity</code> 一键部署，30 秒空中升级，MIT 完全开源。
+    </p>
+    <div class="btn-row">
+      <a href="#waitlist" class="btn-dopa btn-pink">🎈 加入 alpha 抢先名单</a>
+      <a href="#vision" class="btn-dopa btn-cream">🎨 翻阅概念长卷</a>
+      <a href="https://github.com" class="btn-dopa btn-honey">⭐ MIT 开源仓库</a>
+    </div>
+    <div class="tech-pills">
+      <span class="tech-pill">🎤 声纹克隆 0.8s</span>
+      <span class="tech-pill">📷 1080p 探索之眼</span>
+      <span class="tech-pill">🌀 6 轴 IMU</span>
+      <span class="tech-pill">🔋 14 天待机</span>
+      <span class="tech-pill">🧲 N52 钕磁吸附</span>
+      <span class="tech-pill">📡 BLE5.3 + Wi-Fi 6</span>
+      <span class="tech-pill">🛠️ MIT 全开源</span>
+    </div>
+  </section>
+
+  <!-- ===================== HERO STRIP (rotating tape) ===================== -->
+  <div class="hero-strip">
+    <div class="marquee-track">
+      <div class="marquee-tile"><img src="../assets/gamma_concept_1.png" alt=""><span class="tile-label">CONCEPT · 01</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_2.png" alt=""><span class="tile-label">CONCEPT · 02</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_3.png" alt=""><span class="tile-label">CONCEPT · 03</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_4.png" alt=""><span class="tile-label">CONCEPT · 04</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_5.png" alt=""><span class="tile-label">CONCEPT · 05</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_6.png" alt=""><span class="tile-label">CONCEPT · 06</span></div>
+      <div class="marquee-tile"><img src="../assets/circular_magnet_device.png" alt=""><span class="tile-label">MODEL · C</span></div>
+      <div class="marquee-tile"><img src="../assets/square_magnet_device.png" alt=""><span class="tile-label">MODEL · S</span></div>
+      <!-- duplicated for infinite scroll -->
+      <div class="marquee-tile"><img src="../assets/gamma_concept_1.png" alt=""><span class="tile-label">CONCEPT · 01</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_2.png" alt=""><span class="tile-label">CONCEPT · 02</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_3.png" alt=""><span class="tile-label">CONCEPT · 03</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_4.png" alt=""><span class="tile-label">CONCEPT · 04</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_5.png" alt=""><span class="tile-label">CONCEPT · 05</span></div>
+      <div class="marquee-tile"><img src="../assets/gamma_concept_6.png" alt=""><span class="tile-label">CONCEPT · 06</span></div>
+      <div class="marquee-tile"><img src="../assets/circular_magnet_device.png" alt=""><span class="tile-label">MODEL · C</span></div>
+      <div class="marquee-tile"><img src="../assets/square_magnet_device.png" alt=""><span class="tile-label">MODEL · S</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== ACT 1 — VISION BOARD ===================== -->
+  <section class="lane peach" id="vision">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 01 · 愿景画板</span>
+      <h2 class="lane-title">这就是 Voilà 想成为的<br>那种「家里的小温度」</h2>
+      <p class="lane-sub">
+        每一张概念图都是一句温情台词。把它们贴在墙上看，你会读出整个产品的氛围——亲肤的圆角、晨光里的呼吸、和家人之间始终在场的声音。
+      </p>
+
+      <div class="vision-mosaic">
+        <div class="v-tile t1">
+          <img src="../assets/gamma_concept_5.png" alt="家人对话瞬间">
+          <span class="v-tile-tag">HERO</span>
+          <span class="v-tile-cap">📷 "归属感 × 科技 · 主视觉"</span>
+        </div>
+        <div class="v-tile t2">
+          <img src="../assets/gamma_concept_1.png" alt="冰箱真身">
+          <span class="v-tile-tag">FORM</span>
+          <span class="v-tile-cap">🧲 圆润机身贴附</span>
+        </div>
+        <div class="v-tile t3">
+          <img src="../assets/gamma_concept_2.png" alt="晨光伴侣">
+          <span class="v-tile-cap">🌅 晨光场景</span>
+        </div>
+        <div class="v-tile t4">
+          <img src="../assets/gamma_concept_4.png" alt="工艺细节">
+          <span class="v-tile-tag">CRAFT</span>
+          <span class="v-tile-cap">✋ 软陶 × 金属倒角</span>
+          <div class="sticky-note pink">"摸起来像奶油，不是塑料 🫧"</div>
+        </div>
+        <div class="v-tile t5">
+          <img src="../assets/gamma_concept_3.png" alt="多模态感知">
+          <span class="v-tile-cap">🎤 多模态感知</span>
+        </div>
+        <div class="v-tile t6">
+          <img src="../assets/gamma_concept_6.png" alt="未来 mesh">
+          <span class="v-tile-tag">FUTURE</span>
+          <span class="v-tile-cap">🌐 mesh 自组网</span>
+        </div>
+        <div class="v-tile t7">
+          <img src="../assets/family_recipe.png" alt="家庭食谱">
+          <span class="v-tile-cap">🍲 妈妈持家大脑</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ACT 2 — MATERIAL & CRAFT SPECIMENS ===================== -->
+  <section class="lane mint" id="craft">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 02 · 材质标本</span>
+      <h2 class="lane-title">把"温暖"翻译成可量化的物料语言</h2>
+      <p class="lane-sub">
+        概念图给你氛围，标本卡给你工程参数——配色、材质、声纹形状、传感器阵列、续航环、家人节奏环，全部摊开。
+      </p>
+
+      <div class="specimen-grid">
+        <!-- Specimen 1: Color palette -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 01 / PALETTE</div>
+          <div class="spec-title">🎨 多巴胺六色谱</div>
+          <div class="palette-row">
+            <div class="swatch" style="background: var(--dopa-pink)"><span class="swatch-tag">#F472B6</span></div>
+            <div class="swatch" style="background: var(--dopa-honey)"><span class="swatch-tag">#FACC15</span></div>
+            <div class="swatch" style="background: var(--dopa-mint)"><span class="swatch-tag">#A7F3D0</span></div>
+          </div>
+          <div class="palette-row" style="margin-top: 14px;">
+            <div class="swatch" style="background: var(--dopa-blue)"><span class="swatch-tag">#38BDF8</span></div>
+            <div class="swatch" style="background: var(--dopa-purple)"><span class="swatch-tag">#C084FC</span></div>
+            <div class="swatch" style="background: var(--dopa-orange)"><span class="swatch-tag">#FB923C</span></div>
+          </div>
+          <p class="spec-desc">六个家庭成员、六种磁贴色卡。Pantone 校准过的"看着就开心"色温区间。</p>
+        </div>
+
+        <!-- Specimen 2: Materials -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 02 / MATERIAL</div>
+          <div class="spec-title">🫧 触感四层叠</div>
+          <div class="material-stack">
+            <div class="material-chip"><span class="dot" style="background: #f5e1cc;"></span>表层 · 食品级软陶 Shore A 35</div>
+            <div class="material-chip" style="background: var(--dopa-pink-light)"><span class="dot" style="background: #f472b6;"></span>导光层 · 0.3mm 哑光亚克力</div>
+            <div class="material-chip" style="background: var(--dopa-blue-light)"><span class="dot" style="background: #38bdf8;"></span>结构 · GF30 PA 工程塑料</div>
+            <div class="material-chip" style="background: var(--dopa-green-light)"><span class="dot" style="background: #292524;"></span>磁吸 · N52 钕磁 × 4 颗</div>
+          </div>
+          <p class="spec-desc">从外到内四层，每一层都为"敢让小朋友捏"做的考虑。</p>
+        </div>
+
+        <!-- Specimen 3: Audio waveform -->
+        <div class="spec-card waveform-card">
+          <div class="spec-label">SPECIMEN · 03 / AUDIO</div>
+          <div class="spec-title">🎤 妈妈声纹 0.8s 克隆</div>
+          <div class="waveform">
+            <div class="wave-bar" style="background: var(--dopa-pink); animation-delay: 0s; height: 30%"></div>
+            <div class="wave-bar" style="background: var(--dopa-pink); animation-delay: 0.1s; height: 60%"></div>
+            <div class="wave-bar" style="background: var(--dopa-honey); animation-delay: 0.2s; height: 90%"></div>
+            <div class="wave-bar" style="background: var(--dopa-honey); animation-delay: 0.3s; height: 70%"></div>
+            <div class="wave-bar" style="background: var(--dopa-orange); animation-delay: 0.4s; height: 100%"></div>
+            <div class="wave-bar" style="background: var(--dopa-orange); animation-delay: 0.5s; height: 75%"></div>
+            <div class="wave-bar" style="background: var(--dopa-pink); animation-delay: 0.6s; height: 50%"></div>
+            <div class="wave-bar" style="background: var(--dopa-pink); animation-delay: 0.7s; height: 80%"></div>
+            <div class="wave-bar" style="background: var(--dopa-mint); animation-delay: 0.8s; height: 40%"></div>
+            <div class="wave-bar" style="background: var(--dopa-mint); animation-delay: 0.9s; height: 65%"></div>
+            <div class="wave-bar" style="background: var(--dopa-blue); animation-delay: 1.0s; height: 90%"></div>
+            <div class="wave-bar" style="background: var(--dopa-blue); animation-delay: 1.1s; height: 55%"></div>
+            <div class="wave-bar" style="background: var(--dopa-purple); animation-delay: 1.2s; height: 70%"></div>
+            <div class="wave-bar" style="background: var(--dopa-purple); animation-delay: 1.3s; height: 35%"></div>
+          </div>
+          <p class="spec-desc">I2S 数字 MEMS · 48kHz × 24bit · 信噪比 70dB。一句"宝贝今天怎么样"就够了。</p>
+        </div>
+
+        <!-- Specimen 4: Sensor topology -->
+        <div class="spec-card topology-card">
+          <div class="spec-label">SPECIMEN · 04 / SENSORS</div>
+          <div class="spec-title">🌀 五感传感矩阵</div>
+          <svg class="topology-svg" viewBox="0 0 280 180" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse">
+                <circle cx="7" cy="7" r="1" fill="#a8a29e" />
+              </pattern>
+            </defs>
+            <rect width="280" height="180" fill="url(#dots)" opacity="0.5"/>
+            <!-- center MCU -->
+            <rect x="118" y="76" width="44" height="28" rx="6" fill="#facc15" stroke="#292524" stroke-width="2.5"/>
+            <text x="140" y="94" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="9" fill="#292524">ESP32-S3</text>
+            <!-- nodes -->
+            <circle cx="40" cy="40" r="18" fill="#f472b6" stroke="#292524" stroke-width="2.5"/>
+            <text x="40" y="44" text-anchor="middle" font-size="12">🎤</text>
+            <circle cx="240" cy="40" r="18" fill="#38bdf8" stroke="#292524" stroke-width="2.5"/>
+            <text x="240" y="44" text-anchor="middle" font-size="12">📷</text>
+            <circle cx="40" cy="140" r="18" fill="#34d399" stroke="#292524" stroke-width="2.5"/>
+            <text x="40" y="145" text-anchor="middle" font-size="12">🌀</text>
+            <circle cx="240" cy="140" r="18" fill="#c084fc" stroke="#292524" stroke-width="2.5"/>
+            <text x="240" y="144" text-anchor="middle" font-size="12">🔊</text>
+            <circle cx="140" cy="24" r="14" fill="#fb923c" stroke="#292524" stroke-width="2.5"/>
+            <text x="140" y="28" text-anchor="middle" font-size="10">📡</text>
+            <circle cx="140" cy="156" r="14" fill="#fda4af" stroke="#292524" stroke-width="2.5"/>
+            <text x="140" y="160" text-anchor="middle" font-size="10">🔋</text>
+            <!-- wires -->
+            <line x1="58" y1="40" x2="120" y2="80" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+            <line x1="222" y1="40" x2="160" y2="80" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+            <line x1="58" y1="140" x2="120" y2="100" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+            <line x1="222" y1="140" x2="160" y2="100" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+            <line x1="140" y1="38" x2="140" y2="76" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+            <line x1="140" y1="142" x2="140" y2="104" stroke="#292524" stroke-width="2" stroke-dasharray="4 3"/>
+          </svg>
+          <p class="spec-desc">麦克风 / 摄像头 / 6 轴 IMU / 扬声器 / 天线 / 电池——围着一颗 ESP32-S3 跳舞。</p>
+        </div>
+
+        <!-- Specimen 5: Battery -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 05 / BATTERY</div>
+          <div class="spec-title">🔋 14 天待机环</div>
+          <svg viewBox="0 0 200 200" style="width: 100%; max-width: 220px; display: block; margin: 0 auto;">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#e5e7eb" stroke-width="14"/>
+            <circle cx="100" cy="100" r="80" fill="none" stroke="#34d399" stroke-width="14"
+              stroke-dasharray="430" stroke-dashoffset="60"
+              stroke-linecap="round" transform="rotate(-90 100 100)"/>
+            <text x="100" y="96" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="36" fill="#292524">14</text>
+            <text x="100" y="124" text-anchor="middle" font-family="Fredoka" font-weight="600" font-size="13" fill="#78716c">DAYS STANDBY</text>
+          </svg>
+          <p class="spec-desc">800mAh 锂聚合物 · Type-C PD 快充 · 待机心跳每 3 秒一次唤醒。</p>
+        </div>
+
+        <!-- Specimen 6: Family rhythm ring -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 06 / RHYTHM</div>
+          <div class="spec-title">⏰ 家人 24 小时律动</div>
+          <svg viewBox="0 0 240 200" style="width: 100%;">
+            <circle cx="120" cy="100" r="78" fill="none" stroke="#292524" stroke-width="2.5" stroke-dasharray="3 4"/>
+            <!-- 24 segments split into 4 zones -->
+            <path d="M 120 22 A 78 78 0 0 1 175.2 44.8" fill="none" stroke="#facc15" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 175.2 44.8 A 78 78 0 0 1 198 100" fill="none" stroke="#fb923c" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 198 100 A 78 78 0 0 1 175.2 155.2" fill="none" stroke="#f472b6" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 175.2 155.2 A 78 78 0 0 1 120 178" fill="none" stroke="#c084fc" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 120 178 A 78 78 0 0 1 64.8 155.2" fill="none" stroke="#38bdf8" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 64.8 155.2 A 78 78 0 0 1 42 100" fill="none" stroke="#34d399" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 42 100 A 78 78 0 0 1 64.8 44.8" fill="none" stroke="#a7f3d0" stroke-width="12" stroke-linecap="round"/>
+            <path d="M 64.8 44.8 A 78 78 0 0 1 120 22" fill="none" stroke="#fef9c3" stroke-width="12" stroke-linecap="round"/>
+            <text x="120" y="98" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="13" fill="#292524">24h</text>
+            <text x="120" y="116" text-anchor="middle" font-family="Fredoka" font-size="10" fill="#78716c">FAMILY LOOP</text>
+            <!-- labels -->
+            <text x="120" y="14" text-anchor="middle" font-size="14">🌅</text>
+            <text x="220" y="106" text-anchor="middle" font-size="14">☀️</text>
+            <text x="120" y="200" text-anchor="middle" font-size="14">🌙</text>
+            <text x="20" y="106" text-anchor="middle" font-size="14">🌌</text>
+          </svg>
+          <p class="spec-desc">磁贴自动跟随家人作息的能量配色——清晨蜜糖、午后橘子、深夜薰衣草。</p>
+        </div>
+
+        <!-- Specimen 7: Family avatar grid -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 07 / AVATARS</div>
+          <div class="spec-title">👨‍👩‍👧‍👦 一家六位智能真身</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+            <div style="aspect-ratio: 1; background: var(--dopa-pink-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">👩</div>
+            <div style="aspect-ratio: 1; background: var(--dopa-blue-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">👨</div>
+            <div style="aspect-ratio: 1; background: var(--dopa-yellow-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">👧</div>
+            <div style="aspect-ratio: 1; background: var(--dopa-green-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">👦</div>
+            <div style="aspect-ratio: 1; background: var(--dopa-orange-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">👵</div>
+            <div style="aspect-ratio: 1; background: var(--dopa-purple-light); border: 2px solid var(--coffee-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 2px 2px 0 var(--coffee-dark);">🤖</div>
+          </div>
+          <p class="spec-desc">每个家人一颗磁贴 + 一个 AI 真身。第六颗是"全家 AI 管家"，串起所有人。</p>
+        </div>
+
+        <!-- Specimen 8: Connectivity -->
+        <div class="spec-card">
+          <div class="spec-label">SPECIMEN · 08 / RADIO</div>
+          <div class="spec-title">📡 三层连线</div>
+          <svg viewBox="0 0 200 180" style="width: 100%;">
+            <!-- waves -->
+            <circle cx="100" cy="120" r="20" fill="none" stroke="#292524" stroke-width="3"/>
+            <circle cx="100" cy="120" r="40" fill="none" stroke="#f472b6" stroke-width="3" stroke-dasharray="3 4" opacity="0.6"/>
+            <circle cx="100" cy="120" r="60" fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="5 6" opacity="0.5"/>
+            <circle cx="100" cy="120" r="80" fill="none" stroke="#34d399" stroke-width="3" stroke-dasharray="8 7" opacity="0.4"/>
+            <text x="100" y="124" text-anchor="middle" font-size="14">🧲</text>
+            <text x="100" y="56" text-anchor="middle" font-family="Quicksand" font-size="9" font-weight="700" fill="#34d399">Wi-Fi 6 · 云端</text>
+            <text x="100" y="74" text-anchor="middle" font-family="Quicksand" font-size="9" font-weight="700" fill="#38bdf8">BLE 5.3 · 手机</text>
+            <text x="100" y="92" text-anchor="middle" font-family="Quicksand" font-size="9" font-weight="700" fill="#f472b6">Mesh · 邻居磁贴</text>
+          </svg>
+          <p class="spec-desc">磁贴 → 邻居磁贴 → 手机 → 云。任何一层断了，其他层接住。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== DEVICES ===================== -->
+  <section class="lane honey" id="devices">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 03 · 两款机身</span>
+      <h2 class="lane-title">圆形声学磁贴 · 方形画框磁贴</h2>
+      <p class="lane-sub">一颗"心脏"专心听声音，一块"画框"专心讲故事。组合起来覆盖家里冰箱门上任何一面。</p>
+
+      <div class="devices">
+        <div class="device-card peach">
+          <div class="device-img-frame">
+            <img src="../assets/circular_magnet_device.png" alt="Model C">
+          </div>
+          <div class="device-name">🔴 Model C · 圆形声学磁贴</div>
+          <div class="device-tagline">"贴在冰箱上的一颗温度的心脏" 💖</div>
+          <div class="device-spec">
+            <div><b>直径</b> 85mm</div>
+            <div><b>厚度</b> 14mm</div>
+            <div><b>麦克风</b> I2S 数字 MEMS</div>
+            <div><b>扬声器</b> 1.5W 全频</div>
+            <div><b>处理器</b> ESP32-S3</div>
+            <div><b>电池</b> 800mAh / 14 天</div>
+          </div>
+        </div>
+
+        <div class="device-card">
+          <div class="device-img-frame">
+            <img src="../assets/square_magnet_device.png" alt="Model S">
+          </div>
+          <div class="device-name">🟦 Model S · 方形画框磁贴</div>
+          <div class="device-tagline">"全家福永远在轮播的相框" 🖼️</div>
+          <div class="device-spec">
+            <div><b>尺寸</b> 120×78mm</div>
+            <div><b>厚度</b> 16mm</div>
+            <div><b>屏幕</b> 2.5D IPS 弧边</div>
+            <div><b>摄像头</b> 1080p 探索</div>
+            <div><b>处理器</b> ESP32-S3</div>
+            <div><b>电池</b> 1200mAh / 10 天</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ACT 3 — ANNOTATED CONCEPT JOURNEY ===================== -->
+  <section class="lane lavender" id="journey">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 04 · 概念剖析</span>
+      <h2 class="lane-title">把 6 张概念图<br>掰开揉碎给你看</h2>
+      <p class="lane-sub">
+        每一张 Gamma AI 渲染的图都不是"装饰"——它对应一项具体的设计取舍。下面是带便签的逐张拆解。
+      </p>
+
+      <div class="journey-board">
+
+        <!-- Journey 1 -->
+        <div class="journey-row">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 01</span>
+            <img src="../assets/gamma_concept_1.png" alt="">
+            <div class="jr-annotation tr">圆角不是装饰<br>是给小孩捏的 🫧</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">FORM / 真身形态</span>
+            <h3><span class="num">01</span>新拟物 × 软陶呼吸感</h3>
+            <p>
+              机身整体走"婴儿肥"曲线：每一道倒角 R 值都做了 1.5 倍放大，让磁贴远看像一颗软糖。表面用食品级软陶 Shore A 35 包覆，
+              既能塞下电池和扬声器，又敢让两岁宝宝直接放进嘴里啃。
+            </p>
+            <div class="jr-spec">
+              <div><b>表面硬度</b> Shore A 35</div>
+              <div><b>跌落测试</b> 1.5m × 100 次</div>
+              <div><b>最大 R</b> 12mm 倒角</div>
+              <div><b>认证</b> FDA / EN71</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journey 2 -->
+        <div class="journey-row flip">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 02</span>
+            <img src="../assets/gamma_concept_2.png" alt="">
+            <div class="jr-annotation bl">7:05<br>第一次召唤 ☀️</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">SCENE / 晨光伴侣</span>
+            <h3><span class="num">02</span>清晨第一句"早上好"</h3>
+            <p>
+              磁贴的人体感应模组在你打开冰箱前 1.2 秒就开始唤醒。当妈妈和孩子走进厨房，磁贴用爸爸的声纹播报今日天气和路况，
+              用一句温柔的"记得拿伞"开启全家的一天。
+            </p>
+            <div class="jr-spec">
+              <div><b>感应距离</b> 60cm PIR</div>
+              <div><b>响应延迟</b> &lt; 1.2s</div>
+              <div><b>声纹源</b> 爸爸 30s 样本</div>
+              <div><b>API</b> 高德 + 和风</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journey 3 -->
+        <div class="journey-row">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 03</span>
+            <img src="../assets/gamma_concept_3.png" alt="">
+            <div class="jr-annotation br">麦克风 + 摄像头<br>= 一对会听会看的眼睛 👀</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">TECH / 多模态感知</span>
+            <h3><span class="num">03</span>三种感官同时打开</h3>
+            <p>
+              声音、视觉、动作传感器构成三角阵。这意味着磁贴能同时"听到孩子在做作业"、"看到他在画哪一题"、"感到他放下笔的瞬间"。
+              三流数据汇入边缘小模型，决定下一刻该不该开口。
+            </p>
+            <div class="jr-spec">
+              <div><b>SNR</b> 70dB</div>
+              <div><b>视野</b> 120° 广角</div>
+              <div><b>IMU</b> 6 轴 / 200Hz</div>
+              <div><b>本地模型</b> 18M 参数</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journey 4 -->
+        <div class="journey-row flip">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 04</span>
+            <img src="../assets/gamma_concept_4.png" alt="">
+            <div class="jr-annotation tr">摸到的不是塑料<br>是奶油 🍦</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">CRAFT / 工艺细节</span>
+            <h3><span class="num">04</span>专为情感雕琢的外壳</h3>
+            <p>
+              外壳采用三明治叠层：食品级软陶包覆 + 导光亚克力中层 + GF30 PA 工程塑料骨架。每一层各司其职，让"温度"不仅是修辞，
+              也是一个能用三个工程参数描述的物理量。
+            </p>
+            <div class="jr-spec">
+              <div><b>表层</b> 软陶 0.8mm</div>
+              <div><b>导光层</b> PMMA 0.3mm</div>
+              <div><b>骨架</b> GF30 PA</div>
+              <div><b>整机重量</b> 68g</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journey 5 -->
+        <div class="journey-row">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 05</span>
+            <img src="../assets/gamma_concept_5.png" alt="">
+            <div class="jr-annotation bl">爱与代码<br>在这里相遇 💗</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">EMOTION / 归属感</span>
+            <h3><span class="num">05</span>家里那束温暖的光</h3>
+            <p>
+              当奶奶按下磁贴，远在北京的孙女的声音瞬间从冰箱门上飘出来——"奶奶，今天降压药吃了吗？" 物理空间被声纹折叠，
+              磁贴成为家庭的"声音传送门"。
+            </p>
+            <div class="jr-spec">
+              <div><b>同步延迟</b> &lt; 400ms</div>
+              <div><b>声纹保真</b> 92% MOS</div>
+              <div><b>家庭组</b> 最多 12 人</div>
+              <div><b>留言保留</b> 30 天本地</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Journey 6 -->
+        <div class="journey-row flip">
+          <div class="jr-image">
+            <span class="jr-frame-tag">FRAME · 06</span>
+            <img src="../assets/gamma_concept_6.png" alt="">
+            <div class="jr-annotation br">每一颗磁贴<br>都能找到对方 🌐</div>
+          </div>
+          <div class="jr-copy">
+            <span class="jr-tag">FUTURE / Mesh 愿景</span>
+            <h3><span class="num">06</span>无声组网的未来家</h3>
+            <p>
+              每颗 Voilà 磁贴都是一个 BLE Mesh 节点。装在冰箱、玄关、卧室的磁贴会自动发现彼此，把"妈妈说今晚回来晚一点"从厨房
+              推送到卧室和书房，不需要任何 App。
+            </p>
+            <div class="jr-spec">
+              <div><b>Mesh 标准</b> BLE 5.3 SIG</div>
+              <div><b>跳数</b> &le; 7 hops</div>
+              <div><b>组网时间</b> &lt; 10s</div>
+              <div><b>典型直径</b> 80m 室内</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ACT 4 — FAMILY MOMENTS COLLAGE ===================== -->
+  <section class="lane peach" id="moments">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 05 · 家庭瞬间</span>
+      <h2 class="lane-title">这些是 Voilà 想守护的<br>「冰箱门前 30 秒」</h2>
+      <p class="lane-sub">
+        每张图都是一个"接住"——当家人推开冰箱、抬眼看到磁贴，那 30 秒里磁贴该做什么、说什么、亮成什么颜色。
+      </p>
+
+      <div class="moments-collage">
+        <div class="moment m1">
+          <img src="../assets/gamma_concept_5.png" alt="">
+          <span class="m-cap">🌅 全家在厨房</span>
+        </div>
+        <div class="moment m2 text-card pink">
+          <div class="m-quote">"宝贝今天作业<br>不难吧？"</div>
+          <div class="m-from">— 妈妈出差视角 · 7:32 PM</div>
+        </div>
+        <div class="moment m3 text-card mint">
+          <div class="m-quote">"奶奶<br>该吃药啦 💊"</div>
+          <div class="m-from">— 儿子声纹 · 8:00 AM</div>
+        </div>
+        <div class="moment m4">
+          <img src="../assets/family_recipe.png" alt="">
+          <span class="m-cap">🍲 今晚吃什么</span>
+        </div>
+        <div class="moment m5 text-card blue">
+          <div class="m-quote">"高架堵了<br>提前 10 分钟 🚗"</div>
+          <div class="m-from">— 爸爸晨间报 · 7:05 AM</div>
+        </div>
+        <div class="moment m6">
+          <img src="../assets/family_selfie.png" alt="">
+          <span class="m-cap">📸 月度家庭快剪</span>
+        </div>
+        <div class="moment m7">
+          <img src="../assets/gamma_concept_2.png" alt="">
+          <span class="m-cap">☀️ 晨光召唤</span>
+        </div>
+        <div class="moment m8 text-card">
+          <div class="m-quote">"做完作业<br>奖励 🌟🌟🌟"</div>
+          <div class="m-from">— 代理妈妈 · 4:15 PM</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== ACT 5 — SYSTEM TOPOLOGY ===================== -->
+  <section class="lane tinted" id="topology">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 06 · 拓扑大图</span>
+      <h2 class="lane-title">六颗磁贴怎么织成<br>一张家的网</h2>
+      <p class="lane-sub">下面是 Voilà 系统的"家庭 mesh"。每一颗磁贴都是一个节点，孩子、爸爸、妈妈、奶奶各自有自己的智能真身在节点上跑。</p>
+
+      <div class="topology-wrap">
+        <svg class="mesh-svg" viewBox="0 0 1100 480" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e7e5e4" stroke-width="1"/>
+            </pattern>
+            <filter id="shadow">
+              <feDropShadow dx="3" dy="3" stdDeviation="0" flood-color="#292524"/>
+            </filter>
+          </defs>
+          <rect width="1100" height="480" fill="url(#grid)"/>
+
+          <!-- mesh links -->
+          <g stroke="#292524" stroke-width="2.5" stroke-dasharray="6 4" fill="none">
+            <line x1="240" y1="120" x2="550" y2="240"/>
+            <line x1="240" y1="120" x2="480" y2="80"/>
+            <line x1="480" y1="80" x2="550" y2="240"/>
+            <line x1="550" y1="240" x2="780" y2="120"/>
+            <line x1="550" y1="240" x2="780" y2="360"/>
+            <line x1="550" y1="240" x2="320" y2="380"/>
+            <line x1="320" y1="380" x2="550" y2="380"/>
+            <line x1="550" y1="380" x2="780" y2="360"/>
+            <line x1="780" y1="120" x2="940" y2="200"/>
+            <line x1="780" y1="360" x2="940" y2="280"/>
+            <line x1="940" y1="200" x2="940" y2="280"/>
+          </g>
+
+          <!-- nodes -->
+          <g filter="url(#shadow)">
+            <!-- mom -->
+            <circle cx="240" cy="120" r="44" fill="#f472b6" stroke="#292524" stroke-width="3"/>
+            <text x="240" y="118" text-anchor="middle" font-size="28">👩</text>
+            <text x="240" y="138" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="10" fill="#fff">妈妈 · MOM</text>
+
+            <!-- dad -->
+            <circle cx="480" cy="80" r="44" fill="#38bdf8" stroke="#292524" stroke-width="3"/>
+            <text x="480" y="78" text-anchor="middle" font-size="28">👨</text>
+            <text x="480" y="98" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="10" fill="#fff">爸爸 · DAD</text>
+
+            <!-- AI hub (kitchen fridge) -->
+            <rect x="500" y="200" width="100" height="80" rx="14" fill="#facc15" stroke="#292524" stroke-width="3"/>
+            <text x="550" y="234" text-anchor="middle" font-size="22">🧊</text>
+            <text x="550" y="258" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="11" fill="#292524">KITCHEN HUB</text>
+            <text x="550" y="272" text-anchor="middle" font-family="Quicksand" font-weight="700" font-size="9" fill="#57534e">Voilà mesh root</text>
+
+            <!-- daughter -->
+            <circle cx="780" cy="120" r="44" fill="#fcd34d" stroke="#292524" stroke-width="3"/>
+            <text x="780" y="118" text-anchor="middle" font-size="28">👧</text>
+            <text x="780" y="138" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="10" fill="#292524">大女儿 · BIG SIS</text>
+
+            <!-- son -->
+            <circle cx="780" cy="360" r="44" fill="#34d399" stroke="#292524" stroke-width="3"/>
+            <text x="780" y="358" text-anchor="middle" font-size="28">👦</text>
+            <text x="780" y="378" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="10" fill="#fff">小儿子 · LIL BRO</text>
+
+            <!-- grandma -->
+            <circle cx="320" cy="380" r="44" fill="#fb923c" stroke="#292524" stroke-width="3"/>
+            <text x="320" y="378" text-anchor="middle" font-size="28">👵</text>
+            <text x="320" y="398" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="10" fill="#fff">奶奶 · GRAN</text>
+
+            <!-- agent -->
+            <circle cx="550" cy="380" r="38" fill="#c084fc" stroke="#292524" stroke-width="3"/>
+            <text x="550" y="378" text-anchor="middle" font-size="24">🤖</text>
+            <text x="550" y="396" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="9" fill="#fff">家庭 AI 真身</text>
+
+            <!-- cloud -->
+            <rect x="890" y="180" width="100" height="44" rx="22" fill="#fff" stroke="#292524" stroke-width="3"/>
+            <text x="940" y="208" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="13">☁️ Cloud</text>
+            <rect x="890" y="260" width="100" height="44" rx="22" fill="#fff" stroke="#292524" stroke-width="3"/>
+            <text x="940" y="288" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="13">📱 Phone</text>
+          </g>
+
+          <!-- caption -->
+          <text x="50" y="450" font-family="Quicksand" font-weight="700" font-size="11" fill="#78716c" letter-spacing="0.1em">
+            BLE 5.3 SIG MESH · 6 NODES · 12 LINKS · KITCHEN ROOT · CLOUD &amp; PHONE FALLBACK
+          </text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCENARIOS ===================== -->
+  <section class="lane" id="scenarios">
+    <div class="lane-inner">
+      <span class="eyebrow-section">ACT 07 · 家庭场景</span>
+      <h2 class="lane-title">10 个会让你<br>"原来还能这样" 的瞬间</h2>
+      <p class="lane-sub">从放学到深夜，从早饭到月度回忆——磁贴在哪里、家就温暖到哪里。</p>
+
+      <div class="scenes">
+        <div class="scene">
+          <span class="scene-num">SCENE · 01</span>
+          <div class="scene-title">🌸 放学后的"代理妈妈"</div>
+          <div class="scene-modal">🎤 妈妈声纹克隆 + 摄像头人脸抓取</div>
+          <p class="scene-story">妈妈出差在途，孩子刷卡进门。磁贴识别到孩子，自动以妈妈的克隆嗓音播报："工作辛苦啦宝贝，妈妈在冰箱里留了温牛奶，今天作业在第 3 页 📖"</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 02</span>
+          <div class="scene-title">🌙 深夜健康分身</div>
+          <div class="scene-modal">🎤 妻子叮嘱原声 + 降脂关怀</div>
+          <p class="scene-story">23:30 爸爸加班疲倦回家打开冰箱。妻子的 Agent 自动闪烁："今天卡路里超标啦，吃颗苹果代替冰啤酒如何？我和孩子都在等你 💖"</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 03</span>
+          <div class="scene-title">🍲 食材管理与"今晚吃啥"</div>
+          <div class="scene-modal">🎤 妈妈持家大脑 + 食物矩阵</div>
+          <p class="scene-story">爸爸和孩子对着冰箱犯愁，敲击磁贴，妈妈的 Agent 调取购买日记："还有西冷和番茄，今晚做番茄牛腩面吧，菜谱已经发你微信啦 📲"</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 04</span>
+          <div class="scene-title">☀️ 清晨天气与路况</div>
+          <div class="scene-modal">🎤 爸爸声音气象台 + 路况推送</div>
+          <p class="scene-story">7:05 妈妈走进厨房倒水，磁贴用爸爸标志性的声音："高架今天拥堵，建议提早 10 分钟，记得带鞋柜旁的那把大黄伞 ☂️"</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 05</span>
+          <div class="scene-title">💌 跨磁贴物理传情</div>
+          <div class="scene-modal">🎤 冰箱贴间声音 + 触觉快递</div>
+          <p class="scene-story">爸爸在书房写代码，妈妈敲击厨房磁贴："今晚多陪孩子拼乐高。" 消息伴微弱震动推送到爸爸的书房磁贴，物理空间隔空拥抱 🤗</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 06</span>
+          <div class="scene-title">🗣️ 开心学英语纠音</div>
+          <div class="scene-modal">🎤 孩子英语发声 + NYC 口语对齐</div>
+          <p class="scene-story">吃早餐时，孩子与圆形磁贴对话，NYC 外教声学内核实时打分，优秀的发音录音生成卡片推送到上班父母手机 ⭐</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 07</span>
+          <div class="scene-title">📚 拍照 AI 答疑助教</div>
+          <div class="scene-modal">🎤 孩子探索之眼 + Claude 视觉</div>
+          <p class="scene-story">孩子写作业卡壳，对准磁贴拍照。AI 解析题意，用童趣音色循循善诱给图形解题思路，不直接给答案，激发独立思考 🧠</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 08</span>
+          <div class="scene-title">💊 奶奶的儿女声音药盒</div>
+          <div class="scene-modal">🎤 儿女温暖声音 + 特大视觉</div>
+          <p class="scene-story">每天早上 8:00，奶奶的磁贴亮起大字："奶奶，降压药别忘啦！就在桌上右边药瓶里，记得温水送服。" 陪伴每个安稳早晨 🌅</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 09</span>
+          <div class="scene-title">🚨 双击紧急呼救"安全哨"</div>
+          <div class="scene-modal">🎤 6 轴 IMU + 全家高频强推</div>
+          <p class="scene-story">奶奶在厨房滑倒，伸手快速双击磁贴外壳。IMU 加速度精准捕捉两次特异性撞击，瞬间向全家手机推送红光警报与免提通话 ⚠️</p>
+        </div>
+
+        <div class="scene">
+          <span class="scene-num">SCENE · 10</span>
+          <div class="scene-title">🎬 月度温暖记忆放映机</div>
+          <div class="scene-modal">🎤 全家音容剪辑 + 磁贴联动</div>
+          <p class="scene-story">每月最后一天，所有磁贴屏幕联动亮起。AI 把一月互发的便签、合影、克隆语音剪成 1 分钟视频，在冰箱门上闪耀上映 🌟</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== COMPARISON ===================== -->
+  <section class="lane mint" id="compare">
+    <div class="lane-inner">
+      <span class="eyebrow-section">对比表 · WHAT'S DIFFERENT</span>
+      <h2 class="lane-title">不是又一个 AI 玩具<br>是家庭情感的物理基础设施</h2>
+
+      <div class="comparison-wrap">
+        <div class="compare-row head">
+          <div class="compare-cell">维度</div>
+          <div class="compare-cell">传统 AI 玩具</div>
+          <div class="compare-cell us">🎈 Voilà AI 冰箱贴</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">部署方式</div>
+          <div class="compare-cell">手机 App 配对，依赖云</div>
+          <div class="compare-cell us"><span class="check">✓</span> Claude Code / Codex / Antigravity 一键部署</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">用户基础</div>
+          <div class="compare-cell">单用户，单设备</div>
+          <div class="compare-cell us"><span class="check">✓</span> 一家最多 12 人共享 mesh</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">传感器</div>
+          <div class="compare-cell">仅麦克风 + 触摸</div>
+          <div class="compare-cell us"><span class="check">✓</span> 麦克 + 摄像头 + IMU + PIR + 温湿</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">软件开放性</div>
+          <div class="compare-cell">封闭，厂商唯一</div>
+          <div class="compare-cell us"><span class="check">✓</span> MIT 完全开源，固件可改</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">物理形态</div>
+          <div class="compare-cell">立桌或挂墙，占空间</div>
+          <div class="compare-cell us"><span class="check">✓</span> N52 钕磁贴冰箱，零占地</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">声纹定制</div>
+          <div class="compare-cell">仅厂商内置音色</div>
+          <div class="compare-cell us"><span class="check">✓</span> 30s 克隆任意家人嗓音</div>
+        </div>
+        <div class="compare-row">
+          <div class="compare-cell label">隐私模式</div>
+          <div class="compare-cell">上传云端处理</div>
+          <div class="compare-cell us"><span class="check">✓</span> Data-Local-First，边缘小模型</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CTA ===================== -->
+  <section class="lane" id="waitlist">
+    <div class="lane-inner">
+      <div class="cta-final">
+        <h2>🎈 加入 alpha 抢先测试名单</h2>
+        <p>2026 年底首批发货 · MIT 全开源 · 你的反馈直接影响下一版固件 · 留下邮箱，第一时间收到工坊更新</p>
+        <form class="cta-form" onsubmit="event.preventDefault(); alert('🎉 感谢加入！我们会用最早一批磁贴联系你。');">
+          <input type="email" placeholder="你的邮箱地址" required>
+          <button class="btn-dopa btn-honey" type="submit">🎈 加入名单</button>
+        </form>
+        <div style="margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+          <a href="https://github.com" class="btn-dopa btn-cream">⭐ MIT 开源仓库</a>
+          <a href="https://gamma.app/docs/3sgeumbr9llbv0q" target="_blank" class="btn-dopa btn-mint">📖 Gamma 原作幻灯片</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer>
+    <h4>🎈 wooooow.ai</h4>
+    <div style="font-family: 'Quicksand', monospace; font-size: 12px; letter-spacing: 0.2em; color: var(--dopa-mint);">VOILÀ AI · REFRIGERATOR MAGNET · 概念长卷 V2</div>
+    <div class="foot-links">
+      <a href="https://wooooow.ai">主站</a>
+      <a href="#">SDK 文档</a>
+      <a href="https://github.com">GitHub</a>
+      <a href="#vision">愿景画板</a>
+      <a href="#journey">概念剖析</a>
+    </div>
+    <div class="foot-meta">© 2026 wooooow.ai · SHIPPED WITH WARM FAMILY VIBE · DATA IS LOCAL FIRST · MIT OPEN SOURCE</div>
+  </footer>
+</body>
+</html>

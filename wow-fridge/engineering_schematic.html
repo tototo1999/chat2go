@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>W00000W·AI 冰箱贴工程设计图与系统架构蓝图</title>
+  <title>Voilà AI 冰箱贴工程设计图与系统架构蓝图</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -274,6 +274,396 @@
       font-weight: 700;
       color: var(--coffee-light);
     }
+
+    /* Showroom styles */
+    .prototype-showroom {
+      margin-top: 32px;
+      margin-bottom: 32px;
+      background: #fdfaf6;
+      border: 3px solid var(--coffee-dark);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: var(--shadow-chunky);
+    }
+    .showroom-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .badge-new {
+      background: var(--dopa-pink);
+      color: #fff;
+      border: 2px solid var(--coffee-dark);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      font-family: 'Fredoka', sans-serif;
+      box-shadow: 2px 2px 0 var(--coffee-dark);
+    }
+    .showroom-header h3 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+    }
+    .prototype-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .prototype-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .prototype-card {
+      background: #ffffff;
+      border: 3px solid var(--coffee-dark);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: 3px 3px 0 var(--coffee-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card-header-inner {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px dashed var(--coffee-light);
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    .proto-tag {
+      background: var(--dopa-mint);
+      border: 2px solid var(--coffee-dark);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .card-header-inner h4 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+    }
+
+    /* 3D Scene Canvas */
+    .canvas-3d {
+      width: 100%;
+      height: 240px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      perspective: 800px;
+      background: radial-gradient(circle, #f9fafb 0%, #ebe6d8 100%);
+      border: 3px solid var(--coffee-dark);
+      border-radius: var(--radius-sm);
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+    .canvas-3d:active {
+      cursor: grabbing;
+    }
+    .real-render-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 1;
+    }
+    .prototype-card:hover .real-render-img {
+      opacity: 0.12;
+    }
+    .model-3d {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      transform-style: preserve-3d;
+      animation: spin-auto 15s infinite linear;
+      opacity: 0;
+      transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      z-index: 2;
+    }
+    .prototype-card:hover .model-3d {
+      opacity: 1 !important;
+    }
+
+    @keyframes spin-auto {
+      from { transform: rotateX(-15deg) rotateY(0deg); }
+      to { transform: rotateX(-15deg) rotateY(360deg); }
+    }
+
+    /* Model Common Faces */
+    .model-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border: 3px solid var(--coffee-dark);
+      backface-visibility: visible;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.15);
+    }
+
+    /* Cylinder Model specific */
+    .cylinder-model {
+      width: 120px;
+      height: 120px;
+    }
+    .model-front {
+      border-radius: 50%;
+      background: var(--dopa-yellow);
+      transform: translateZ(11px);
+    }
+    .model-back {
+      border-radius: 50%;
+      background: #374151;
+      color: #fff;
+      transform: translateZ(-11px) rotateY(180deg);
+    }
+
+    /* Side Panels for Cylinder Thickness */
+    .model-side {
+      position: absolute;
+      background: #4b5563;
+      border-top: 3px solid var(--coffee-dark);
+      border-bottom: 3px solid var(--coffee-dark);
+      height: 22px;
+      top: 49px; /* (120-22)/2 */
+      left: 0;
+      width: 120px;
+      transform-style: preserve-3d;
+    }
+    .side-1 { transform: rotateY(0deg) translateZ(59px); }
+    .side-2 { transform: rotateY(90deg) translateZ(59px); }
+    .side-3 { transform: rotateY(180deg) translateZ(59px); }
+    .side-4 { transform: rotateY(270deg) translateZ(59px); }
+
+    /* Circular Screen UI Details */
+    .circular-bezel {
+      width: 106px;
+      height: 106px;
+      border-radius: 50%;
+      border: 3px solid var(--coffee-dark);
+      background: #111827;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .glass-screen {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+      position: relative;
+    }
+    .glass-screen::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 50%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, transparent 100%);
+      transform: skewY(-20deg) scale(1.5);
+      pointer-events: none;
+    }
+    .minion-eye {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border-radius: 50%;
+      border: 3px solid #78716c;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      animation: blink-eye 4s infinite;
+    }
+    .pupil {
+      width: 16px;
+      height: 16px;
+      background: #2563eb;
+      border-radius: 50%;
+      border: 3px solid #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .pupil::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 4px; height: 4px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .hud-text {
+      font-size: 7px;
+      color: var(--dopa-mint);
+      margin-top: 8px;
+      text-shadow: 0 0 3px rgba(204,251,241,0.5);
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes blink-eye {
+      0%, 90%, 100% { transform: scaleY(1); }
+      95% { transform: scaleY(0.1); }
+    }
+
+    /* Cuboid Model specific */
+    .cuboid-model {
+      width: 130px;
+      height: 90px;
+      top: 15px; /* center vertically */
+    }
+    .cuboid-front {
+      background: var(--dopa-yellow);
+      transform: translateZ(11px);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+    }
+    .cuboid-back {
+      background: #374151;
+      color: #fff;
+      transform: translateZ(-11px) rotateY(180deg);
+      border-radius: var(--radius-sm);
+    }
+    .cuboid-right {
+      width: 22px;
+      height: 90px;
+      left: 119px; /* 130 - 22/2 */
+      transform: rotateY(90deg) translateZ(11px);
+      background: #4b5563;
+    }
+    .cuboid-left {
+      width: 22px;
+      height: 90px;
+      left: -11px;
+      transform: rotateY(-90deg) translateZ(11px);
+      background: #4b5563;
+    }
+    .cuboid-top {
+      width: 130px;
+      height: 22px;
+      top: -11px;
+      transform: rotateX(90deg) translateZ(11px);
+      background: #4b5563;
+    }
+    .cuboid-bottom {
+      width: 130px;
+      height: 22px;
+      top: 79px;
+      transform: rotateX(-90deg) translateZ(11px);
+      background: #4b5563;
+    }
+
+    /* Cuboid specific UI details */
+    .camera-lens {
+      width: 10px;
+      height: 10px;
+      background: #111827;
+      border: 1.5px solid var(--coffee-dark);
+      border-radius: 50%;
+      margin-bottom: 6px;
+    }
+    .rounded-screen {
+      width: 110px;
+      height: 56px;
+      border-radius: 6px;
+      border: 2px solid var(--coffee-dark);
+      background: #111827;
+      overflow: hidden;
+      position: relative;
+    }
+    .dashboard-mock {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      padding: 4px;
+    }
+    .weather-widget {
+      font-size: 8px;
+      font-weight: 800;
+    }
+    .todo-widget {
+      font-size: 7px;
+      color: var(--dopa-yellow);
+      margin-top: 4px;
+      border: 1px solid var(--dopa-yellow);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    /* Common Magnet Details on Back */
+    .magnet-ring {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 3px solid #111827;
+      background: #4b5563;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 7px;
+      font-weight: 800;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+    }
+    .pogo-pins {
+      display: flex;
+      gap: 3px;
+      margin-top: 10px;
+    }
+    .pogo-pins span {
+      width: 4px;
+      height: 4px;
+      background: #d97706;
+      border-radius: 50%;
+      border: 1px solid #000;
+    }
+    .side-btn {
+      background: var(--dopa-pink);
+      border: 2px solid var(--coffee-dark);
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-size: 7px;
+      color: #fff;
+      font-weight: 800;
+    }
+    .mic-hole {
+      font-size: 9px;
+      transform: rotateX(-90deg);
+    }
+
+    .proto-specs {
+      width: 100%;
+      margin-top: 16px;
+      background: #fdf8f0;
+      border: 2px solid var(--coffee-dark);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 11px;
+      display: flex;
+      justify-content: space-between;
+    }
   </style>
 
   <!-- Mermaid.js library -->
@@ -303,7 +693,7 @@
   <nav>
     <div class="nav-inner">
       <a href="#" class="nav-brand">
-        W00000W·AI <span class="logo-bubble">系统工程图</span>
+        Voilà AI <span class="logo-bubble">系统工程图</span>
       </a>
       <div class="nav-links">
         <a href="#hardware">电路架构</a>
@@ -317,7 +707,7 @@
   <!-- Hero Header -->
   <header class="header-hero">
     <div class="eyebrow">🛠️ OFFICIAL ENGINEERING BLUEPRINT</div>
-    <h1>W00000W 智能终端硬件架构与时序图</h1>
+    <h1>Voilà AI 智能终端硬件架构与时序图</h1>
     <p class="subtitle">详细描述基于 ESP32-S3 双核处理器的多模态家庭智能磁吸终端的硬件拓扑、无线 OTA 传送编译管线、以及低层 SDK GPIO 映射细节。</p>
   </header>
 
@@ -330,7 +720,7 @@
         <span class="card-emoji">🔌</span>
         <h2 class="card-title">1. 物理硬件架构系统框图</h2>
       </div>
-      <p class="card-desc">W00000W 冰箱贴电路基于集成度极高、低功耗的 ESP32-S3 片上系统，主控通过高速 SPI 和 I2C/I2S 接口连接液晶显示屏、MEMS 数字麦克风、数模转换音频放大器及电源管理模块。</p>
+      <p class="card-desc">Voilà AI 冰箱贴电路基于集成度极高、低功耗的 ESP32-S3 片上系统，主控通过高速 SPI 和 I2C/I2S 接口连接液晶显示屏、MEMS 数字麦克风、数模转换音频放大器及电源管理模块。</p>
       
       <div class="diagram-container">
         <div class="mermaid">
@@ -439,7 +829,7 @@ sequenceDiagram
         <span class="card-emoji">🧬</span>
         <h2 class="card-title">3. Python SDK 低层硬件映射关系</h2>
       </div>
-      <p class="card-desc">W00000W 极简 Python 接口设计高度抽象，屏蔽了微控制器底层驱动寄存器的繁琐配置，将硬件交互抽象为最温暖的家庭感知指令：</p>
+      <p class="card-desc">Voilà AI 极简 Python 接口设计高度抽象，屏蔽了微控制器底层驱动寄存器的繁琐配置，将硬件交互抽象为最温暖的家庭感知指令：</p>
       
       <table>
         <thead>
@@ -507,7 +897,7 @@ sequenceDiagram
       <p class="card-desc">整体外壳沿用 Claymorphism（橡皮泥泥塑风格）设计，边缘大角度倒角，正面加装 2.5D 高弧度钢化防指纹保护玻璃，防溅水，完美胜任恶劣的厨房油烟水渍环境。</p>
       
       <pre class="pre-slate">
-       W00000W Refrigerator Magnet 3D Dimensional Specifications
+       Voilà AI Refrigerator Magnet 3D Dimensional Specifications
        
        &lt;==================== 120.00 mm ====================&gt;   &lt;=== 22 mm ===&gt;
        +---------------------------------------------+       +-------------+
@@ -530,6 +920,100 @@ sequenceDiagram
        +---------------------------------------------+       +-------------+
                          FRONT VIEW                             SIDE VIEW
       </pre>
+
+      <!-- 3D Prototypes Showroom -->
+      <div class="prototype-showroom">
+        <div class="showroom-header">
+          <span class="badge-new">NEW</span>
+          <h3>🛰️ 样机物理实体三维立体结构交互（Hover / 移动鼠标可多轴旋转）</h3>
+        </div>
+        
+        <div class="prototype-grid">
+          <!-- Circular Model -->
+          <div class="prototype-card scene-interactive" data-type="circular">
+            <div class="card-header-inner">
+              <span class="proto-tag">Model C (圆形样机)</span>
+              <h4>圆形多模态声学磁贴</h4>
+            </div>
+            
+            <div class="canvas-3d">
+              <img src="assets/circular_magnet_device.png" alt="Circular Magnet" class="real-render-img">
+              <div class="model-3d cylinder-model">
+                <!-- Front Face (Screen + Bezel) -->
+                <div class="model-face model-front">
+                  <div class="circular-bezel">
+                    <div class="glass-screen">
+                      <!-- Minion eye mock UI -->
+                      <div class="minion-eye">
+                        <div class="pupil"></div>
+                      </div>
+                      <div class="hud-text font-mono">BAT 98% | WIFI OK</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Back Face (Magnet + Pogo) -->
+                <div class="model-face model-back">
+                  <div class="magnet-ring">🧲 N52 Ring</div>
+                  <div class="pogo-pins">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+                <!-- Cylindrical segments to give thickness -->
+                <div class="model-side side-1"></div>
+                <div class="model-side side-2"></div>
+                <div class="model-side side-3"></div>
+                <div class="model-side side-4"></div>
+              </div>
+            </div>
+            <div class="proto-specs font-mono">
+              <div>📐 直径: 85.0 mm</div>
+              <div>⚡ 厚度: 22.0 mm</div>
+              <div>🎯 屏幕: 2.1吋 圆形 IPS</div>
+            </div>
+          </div>
+
+          <!-- Square Model -->
+          <div class="prototype-card scene-interactive" data-type="square">
+            <div class="card-header-inner">
+              <span class="proto-tag">Model S (方形样机)</span>
+              <h4>方形经典家庭相册</h4>
+            </div>
+            
+            <div class="canvas-3d">
+              <img src="assets/square_magnet_device.png" alt="Square Magnet" class="real-render-img">
+              <div class="model-3d cuboid-model">
+                <!-- Front Face -->
+                <div class="model-face cuboid-front">
+                  <div class="camera-lens"></div>
+                  <div class="rounded-screen">
+                    <div class="dashboard-mock">
+                      <div class="weather-widget">☀️ 26°C</div>
+                      <div class="todo-widget font-mono">TODO: 1/3</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Back Face -->
+                <div class="model-face cuboid-back">
+                  <div class="magnet-ring">🧲 N52 Ring</div>
+                  <div class="pogo-pins">
+                    <span></span><span></span><span></span><span></span>
+                  </div>
+                </div>
+                <!-- Side Faces -->
+                <div class="model-face cuboid-right"><div class="side-btn">KEY</div></div>
+                <div class="model-face cuboid-left"></div>
+                <div class="model-face cuboid-top"><div class="mic-hole">🎤</div></div>
+                <div class="model-face cuboid-bottom"></div>
+              </div>
+            </div>
+            <div class="proto-specs font-mono">
+              <div>📐 尺寸: 120.0 x 78.0 mm</div>
+              <div>⚡ 厚度: 22.0 mm</div>
+              <div>🎯 屏幕: 2.1吋 弧边 IPS</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="specs-grid">
         <div class="spec-item">
@@ -557,6 +1041,42 @@ sequenceDiagram
   <footer>
     <p>wooooow.ai · SHIPPED WITH WARM FAMILY VIBE · MIT OPEN SOURCE HARDWARE LICENSE · 2026</p>
   </footer>
+
+  <!-- 3D Rotation Interactive Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const cards = document.querySelectorAll('.scene-interactive');
+      cards.forEach(card => {
+        const model = card.querySelector('.model-3d');
+        
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width / 2;
+          const y = e.clientY - rect.top - rect.height / 2;
+          
+          // Calculate rotation angles (pitch/yaw)
+          const rotY = (x / rect.width) * 180; // Allow 180 degrees spin
+          const rotX = -(y / rect.height) * 90; // Allow 90 degrees tilt
+          
+          // Apply transforms and pause auto-spin animation
+          model.style.animation = 'none';
+          model.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+        });
+        
+        card.addEventListener('mouseleave', () => {
+          // Smoothly return and restart animation
+          model.style.transform = '';
+          model.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+          
+          // Timeout to clean up transition style and let infinite spin keyframes run
+          setTimeout(() => {
+            model.style.transition = '';
+            model.style.animation = '';
+          }, 500);
+        });
+      });
+    });
+  </script>
 
 </body>
 </html>

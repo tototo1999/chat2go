@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voilà AI 冰箱贴 · 产品价值链与技术必选项蓝图</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      /* Neumorphism Warm Clay Palette */
+      --clay-base: #ebe6d8;
+      --clay-dark-shadow: #cecabd;
+      --clay-light-shadow: #ffffff;
+      
+      --coffee-dark: #292524;
+      --coffee-light: #78716c;
+      
+      --dopa-pink: #f43f5e;
+      --dopa-pink-light: #fff1f2;
+      --dopa-mint: #0d9488;
+      --dopa-mint-light: #f0fdfa;
+      --dopa-yellow: #eab308;
+      --dopa-purple: #8b5cf6;
+      --dopa-purple-light: #f5f3ff;
+      --dopa-blue: #0284c7;
+      
+      --radius-lg: 32px;
+      --radius-md: 20px;
+      --radius-sm: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--clay-base);
+    }
+    body {
+      background-color: var(--clay-base);
+      color: var(--coffee-dark);
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+      line-height: 1.6;
+      max-width: 1056px;
+      margin: 0 auto;
+      position: relative;
+      min-height: 100vh;
+      box-shadow: 18px 18px 36px var(--clay-dark-shadow), -18px -18px 36px var(--clay-light-shadow);
+      padding-bottom: 40px;
+    }
+
+    /* Tactile Neumorphic Nav */
+    nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--clay-base);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 20px 32px;
+      box-shadow: 0 10px 30px -10px rgba(40, 37, 30, 0.05);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--coffee-dark);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+    }
+    .logo-bubble {
+      background: var(--clay-base);
+      border: 1px solid rgba(255,255,255,0.8);
+      padding: 4px 14px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--dopa-pink);
+      box-shadow: inset 3px 3px 6px var(--clay-dark-shadow), inset -3px -3px 6px var(--clay-light-shadow);
+    }
+    .nav-links {
+      display: flex; gap: 24px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--coffee-dark);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      font-family: 'Fredoka', sans-serif;
+      transition: all 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--dopa-pink);
+      text-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
+    }
+    
+    /* Neumorphic Extruded Button */
+    .btn-back {
+      background: var(--clay-base);
+      color: var(--coffee-dark);
+      border: none;
+      padding: 8px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 800;
+      font-family: 'Fredoka', sans-serif;
+      text-decoration: none;
+      box-shadow: 5px 5px 10px var(--clay-dark-shadow), -5px -5px 10px var(--clay-light-shadow);
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .btn-back:hover {
+      transform: translateY(-1px);
+      box-shadow: 8px 8px 16px var(--clay-dark-shadow), -8px -8px 16px var(--clay-light-shadow);
+      color: var(--dopa-pink);
+    }
+    .btn-back:active {
+      transform: translateY(1px);
+      box-shadow: inset 3px 3px 6px var(--clay-dark-shadow), inset -3px -3px 6px var(--clay-light-shadow);
+    }
+
+    /* Header Hero Section */
+    .header-hero {
+      padding: 80px 40px 50px;
+      text-align: center;
+      background: radial-gradient(circle at center, rgba(244, 63, 94, 0.05) 0%, transparent 70%);
+      position: relative;
+    }
+    .eyebrow {
+      display: inline-block;
+      background: var(--clay-base);
+      padding: 6px 16px;
+      border-radius: 30px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--dopa-yellow);
+      margin-bottom: 24px;
+      box-shadow: inset 3px 3px 6px var(--clay-dark-shadow), inset -3px -3px 6px var(--clay-light-shadow);
+      letter-spacing: 1px;
+    }
+    h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+      line-height: 1.25;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(40,37,30,0.06);
+    }
+    .subtitle {
+      font-size: 16px;
+      color: var(--coffee-light);
+      max-width: 780px;
+      margin: 0 auto;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    /* Layout Containers */
+    .dashboard-layout {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 60px;
+    }
+
+    /* Neumorphic Extruded Main Card */
+    .card {
+      background: var(--clay-base);
+      border-radius: var(--radius-lg);
+      box-shadow: 12px 12px 24px var(--clay-dark-shadow), -12px -12px 24px var(--clay-light-shadow);
+      padding: 40px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.4);
+    }
+    .card-title-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+    }
+    .card-emoji {
+      font-size: 32px;
+      filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.1));
+    }
+    .card-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+    }
+    .card-desc {
+      font-size: 15px;
+      color: var(--coffee-light);
+      margin-bottom: 32px;
+      font-weight: 600;
+      border-left: 4px solid var(--dopa-pink);
+      padding-left: 12px;
+    }
+
+    /* Inset Diagram Window */
+    .diagram-container {
+      background: var(--clay-base);
+      border-radius: var(--radius-md);
+      box-shadow: inset 6px 6px 12px var(--clay-dark-shadow), inset -6px -6px 12px var(--clay-light-shadow);
+      padding: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+
+    /* Specs & Flat Substitutes Grid */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+    }
+    @media (max-width: 768px) {
+      .specs-grid { grid-template-columns: 1fr; }
+    }
+    
+    /* Tactile Neumorphic Spec Cards */
+    .spec-card {
+      background: var(--clay-base);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      box-shadow: 6px 6px 16px var(--clay-dark-shadow), -6px -6px 16px var(--clay-light-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,0.4);
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .spec-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 10px 10px 20px var(--clay-dark-shadow), -10px -10px 20px var(--clay-light-shadow);
+    }
+    .spec-card.must-have {
+      border-top: 5px solid var(--dopa-pink);
+    }
+    .spec-card.extension {
+      border-top: 5px solid var(--dopa-purple);
+    }
+    
+    /* Inset Badge */
+    .spec-badge {
+      align-self: flex-start;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      box-shadow: inset 2px 2px 5px var(--clay-dark-shadow), inset -2px -2px 5px var(--clay-light-shadow);
+    }
+    .spec-badge.must { color: var(--dopa-pink); }
+    .spec-badge.ext { color: var(--dopa-purple); }
+    
+    .spec-card h4 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spec-card p {
+      font-size: 13px;
+      color: var(--coffee-light);
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    /* Scenarios Filter Buttons */
+    .scenarios-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+    }
+    .filter-btn {
+      background: var(--clay-base);
+      border: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+      cursor: pointer;
+      box-shadow: 5px 5px 10px var(--clay-dark-shadow), -5px -5px 10px var(--clay-light-shadow);
+      transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .filter-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 7px 7px 14px var(--clay-dark-shadow), -7px -7px 14px var(--clay-light-shadow);
+      color: var(--dopa-pink);
+    }
+    .filter-btn.active {
+      box-shadow: inset 4px 4px 8px var(--clay-dark-shadow), inset -4px -4px 8px var(--clay-light-shadow);
+      color: var(--dopa-pink);
+      transform: translateY(1px);
+      font-weight: 800;
+    }
+    
+    /* Scenario Grid */
+    .scenarios-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+    @media (max-width: 768px) {
+      .scenarios-grid { grid-template-columns: 1fr; }
+    }
+    
+    /* Neumorphic Extruded Scenario Cards */
+    .scenario-card {
+      background: var(--clay-base);
+      border-radius: var(--radius-md);
+      padding: 28px;
+      box-shadow: 8px 8px 20px var(--clay-dark-shadow), -8px -8px 20px var(--clay-light-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      border: 1px solid rgba(255,255,255,0.4);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+    }
+    .scenario-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 12px 12px 28px var(--clay-dark-shadow), -12px -12px 28px var(--clay-light-shadow);
+    }
+    .scenario-card:active {
+      transform: translateY(1px);
+      box-shadow: inset 4px 4px 8px var(--clay-dark-shadow), inset -4px -4px 8px var(--clay-light-shadow);
+    }
+    
+    .scenario-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .role-badge {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: 20px;
+      box-shadow: inset 2px 2px 5px var(--clay-dark-shadow), inset -2px -2px 5px var(--clay-light-shadow);
+    }
+    .role-badge.mom { color: var(--dopa-pink); }
+    .role-badge.dad { color: #0284c7; }
+    .role-badge.child { color: #d97706; }
+    .role-badge.grandma { color: var(--dopa-purple); }
+    .role-badge.family { color: #0d9488; }
+
+    .scenario-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    /* Inset modality bar */
+    .modality-cloning {
+      background: var(--clay-base);
+      box-shadow: inset 3px 3px 6px var(--clay-dark-shadow), inset -3px -3px 6px var(--clay-light-shadow);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--coffee-dark);
+      font-weight: 700;
+      border-left: 4px solid var(--dopa-pink);
+    }
+    .story-desc {
+      font-size: 14px;
+      color: var(--coffee-light);
+      font-weight: 600;
+      line-height: 1.6;
+    }
+    .hardware-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .hw-tag {
+      background: var(--clay-base);
+      box-shadow: inset 1.5px 1.5px 3px var(--clay-dark-shadow), inset -1.5px -1.5px 3px var(--clay-light-shadow);
+      border-radius: 6px;
+      padding: 2px 10px;
+      font-size: 10px;
+      font-weight: 800;
+      color: #0f766e;
+    }
+
+    /* Inset Dark Coding Box (Holographic feel) */
+    .coding-tip-box {
+      background: #1e293b;
+      color: #38bdf8;
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-size: 12px;
+      margin-top: 10px;
+      box-shadow: inset 3px 3px 8px rgba(0,0,0,0.5), 3px 3px 8px var(--clay-light-shadow);
+    }
+    .coding-tip-title {
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 800;
+      color: #f43f5e;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .coding-tip-desc {
+      font-family: 'Nunito', sans-serif;
+      color: #94a3b8;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+
+    /* Cozy Tactile Footer */
+    footer {
+      margin-top: 40px;
+      padding: 40px 30px;
+      text-align: center;
+      background: var(--clay-base);
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--coffee-light);
+      box-shadow: inset 6px 6px 12px var(--clay-dark-shadow), inset -6px -6px 12px var(--clay-light-shadow);
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+  </style>
+
+  <!-- Mermaid.js library -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#ebe6d8',
+        primaryTextColor: '#292524',
+        primaryBorderColor: '#78716c',
+        lineColor: '#292524',
+        secondaryColor: '#fef3c7',
+        tertiaryColor: '#ccfbf1',
+        edgeLabelBackground: '#ebe6d8',
+        mainBkg: '#ebe6d8',
+        actorBorder: '#292524',
+        actorBkg: '#fef3c7'
+      }
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-brand">
+        Voilà AI <span class="logo-bubble">触觉价值图谱</span>
+      </a>
+      <div class="nav-links">
+        <a href="#value-chain">智能流向</a>
+        <a href="#must-haves">真身必选项</a>
+        <a href="#substitutes">高维设备平替</a>
+        <a href="#scenarios">10大延伸场景</a>
+        <a href="index.html" class="btn-back">🏡 返回工坊</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <header class="header-hero">
+    <div class="eyebrow">🧬 THE PHYSICAL & VIRTUAL DIGITAL TWIN</div>
+    <h1>Voilà AI 冰箱贴：智能真身与高维平替价值蓝图</h1>
+    <p class="subtitle">Voilà AI 冰箱贴并非单纯的机器人，而是家庭成员“智能真身”在家庭物理空间中的温情延伸。它是亲人音容的数字复刻，更是父母给孩子的第一个物理 Web 编程启蒙玩具。</p>
+  </header>
+
+  <!-- Main Content Dashboard -->
+  <div class="dashboard-layout">
+    
+    <!-- Section 1: Soul Value Chain -->
+    <section id="value-chain" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🧬</span>
+        <h2 class="card-title">1. Voilà AI 智能真身核心价值链拓扑</h2>
+      </div>
+      <p class="card-desc">以“智能真身的物理延伸”为核心，通过声音形象的完全复制，连接到家庭日常的暖融融场景，最终作为 Web 编程教育的启蒙实体。每一环都在传递爱的温度：</p>
+      
+      <div class="diagram-container">
+        <div class="mermaid">
+graph LR
+    User["👨‍👩‍👧‍👦 家庭真实成员 <br>(真实情感纽带)"]
+    
+    subgraph Modality ["🎙️ 音容模态复制"]
+        Verbal["🗣️ 声音完全复制 <br>(Verbal Coding 极速克隆)"]
+        Visual["📸 形象/人脸捕捉 <br>(摄像头微表情抓取)"]
+    end
+    
+    subgraph Physical ["🏡 多终端智能真身延伸"]
+        Cylinder["🔴 圆形多模态声学磁贴"]
+        Cuboid["🟦 方形经典家庭相册"]
+        SubWatch["⌚ 智能手表 (生理/触觉)"]
+        SubPhone["📱 智能手机 (算力/灵动岛)"]
+        SubPad["🖥️ 智能平板 (家庭大墙)"]
+    end
+
+    subgraph Coding ["💻 亲子 Web 编程启蒙"]
+        Playground["🎲 沉浸式场景 Web Coding <br>(Fetch/Audio/WebSocket)"]
+        Love["❤️ 用代码连接爱 <br>(孩子动手为奶奶/爸爸写温暖代码)"]
+    end
+
+    User -->|亲情连接| Modality
+    Verbal -->|高保真还原| Cylinder
+    Visual -->|复刻微笑| Cuboid
+    Modality -->|手表生理触觉| SubWatch
+    Modality -->|手机灵动岛组件| SubPhone
+    Modality -->|平板多端看板| SubPad
+    Cylinder -->|寄宿 Agent| Playground
+    Cuboid -->|寄宿 Agent| Playground
+    SubWatch -->|寄宿 Agent| Playground
+    SubPhone -->|寄宿 Agent| Playground
+    SubPad -->|寄宿 Agent| Playground
+    Playground -->|第一款启蒙玩具| Love
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Must-Haves Matrix -->
+    <section id="must-haves" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🔌</span>
+        <h2 class="card-title">2. 软硬件必选项 (Must-Haves) 与延展 (Extensions) 矩阵</h2>
+      </div>
+      <p class="card-desc">我们明确区分了实现“真身音容复刻与亲子编程启蒙”底座的**绝对必选项（Must-Haves）**，以及保障未来不断进化的**能力延展图谱（Extensions）**：</p>
+      
+      <div class="specs-grid">
+        
+        <!-- Must-haves -->
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>🧠 ESP32-S3 SoC (8MB PSRAM)</h4>
+          <p>主控芯片必选项。双核 LX7 架构提供强悍音视频流软解算力，8MB 超大 PSRAM 保证 MJPEG/H.264 家庭 Vlog 视频和音频缓存不卡顿。</p>
+        </div>
+
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>🔊 MAX98357A I2S DAC 音频系统</h4>
+          <p>发声系统必选项。通过高性能 I2S 数字音频接口，完美高保真还原亲人通过 Verbal Coding 克隆出的温暖、清爽的真实嗓音，拒绝普通蜂鸣器的廉价感。</p>
+        </div>
+
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>🎤 MEMS 数字麦克风 (I2S 总线)</h4>
+          <p>收音系统必选项。提供高信噪比高清音频录入，为孩子的日常口语对话、古诗背诵以及家人的声音极速克隆提供无可比拟的底层声学底座。</p>
+        </div>
+
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>🧲 N52 环形钕铁硼强磁与充电底座</h4>
+          <p>物理挂载必选项。环形 N52 超强钕铁硼提供高达 18N 的拉力，稳吸在冰箱门等铁表面，配合 Pogo-Pin 充电底座提供随放随充、无摩擦的温馨体验。</p>
+        </div>
+
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>🌐 Web Audio & WebSocket 实时双向网络</h4>
+          <p>软件通信必选项。Web Audio 保证浏览器端音波捕获，WebSocket 保证跨设备磁贴之间毫秒级信息同步与物理微振动推送。</p>
+        </div>
+
+        <div class="spec-card must-have">
+          <span class="spec-badge must">必选项 MUST-HAVE</span>
+          <h4>📷 Claude Vision API 视觉答疑</h4>
+          <p>多模态软件必选项。将孩子微距拍摄的练习册难题精准识别，让代表爸爸妈妈探索之眼的 Agent 给出鼓励式解题引导。</p>
+        </div>
+
+        <!-- Extensions -->
+        <div class="spec-card extension">
+          <span class="spec-badge ext">延展项 EXTENSION</span>
+          <h4>📖 家庭记忆 RAG 向量知识库</h4>
+          <p>核心能力延展。大咖上传资料及家庭账单日记向量化（pgvector），让 Agent 真正“记住”家人的重要纪念日、生活喜好和温暖点滴。</p>
+        </div>
+
+        <div class="spec-card extension">
+          <span class="spec-badge ext">延展项 EXTENSION</span>
+          <h4>📡 BLE / Wi-Fi Mesh 局域自组网</h4>
+          <p>网络拓扑延展。当家中路由器断网时，多款冰箱贴之间能自动通过 BLE 蓝牙或 Wi-Fi 局域进行直连通信，保障紧急呼救与便签传送永不断线。</p>
+        </div>
+
+        <div class="spec-card extension">
+          <span class="spec-badge ext">延展项 EXTENSION</span>
+          <h4>🖨️ 温情 Zine 纸质排版实体打印联动</h4>
+          <p>输出模态延展。支持月底将家庭一月来的照片和暖心便签一键排版，通过低成本热敏打印机直接打印出属于家人的实体黑白 Zine 迷你小杂志。</p>
+        </div>
+
+        <div class="spec-card extension">
+          <span class="spec-badge ext">延展项 EXTENSION</span>
+          <h4>👓 AR 眼镜与可穿戴生态打通</h4>
+          <p>多终端生态延展。支持向雷鸟 X2、Rokid 等 AR 眼镜和智能手环推送紧急通知或日程，打破冰箱贴的地理限制。</p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 3: High-dimensional substitutes -->
+    <section id="substitutes" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">⌚</span>
+        <h2 class="card-title">3. 零硬件门槛：Voilà AI 全终端高维硬件平替图谱</h2>
+      </div>
+      <p class="card-desc">Voilà 冰箱贴不是唯一的物理实体！借由家人的已有设备（手机、平板、智能手表），我们可以完全替代或延伸冰箱贴的交互，并在生命与生理感知上达成<b>更高维度</b>的价值呈现：</p>
+      
+      <div class="specs-grid">
+        
+        <!-- Apple Watch Substitute -->
+        <div class="spec-card" style="border-top: 5px solid var(--dopa-purple);">
+          <span class="spec-badge ext" style="color: var(--dopa-purple);">智能手表平替 (Apple/华为/安卓)</span>
+          <h4>⌚ 物理微震触觉克隆与无感跌倒监测</h4>
+          <p>
+            <strong>高维生理感知</strong>：奶奶不需要滑倒后去寻找冰箱上的磁贴，手表内置的 **跌倒传感器与异常减速算法** 实现全自动跌倒判定，并用儿女克隆的嗓音紧急通话。<br>
+            <strong>物理触觉分身</strong>：利用手表的 **Taptic Engine 线性马达**。当妈妈在厨房敲击磁贴，书房中爸爸的手表会产生如同真实牵手般轻微细致的微颤，传递爱的温度。
+          </p>
+        </div>
+
+        <!-- iPhone Substitute -->
+        <div class="spec-card" style="border-top: 5px solid var(--dopa-pink);">
+          <span class="spec-badge must" style="color: var(--dopa-pink);">智能手机平替 (iPhone/华为/安卓)</span>
+          <h4>📱 灵动岛常驻连线与极速本地音容克隆</h4>
+          <p>
+            <strong>灵动岛 (Live Activities) 挂载</strong>：妈妈无需打开 App，孩子的放学刷卡状态、英语纠音得分或“奶奶今天已服药”的通知，会以丝滑的微动画**实时常驻在 iPhone 灵动岛**或锁屏卡片上。<br>
+            <strong>极速本地声音克隆</strong>：利用手机高规格麦克风与本地 Neural Engine 神经网络引擎，自然聊天 2 分钟，即可完美复刻家人的温暖音容。
+          </p>
+        </div>
+
+        <!-- iPad Substitute -->
+        <div class="spec-card" style="border-top: 5px solid var(--dopa-blue);">
+          <span class="spec-badge must" style="color: var(--dopa-blue); background: var(--dopa-blue-light);">智能平板平替 (iPad/华为等 Pad)</span>
+          <h4>🖥️ 闲置平板变身“家庭多真身控制中心”</h4>
+          <p>
+            <strong>全家真身大墙</strong>：将客厅或厨房闲置的旧平板挂在墙上或吸附在铁架上，作为“Voilà AI 家庭大墙中枢”。一块大屏同时常驻爸爸、妈妈、孩子、奶奶四个 Agent 的 **3D 粘土公仔、今日待办与活跃状态**。<br>
+            <strong>大屏交互物理沙箱</strong>：孩子可以在大屏上直接写字、与 AI 纠音助教互动，前置摄像头通过视觉 API 进行微距作业拍照解题。
+          </p>
+        </div>
+
+        <!-- Spec Comparison Neumorphic Table -->
+        <div class="spec-card" style="grid-column: 1 / -1; background: var(--clay-base); padding: 24px;">
+          <h4 style="font-family: 'Fredoka', sans-serif; margin-bottom: 12px;">📊 物理冰箱贴 vs 高维平替终端</h4>
+          <div style="overflow-x: auto; width:100%;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; font-weight: 700; color: var(--coffee-dark);">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--coffee-dark); text-align: left;">
+                  <th style="padding: 10px 16px;">对比维度</th>
+                  <th style="padding: 10px 16px; color: var(--dopa-pink);">Voilà 物理冰箱贴 (音箱碟)</th>
+                  <th style="padding: 10px 16px; color: var(--dopa-purple);">高维设备平替 (手表/手机/平板)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid rgba(40,37,30,0.1);">
+                  <td style="padding: 12px 16px;">硬件采购成本</td>
+                  <td style="padding: 12px 16px; font-family: 'Share Tech Mono';">¥71-121 (极低 BOM 成本)</td>
+                  <td style="padding: 12px 16px; font-family: 'Share Tech Mono';">¥0 (复用全家现有闲置设备)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(40,37,30,0.1);">
+                  <td style="padding: 12px 16px;">物理感知便携度</td>
+                  <td style="padding: 12px 16px;">固定在冰箱/铁门，属于家庭公有物理锚点</td>
+                  <td style="padding: 12px 16px;">随身佩戴 (手表) 或随处移动，突破物理空间</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(40,37,30,0.1);">
+                  <td style="padding: 12px 16px;">生理状态感知</td>
+                  <td style="padding: 12px 16px;">无</td>
+                  <td style="padding: 12px 16px; color: var(--dopa-mint);">极高 (手表跌落算法/心率生理特征触发 Agent)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(40,37,30,0.1);">
+                  <td style="padding: 12px 16px;">触觉微反馈 (Haptic)</td>
+                  <td style="padding: 12px 16px;">无</td>
+                  <td style="padding: 12px 16px; color: var(--dopa-mint);">极高 (Apple Watch 线性马达完美复刻指尖温度)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(40,37,30,0.1);">
+                  <td style="padding: 12px 16px;">算力与本地克隆</td>
+                  <td style="padding: 12px 16px;">中等 (依赖 ESP32-S3 与云端协同)</td>
+                  <td style="padding: 12px 16px; color: var(--dopa-mint);">极高 (手机 NPU 2分钟本地极速声音完全复制)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Section 4: 10 Scenarios Showroom Matrix -->
+    <section id="scenarios" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🏡</span>
+        <h2 class="card-title">4. Voilà AI · 家庭成员智能真身连线 10 大温情场景工坊</h2>
+      </div>
+      <p class="card-desc">以下是完全贯穿在真实家庭场景里的 10 个沉浸式体验。这不仅是真身的温馨陪伴，更是父母给小朋友的第一个 **Web 编程启蒙教具**。点击角色进行筛选：</p>
+      
+      <!-- Filter Bar -->
+      <div class="scenarios-filter-bar">
+        <button class="filter-btn active" data-role="all">🏡 显示全部场景</button>
+        <button class="filter-btn" data-role="mom">👩 妈妈真身延伸</button>
+        <button class="filter-btn" data-role="dad">👨 爸爸真身延伸</button>
+        <button class="filter-btn" data-role="child">👶 孩子成长延伸</button>
+        <button class="filter-btn" data-role="grandma">👵 奶奶用药安全</button>
+        <button class="filter-btn" data-role="family">🏡 全家温情融合</button>
+      </div>
+
+      <!-- Scenarios Grid -->
+      <div class="scenarios-grid">
+        
+        <!-- Scenario 1 -->
+        <div class="scenario-card" data-role="mom">
+          <div class="scenario-header">
+            <span class="role-badge mom">👩 妈妈真身延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">📸 摄像头</span>
+              <span class="hw-tag">🔊 喇叭</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">1. 放学后的“代理妈妈” (Mom's After-School Presence)</h3>
+          <div class="modality-cloning">🎤 妈妈声音极速克隆 + 人脸识别微表情</div>
+          <p class="story-desc">妈妈出差在途，孩子放学刷卡进门。磁贴摄像头识别到孩子，自动以妈妈完全相同的高保真原声温柔微笑播报：“工作辛苦啦宝贝！妈妈在冰箱里留了牛奶，今天的作业在第3页，做完奖励小红星哦！”</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">引导孩子学习<strong>条件分支控制 (`if-else`)</strong>：当摄像头检测到的人脸 ID 匹配 'Child' 时，执行妈妈 Agent 的语音播放函数，否则进入待机监听。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 2 -->
+        <div class="scenario-card" data-role="mom">
+          <div class="scenario-header">
+            <span class="role-badge mom">👩 妈妈真身延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">⏱️ 定时器</span>
+              <span class="hw-tag">📸 图像 AI</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">2. 叮嘱爸爸的“深夜健康分身”</h3>
+          <div class="modality-cloning">🎤 妻子声音轻声叮嘱 + 深夜降脂关怀</div>
+          <p class="story-desc">深夜 23:30 爸爸加班疲倦回家打开冰箱。磁贴检测到爸爸，妻子的 Agent 自动闪烁并用妻子的原声细语：“今天卡路里摄入已经超标了哦，熬夜吃颗苹果代替冰啤酒如何？我和孩子都在等你。”</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**时间事件监听 (`onTime`)** 与传感器融合。用代码定义在 22:00 之后，如果冰箱被打开，且人物为 'Dad'，则触发卡路里提醒。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 3 -->
+        <div class="scenario-card" data-role="mom">
+          <div class="scenario-header">
+            <span class="role-badge mom">👩 妈妈真身延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">💾 数据库</span>
+              <span class="hw-tag">🔗 菜谱 API</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">3. 食材管理与“今晚吃啥” (Fridge Planner)</h3>
+          <div class="modality-cloning">🎤 妈妈持家大脑数字复刻 + 食物矩阵</div>
+          <p class="story-desc">爸爸和孩子对着冰箱犯愁晚饭，敲击冰箱贴，妈妈的 Agent 自动调取购买日记和冰箱库存数据：“冰箱里还有上周买的西冷和两个有机番茄，今晚给孩子做热腾腾的番茄牛腩面吧，菜谱我已经发你微信啦！”</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习<strong>数据结构（JavaScript 数组与对象列表 Array/Object）</strong>：在代码中声明食材库存，并使用关联算法匹配相应的菜谱 API。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 4 -->
+        <div class="scenario-card" data-role="dad">
+          <div class="scenario-header">
+            <span class="role-badge dad">👨 爸爸真身延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">📶 Wi-Fi</span>
+              <span class="hw-tag">🚦 交通 API</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">4. 清晨通勤的“天气与路况分身”</h3>
+          <div class="modality-cloning">🎤 爸爸的声音气象台 + 路况主动推送</div>
+          <p class="story-desc">清晨 7:05 妈妈和孩子走进厨房倒水，感应器识别到人体，爸爸的 Agent 自动唤醒并用爸爸标志性的原声嘱咐：“高架桥今天拥堵，建议你们提早10分钟出发，记得带上鞋柜旁的那把大黄伞哦！”</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**异步请求 (Fetch API / Async/Await)**：如何编写一段代码从云端请求当天的天气和交通路况 JSON 数据包，并将结果解析出来。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 5 -->
+        <div class="scenario-card" data-role="dad">
+          <div class="scenario-header">
+            <span class="role-badge dad">👨 爸爸真身延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">📳 震动马达</span>
+              <span class="hw-tag">💬 实时网络</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">5. 跨磁贴物理传情 (Real-time Family Courier)</h3>
+          <div class="modality-cloning">🎤 物理冰箱贴间的声音与情感双向快递</div>
+          <p class="story-desc">爸爸在书房写代码，妈妈在厨房敲击磁贴留声：“老公，今晚多陪孩子拼乐高。” 消息伴随微弱的震动马达实时推送到书房爸爸的磁贴上，实现家庭物理空间的“隔空拥抱”。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**WebSocket 实时双向网络通信**与硬件控制接口：当收到 `ws.onmessage` 广播时，调用 `Haptic.vibrate()` 控制马达进行特定频率的轻微震动。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 6 -->
+        <div class="scenario-card" data-role="child">
+          <div class="scenario-header">
+            <span class="role-badge child">👶 孩子成长延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">🎤 麦克风</span>
+              <span class="hw-tag">🔊 音频 API</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">6. 开心学英语纠音挑战 (Spoken English Playground)</h3>
+          <div class="modality-cloning">🎤 孩子学英语发声与 NYC 口语对齐</div>
+          <p class="story-desc">吃早餐时，孩子与圆形声学磁贴对话，NYC外教声学内核实时打分，并将孩子优秀的发音录音（孩子智能真身的展示）生成卡片推送到上班中的父母手机，让爱与鼓励即时传递。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**Web Audio API**：调用浏览器的麦克风采集音频，将模拟音频波形数字化并转换成频率特征，了解什么是模拟与数字转换。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 7 -->
+        <div class="scenario-card" data-role="child">
+          <div class="scenario-header">
+            <span class="role-badge child">👶 孩子成长延伸</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">📸 摄像头</span>
+              <span class="hw-tag">🧠 视觉 AI</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">7. 举手拍照的 AI 答疑助教 (Homework Visual Assistant)</h3>
+          <div class="modality-cloning">🎤 孩子的探索之眼与 Claude 视觉模型</div>
+          <p class="story-desc">孩子写作业卡壳，对准磁贴摄像头拍照。孩子的 Agent 智能解析练习册题意，用极具童趣的音色循循善诱提供图形解题思路，不直接给答案，激发独立思考。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习<strong>Base64 图像编码与多模态 API 请求</strong>：如何把摄像头捕获的 Canvas 帧画面转换为 Base64 编码字符串，打包发送给云端 AI 大脑。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 8 -->
+        <div class="scenario-card" data-role="grandma">
+          <div class="scenario-header">
+            <span class="role-badge grandma">👵 奶奶用药安全</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">🗣️ 大字号 CSS</span>
+              <span class="hw-tag">⏱️ 药盒提醒</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">8. 陪伴奶奶的“儿女声音药盒” (Grandma's Medication Guardian)</h3>
+          <div class="modality-cloning">🎤 儿女温暖声音每日叮嘱 + 特大视觉大字</div>
+          <p class="story-desc">每天早上 8:00，奶奶的磁贴亮起大字并连续播放儿女关怀的录声：“奶奶，降压药别忘啦！就在桌上右边药瓶里，记得温水送服。” 陪伴奶奶度过每一个安稳的早晨。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**TTS（文字转语音）算法**与**自适应 CSS 变量**。了解如何通过 JavaScript 调用语音合成引擎，以及编写能够自动放大字体以适配长辈视力的 CSS 样式。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 9 -->
+        <div class="scenario-card" data-role="grandma">
+          <div class="scenario-header">
+            <span class="role-badge grandma">👵 奶奶用药安全</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">📐 6轴 IMU</span>
+              <span class="hw-tag">🚨 红色警报</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">9. 双击紧急呼救“安全哨” (Grandma's SOS Safety Net)</h3>
+          <div class="modality-cloning">🎤 老人的安全真身警报与全家高频强推</div>
+          <p class="story-desc">奶奶在厨房不慎滑倒，伸手快速双击磁贴外壳。6轴 IMU 加速度计算法精准捕捉两次特异性剧烈物理撞击，瞬间向全家人手机推送红光高警报与免提通话，筑起爱的防线。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习<strong>传感器阈值判定与事件派发（Event Dispatcher）</strong>：当采集到的 X/Y/Z 三轴加速度在 200ms 内产生两次波峰突破设定安全阈值时，向家庭群组派发 'SOS_ALERT' 事件。</div>
+          </div>
+        </div>
+
+        <!-- Scenario 10 -->
+        <div class="scenario-card" data-role="family">
+          <div class="scenario-header">
+            <span class="role-badge family">🏡 全家温情融合</span>
+            <div class="hardware-tags">
+              <span class="hw-tag">🎬 视频处理</span>
+              <span class="hw-tag">📅 定时任务</span>
+            </div>
+          </div>
+          <h3 class="scenario-title">10. 家庭温暖记忆放映机 (Family Memory Projector)</h3>
+          <div class="modality-cloning">🎤 全家音容温馨影集 + 物理磁贴群联动播放</div>
+          <p class="story-desc">每月最后一天，全家所有磁贴的屏幕联动亮起。AI 自动将一月来全家互发的暖心便签、美食合影、克隆语音组合剪辑成一段温馨的1分钟快剪视频，同步在冰箱门上播放。</p>
+          <div class="coding-tip-box">
+            <div class="coding-tip-title">💻 First-step Coder 亲子编程启蒙:</div>
+            <div class="coding-tip-desc">学习**定时任务（Cron Jobs）与自动化脚本**：设计在每个月最后一天的 20:00 自动触发后端数据库聚类脚本，抓取一月的日记媒体流合成渲染为播放列表。</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>Voilà AI Refrigerator Magnet · SHIPPED WITH WARM FAMILY VIBE · MIT OPEN SOURCE HARDWARE LICENSE · 2026</p>
+  </footer>
+
+  <!-- Filter interactive script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const cards = document.querySelectorAll('.scenario-card');
+
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Reset active classes
+          filterButtons.forEach(b => b.classList.remove('active'));
+          // Set current button active
+          btn.classList.add('active');
+
+          const roleFilter = btn.getAttribute('data-role');
+
+          cards.forEach(card => {
+            const cardRole = card.getAttribute('data-role');
+            if (roleFilter === 'all' || cardRole === roleFilter) {
+              card.style.display = 'flex';
+              // Smooth fade in
+              card.style.opacity = '0';
+              setTimeout(() => {
+                card.style.transition = 'opacity 0.3s ease-in-out';
+                card.style.opacity = '1';
+              }, 10);
+            } else {
+              card.style.display = 'none';
+            }
+          });
+        });
+      });
+      
+      // Interactive card hovering effect matching mouse coordinate for true Neumorphism feeling
+      cards.forEach(card => {
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left - rect.width/2;
+          const y = e.clientY - rect.top - rect.height/2;
+          
+          // Slight spring shift on light/dark shadow for physical dynamic touch
+          const shadowX = (x / rect.width) * 6;
+          const shadowY = (y / rect.height) * 6;
+          
+          card.style.boxShadow = `${8 + shadowX}px ${8 + shadowY}px 20px var(--clay-dark-shadow), ${-8 + shadowX}px ${-8 + shadowY}px 20px var(--clay-light-shadow)`;
+          card.style.transform = `translateY(-2px) rotateX(${-(y/rect.height)*8}deg) rotateY(${(x/rect.width)*8}deg)`;
+        });
+        
+        card.addEventListener('mouseleave', () => {
+          card.style.boxShadow = '';
+          card.style.transform = '';
+          card.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>
