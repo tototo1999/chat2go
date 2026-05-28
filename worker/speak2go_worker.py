@@ -452,9 +452,12 @@ def _build_summary_card(parsed: dict, audio_name: str) -> str:
                     lines.append(f"  - {ex_s}")
         lines.append("")
 
-    # 一键导入深链 (CTA) — 精确到分钟,每次 import = 一个新胶囊(同一天多次上课能分开)
+    # 一键导入深链 (CTA) — 每个录音 = 一个独立胶囊
+    # 用 audio_name(去扩展名)+ 北京时间(精确到分钟)作为 lesson_date,即使同一录音多次上传也能分开
     from datetime import datetime, timezone, timedelta
-    lesson_date = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")  # 北京时间
+    audio_label = (audio_name.rsplit('.', 1)[0] if '.' in audio_name else audio_name)[:40]  # 截 40 字符,避免 URL 过长
+    now_bj = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+    lesson_date = f"{audio_label} · {now_bj}"
     import_url = _build_glossary_import_url(vocab, lesson_date)
     if import_url:
         lines.append(f"[📚 一键加进 NYC Global Center 单词表({lesson_date}) →]({import_url})")
