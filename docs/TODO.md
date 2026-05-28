@@ -12,6 +12,13 @@
   - 接入步骤:① 去 [figma.com/developers/api](https://www.figma.com/developers/api) 申请 personal access token → 写进 `.env`(`FIGMA_TOKEN=`)② 写 `scripts/figma_pull.py`(~30 行):输入 file key,拉节点树 JSON + 渲染图 URL ③ 跑通后再考虑自动化(GH Actions 定时 sync / pre-commit hook 校验 design tokens 一致)
   - 不要做的:为了接而接、给现在没有 Figma 稿的产品先接 API。
 
+### 🎯 speak2go 测验做题模式(上线)⭐ 闭环集成测评
+
+- [x] **整库抽 10 词 × 3 部分 × 总分**:单词表加 📝 测验入口,从整个题库随机抽 10 词,依次过 ① 默写(看中文拼英文,字母格提示 N 个字母 + 实时填格 + 清空按钮)② 自然拼读(复用 🎮 切词+重音+罗马音)③ 造句(本地 `gradeTranslation` 评分,离线快),做完出总分(三项平均 + rank + 默写错词清单 + 再来一组)。纯本地评分,断网可用。
+  - 复用:抽 `computePracticeScore` / `buildPracticeAnswer` 纯函数;`gradeTranslation` / `buildSentencePrompt` / `getTermData` 直接用。双路径同步(index.html 线上 + glossary.html legacy)。
+  - 修复:**按住回车自动重复导致级联跳题(答错第一题直接结束)** — 改单一 document 回车处理器 + `e.repeat` 守卫 + 提交/前进每次只做其一 + 不自动聚焦下一题按钮。playwright 端到端验证(含 held-enter 守卫)。
+  - speak2go commit `4091403` + `c80d8c3`,线上已生效。plan: `~/.claude/plans/merry-questing-elephant.md`。
+
 ### 🔁 speak2go 学习闭环 — 主动回忆层(造句 + 默写)⭐ 闭环关键
 
 > 定位:录音 → 提炼 20 生词 → 单词表 → 艾宾浩斯复习 →（**造句 + 默写 = 主动回忆**）→ 掌握。
