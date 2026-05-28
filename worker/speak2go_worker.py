@@ -674,14 +674,20 @@ def ingest(payload: dict) -> dict:
         scribe = _call_scribe(audio_bytes, job.audio_name)
         transcript_raw = _scribe_to_markdown(scribe)
 
-        # 3. Hume Expression Measurement — 从语音 prosody 出情绪曲线(可选,挂了不阻塞)
-        _update_placeholder(sb, job.placeholder_id,
-                            f"💗 Hume 情绪分析中(prosody 50+ 维度)...")
-        hume = _call_hume(audio_bytes, job.audio_name)
-        if hume:
-            print(f"[info] hume distilled {len(hume.get('per_minute_emotions', []))} per-minute buckets")
+        # 3. Hume Expression Measurement — 默认暂停(2026-05-27 起)
+        # 新 prompt(20 词 + 句式)不消费 prosody 数据,跑 Hume 浪费 8-12 min + ~$9/课
+        # 想重开:在 Modal secret 加 HUME_ENABLED=true 即可,代码无需改
+        if os.environ.get("HUME_ENABLED", "").lower() == "true":
+            _update_placeholder(sb, job.placeholder_id,
+                                f"💗 Hume 情绪分析中(prosody 50+ 维度)...")
+            hume = _call_hume(audio_bytes, job.audio_name)
+            if hume:
+                print(f"[info] hume distilled {len(hume.get('per_minute_emotions', []))} per-minute buckets")
+            else:
+                print("[info] hume skipped or failed (主流程继续)")
         else:
-            print("[info] hume skipped or failed (主流程继续)")
+            hume = None
+            print("[info] Hume 已暂停 (HUME_ENABLED!=true) — 省 8-12 min + ~$9/课")
 
         # 4. Gemini 2.5 Flash 后置摘要(吃 transcript + 图 + Hume,不吃 audio,no loop 风险)
         _update_placeholder(sb, job.placeholder_id,
