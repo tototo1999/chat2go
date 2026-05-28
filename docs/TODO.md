@@ -3,6 +3,30 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-28
+
+### 🛠️ 工具链探索 — Figma REST API 接入(待启动)
+
+- [ ] **Figma REST API 接入探索** — 现状:Figma Dev Mode MCP 已配通(`http://127.0.0.1:3845/mcp`,全局 `~/.claude.json`),够"边开桌面端 Figma 边写代码"的场景用。REST API 真正补的缺口是**离线/批量/自动化**:CI 里 Figma 文件 → 自动 export design tokens、批量拉团队多文件、webhook 监听稿件变更。
+  - 触发条件:**当真的开始在 Figma 里画 wooooow / chat2go 设计稿时再接**,现在 freestyle HTML 没经过设计稿这一步,接了就是为了接而接。
+  - 接入步骤:① 去 [figma.com/developers/api](https://www.figma.com/developers/api) 申请 personal access token → 写进 `.env`(`FIGMA_TOKEN=`)② 写 `scripts/figma_pull.py`(~30 行):输入 file key,拉节点树 JSON + 渲染图 URL ③ 跑通后再考虑自动化(GH Actions 定时 sync / pre-commit hook 校验 design tokens 一致)
+  - 不要做的:为了接而接、给现在没有 Figma 稿的产品先接 API。
+
+### 🗂️ speak2go 单词表 — 搜不到的词一键联网查并加入(上线)
+
+- [x] **glossary 联网查词加词闭环**:搜索无结果时出现「🌐 在网络上查 X 并加入「当前分类」」按钮,一键 → 联网查 → 去重 → 加进当前 tab → 清搜索 → 跳新词高亮。
+  - 后端:新 edge function `glossary-lookup`(Gemini Flash + retry/flash-lite fallback,跟 `glossary-grade` 同套路 anon key + `verify_jwt:false`),输入中/英词 → 返回 `en/罗马注音/中文/用法/例句/词性` 双语词卡;乱码返回「无法识别」。
+  - 前端双路径同步 `glossary/index.html`(线上)+ `glossary.html`(legacy);nyc-global-center + 动态 lesson cat 自动带艾宾浩斯字段。
+  - 验证(playwright 跑真实 edge fn):session ✅ / 中文「拖延」→procrastinate ✅ / 乱码→无法识别 ✅ / 重复词搜索直接命中 ✅。speak2go commit `3342a64`,线上已生效。
+
+### 🧰 Gamma 接入(MCP + API)
+
+- [x] **Gamma API + MCP 部署**:API key 存 `chat2go/.env`(`GAMMA_API_KEY`);用 `format:"webpage"` 跑出 LoRA 冰箱贴概念页 v1/v2。装 CryptoJym/gamma-mcp-server 到 `~/mcp-servers/gamma-mcp-server`,注册 user scope(`mcp__gamma__*` 4 tool),patch 加 `webpage` format。重启 Claude Code 后 MCP 用新 dist。
+
+### 🎨 设计稿落地
+
+- [x] **wow-fridge 概念长卷 v2 上线**:`wow-fridge/index_v2.html`(1717 行) — 沿用原 `index.html` 多巴胺糖果设计语言,但把概念图密度翻 3 倍:① 同 6 张 gamma_concept 在 hero 飘带 / 愿景画板蒙太奇 / 概念剖析剖面 / 家庭瞬间拼贴 4 个区段各演一遍 ② 自绘 8 张 SVG/CSS 设计标本卡(配色板/材质栈/声纹波形/传感器拓扑/电池环/24h 律动环/家人头像/连线波纹)③ ACT 06 自绘 SVG 家庭 mesh 拓扑大图(6 家人节点 + 厨房 hub + 云/手机 fallback)。跟原 `index.html` 并列不替换,用户可对比。
+
 ## 2026-05-27
 
 ### 已完成
