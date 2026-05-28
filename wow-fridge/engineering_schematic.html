@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>W00000W·AI 冰箱贴工程设计图与系统架构蓝图</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-cream: #fefaf4;
+      --coffee-dark: #292524;
+      --coffee-light: #78716c;
+      --bg-clay: #dfdcd6;
+      
+      --dopa-pink: #ff007f;
+      --dopa-pink-light: #fff0f6;
+      --dopa-mint: #ccfbf1;
+      --dopa-mint-light: #f0fdfa;
+      --dopa-yellow: #fef3c7;
+      --dopa-purple: #c084fc;
+      --dopa-purple-light: #f3e8ff;
+      --dopa-blue: #bae6fd;
+      
+      --border-chunky: 3px solid #292524;
+      --shadow-chunky: 4px 4px 0px #292524;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html {
+      scroll-behavior: smooth;
+      background-color: var(--bg-clay);
+    }
+    body {
+      background-color: var(--bg-cream);
+      color: var(--coffee-dark);
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+      line-height: 1.6;
+      max-width: 1056px;
+      margin: 0 auto;
+      position: relative;
+      min-height: 100vh;
+      box-shadow: 0 0 60px rgba(41, 37, 36, 0.12);
+      border-left: var(--border-chunky);
+      border-right: var(--border-chunky);
+    }
+
+    /* Cozy Top Nav */
+    nav {
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(254, 250, 244, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: var(--border-chunky);
+      padding: 18px 32px;
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-brand {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--coffee-dark);
+      text-decoration: none;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .logo-bubble {
+      background: var(--dopa-pink-light);
+      border: 2px solid var(--coffee-dark);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--dopa-pink);
+    }
+    .nav-links {
+      display: flex; gap: 20px;
+    }
+    .nav-links a {
+      color: var(--coffee-dark);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 13px;
+      font-family: 'Fredoka', sans-serif;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--dopa-pink);
+    }
+
+    /* Header section */
+    .header-hero {
+      padding: 50px 40px 30px;
+      text-align: center;
+      border-bottom: var(--border-chunky);
+      background: radial-gradient(circle, var(--dopa-mint-light) 0%, transparent 80%);
+    }
+    .eyebrow {
+      display: inline-block;
+      background: var(--dopa-yellow);
+      border: 2px solid var(--coffee-dark);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      box-shadow: 2px 2px 0px var(--coffee-dark);
+    }
+    h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    .subtitle {
+      font-size: 15px;
+      color: var(--coffee-light);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Content Layout */
+    .dashboard-layout {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+    }
+
+    /* Panel Card */
+    .card {
+      background: #ffffff;
+      border: var(--border-chunky);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-chunky);
+      padding: 32px;
+      position: relative;
+      transition: transform 0.2s;
+    }
+    .card-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--coffee-dark);
+      padding-bottom: 12px;
+    }
+    .card-emoji {
+      font-size: 26px;
+    }
+    .card-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--coffee-dark);
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--coffee-light);
+      margin-bottom: 24px;
+    }
+
+    /* Diagram Container */
+    .diagram-container {
+      background: #fafafa;
+      border: 2px dashed var(--coffee-light);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+      margin-top: 16px;
+    }
+
+    /* Interactive Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      border: var(--border-chunky);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      box-shadow: 3px 3px 0 var(--coffee-dark);
+    }
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border: 1.5px solid var(--coffee-dark);
+    }
+    th {
+      background-color: var(--dopa-yellow);
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--coffee-dark);
+    }
+    td {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    tr:nth-child(even) {
+      background-color: #faf8f5;
+    }
+    .tag-bus {
+      background: var(--dopa-mint);
+      border: 1.5px solid var(--coffee-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .tag-driver {
+      background: var(--dopa-purple-light);
+      border: 1.5px solid var(--coffee-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--dopa-purple);
+    }
+
+    /* Preformed slates for mechanical blueprints */
+    .pre-slate {
+      background: #1e293b;
+      color: #38bdf8;
+      border: var(--border-chunky);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      overflow-x: auto;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    /* Specs List */
+    .specs-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .spec-item {
+      background: #faf8f5;
+      border: 1.5px solid var(--coffee-dark);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 13px;
+    }
+    .spec-itemstrong {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* Cozy Footer */
+    footer {
+      border-top: var(--border-chunky);
+      padding: 30px;
+      text-align: center;
+      background: #fdf8f0;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--coffee-light);
+    }
+  </style>
+
+  <!-- Mermaid.js library -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#ccfbf1',
+        primaryTextColor: '#292524',
+        primaryBorderColor: '#292524',
+        lineColor: '#292524',
+        secondaryColor: '#fef3c7',
+        tertiaryColor: '#f3e8ff',
+        edgeLabelBackground: '#ffffff',
+        mainBkg: '#ffffff',
+        actorBorder: '#292524',
+        actorBkg: '#fef3c7'
+      }
+    });
+  </script>
+</head>
+<body>
+
+  <!-- Top Nav -->
+  <nav>
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        W00000W·AI <span class="logo-bubble">系统工程图</span>
+      </a>
+      <div class="nav-links">
+        <a href="#hardware">电路架构</a>
+        <a href="#pipeline">OTA 部署流</a>
+        <a href="#sdk">SDK 驱动映射</a>
+        <a href="#blueprint">结构设计蓝图</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Header -->
+  <header class="header-hero">
+    <div class="eyebrow">🛠️ OFFICIAL ENGINEERING BLUEPRINT</div>
+    <h1>W00000W 智能终端硬件架构与时序图</h1>
+    <p class="subtitle">详细描述基于 ESP32-S3 双核处理器的多模态家庭智能磁吸终端的硬件拓扑、无线 OTA 传送编译管线、以及低层 SDK GPIO 映射细节。</p>
+  </header>
+
+  <!-- Main Content Dashboard -->
+  <div class="dashboard-layout">
+    
+    <!-- Section 1: Hardware System Block Diagram -->
+    <section id="hardware" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🔌</span>
+        <h2 class="card-title">1. 物理硬件架构系统框图</h2>
+      </div>
+      <p class="card-desc">W00000W 冰箱贴电路基于集成度极高、低功耗的 ESP32-S3 片上系统，主控通过高速 SPI 和 I2C/I2S 接口连接液晶显示屏、MEMS 数字麦克风、数模转换音频放大器及电源管理模块。</p>
+      
+      <div class="diagram-container">
+        <div class="mermaid">
+graph TD
+    MCU["🧠 ESP32-S3 SoC <br> (双核 LX7 @ 240MHz, 8MB PSRAM)"]
+    
+    subgraph Power ["🔋 电源管理系统"]
+        PMIC["⚡ 电源 PMIC (AXP2101)"]
+        BAT["🔋 3.7V 锂电池 (800mAh)"]
+        POGO["🔌 磁吸 Pogo-Pin 充电座 (5V)"]
+    end
+    
+    subgraph Screen ["📺 视觉显示屏幕"]
+        LCD["📱 2.1吋 IPS 液晶屏 <br> (480x480 resolution, GC9A01)"]
+        BL["💡 LED 背光驱动电路"]
+    end
+    
+    subgraph Audio ["🔊 多模态声学系统"]
+        MIC["🎤 MEMS 数字麦克风 <br> (MSM261S4030H0R)"]
+        AMP["🔊 I2S 音频功放 <br> (MAX98357A DAC)"]
+        SPK["🔉 8Ω 1.5W 微型喇叭"]
+    end
+
+    subgraph Wireless ["📡 RF 无线通信"]
+        WIFI["📶 Wi-Fi 4 (802.11 b/g/n)"]
+        BLE["🔵 蓝牙 5.0 + 蓝牙低功耗"]
+        ANT["📡 板载陶瓷天线"]
+    end
+
+    subgraph Haptics ["🕹️ 触控与传感器"]
+        ACC["📐 6轴惯性传感器 (MPU6050)"]
+        KEY["🔘 正面微动按键 (GPIO)"]
+        NEO["🌈 NeoPixel 氛围灯 (WS2812B)"]
+    end
+
+    POGO -->|5V 供电| PMIC
+    PMIC <-->|I2C| MCU
+    BAT <--> PMIC
+    
+    MCU -->|高速 SPI 总线| LCD
+    MCU -->|PWM 脉宽控制| BL
+    
+    MIC -->|I2S 总线 (录音数据)| MCU
+    MCU -->|I2S 总线 (音频流)| AMP
+    AMP -->|模拟信号| SPK
+    
+    MCU <-->|RF Transceiver| WIFI
+    MCU <-->|RF Transceiver| BLE
+    WIFI --> ANT
+    BLE --> ANT
+    
+    MCU <-->|I2C 总线| ACC
+    MCU -->|GPIO 中断输入| KEY
+    MCU -->|单线 RMT 控制协议| NEO
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: OTA Pipeline Sequence Diagram -->
+    <section id="pipeline" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🚀</span>
+        <h2 class="card-title">2. Dandelion OTA 无线传送与编译管线</h2>
+      </div>
+      <p class="card-desc">当开发者在 PC 终端输入 <code>wow deploy</code> 时，系统会自动对代码进行预编译压缩，并将高清多媒体资源（视频/图像）重采样适配为 480x480 分辨率后通过无线 OTA 一键瞬间部署到物理磁贴上。</p>
+      
+      <div class="diagram-container">
+        <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor Dev as 💻 开发者电脑 (PC)
+    participant CLI as 🚀 wow CLI 终端
+    participant Cloud as ☁️ Vercel / 云端编译服务器
+    participant Device as 🏡 物理冰箱贴 (ESP32-S3)
+
+    Dev->>CLI: 输入 `wow deploy ./my-app`
+    CLI->>CLI: 打包用户 Python 脚本及多媒体静态资源
+    CLI->>Cloud: 发送部署包 (POST /api/deploy)
+    
+    Note over Cloud: 云端资源优化与代码静态校验
+    Cloud->>Cloud: 优化/压缩 PNG 图像和 MP4 视频为 480x480 尺寸
+    Cloud->>Cloud: 将 Python 脚本编译为 MicroPython 字节码 (.mpy)
+    
+    Cloud-->>CLI: 返回编译校验成功 (Compilation OK)
+    
+    Note over Device: 处于 Wi-Fi 低功耗监听休眠态 (Listening)
+    
+    Cloud->>Device: 通过 WebSocket 强行唤醒并触发 OTA 部署
+    Device->>Device: 液晶屏切换为“正在传送... 🚀”Clay 装载动画
+    
+    Cloud->>Device: HTTPS 安全下载字节码与重采样媒体资源
+    Note over Device: 将编译好的字节码和静态媒体资源写入 SPIFFS 闪存
+    
+    Device->>Device: 软重启 MicroPython 虚拟机并执行 `main.mpy`
+    Device->>Device: 液晶屏重载为成功运行 App 的“小黄人/全家福/视频”状态
+    Device-->>Cloud: 响应部署确认 (Acknowledge OK)
+    Cloud-->>CLI: 传送成功响应
+    CLI-->>Dev: 控制台打印 "🎉 传送成功！磁贴已重载！" 庆祝状态
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: SDK abstraction API mapping -->
+    <section id="sdk" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">🧬</span>
+        <h2 class="card-title">3. Python SDK 低层硬件映射关系</h2>
+      </div>
+      <p class="card-desc">W00000W 极简 Python 接口设计高度抽象，屏蔽了微控制器底层驱动寄存器的繁琐配置，将硬件交互抽象为最温暖的家庭感知指令：</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>极简 Python SDK 接口</th>
+            <th>底层物理通道 / GPIO 口</th>
+            <th>数据总线接口</th>
+            <th>底层芯片驱动程序</th>
+            <th>物理功能与情境应用</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Magnet.screen.show("Hello")</code></td>
+            <td>GPIO 10, 11, 13, 14, 15</td>
+            <td><span class="tag-bus">SPI Bus</span></td>
+            <td>MicroPython Framebuffer + LVGL</td>
+            <td>在玻璃显示屏上呈现字样、小图标或交互画布</td>
+          </tr>
+          <tr>
+            <td><code>Magnet.screen.play_video("vlog.mp4")</code></td>
+            <td>PSRAM DMA 缓存控制</td>
+            <td><span class="tag-bus">DMA Stream</span></td>
+            <td>MJPEG / H.264 Soft Decoder</td>
+            <td>在宝贝和妈妈磁贴上完美渲染流畅的家庭 Vlog 循环视频</td>
+          </tr>
+          <tr>
+            <td><code>Magnet.mic.listen()</code></td>
+            <td>GPIO 4 (BCLK), 5 (WS), 6 (DATA)</td>
+            <td><span class="tag-bus">I2S Input</span></td>
+            <td>I2S DMA Audio Reader</td>
+            <td>通过高灵敏度 MEMS 麦克风录入家人的语音留言</td>
+          </tr>
+          <tr>
+            <td><code>Magnet.speaker.say("沙拉做好啦")</code></td>
+            <td>GPIO 1 (BCLK), 2 (LRCK), 3 (DATA)</td>
+            <td><span class="tag-bus">I2S Output</span></td>
+            <td>MAX98357A DAC + TTS Stream</td>
+            <td>通过微型喇叭合成并播放甜美悦耳的系统合成家庭人声</td>
+          </tr>
+          <tr>
+            <td><code>Magnet.sensors.detect_motion()</code></td>
+            <td>GPIO 8 (SDA), 9 (SCL), 7 (INT)</td>
+            <td><span class="tag-bus">I2C Bus</span></td>
+            <td>MPU6050 Driver (6-Axis)</td>
+            <td>感知冰箱门开启、磁吸掉落或双击震动并触发事件</td>
+          </tr>
+          <tr>
+            <td><code>Magnet.status.set_glow("#ff007f")</code></td>
+            <td>GPIO 12 (氛围灯信号线)</td>
+            <td><span class="tag-bus">Single-Wire</span></td>
+            <td>ESP32 RMT Controller (WS2812B)</td>
+            <td>在磁铁外壳底盘外发散出一圈温暖柔和的梦幻数码呼吸光影</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Section 4: Physical Blueprint and Mechanical Specs -->
+    <section id="blueprint" class="card">
+      <div class="card-title-box">
+        <span class="card-emoji">📐</span>
+        <h2 class="card-title">4. 结构尺寸与机械工程蓝图</h2>
+      </div>
+      <p class="card-desc">整体外壳沿用 Claymorphism（橡皮泥泥塑风格）设计，边缘大角度倒角，正面加装 2.5D 高弧度钢化防指纹保护玻璃，防溅水，完美胜任恶劣的厨房油烟水渍环境。</p>
+      
+      <pre class="pre-slate">
+       W00000W Refrigerator Magnet 3D Dimensional Specifications
+       
+       &lt;==================== 120.00 mm ====================&gt;   &lt;=== 22 mm ===&gt;
+       +---------------------------------------------+       +-------------+
+       |                                             |       |   [Glass]   |
+       |                   [Camera]                  |       |    ====     |
+       |                 (1080p Lens)                |       |   |    |    |
+       |                                             |       |   |    |    |
+       |      +------- 78.00 mm Screen -------+      |       |   |    |    |
+       |      |                               |      |       |   |    |    |
+       |      |         .-----------.         |      |       |   |    |    |
+       |      |        /  Exaggerated\        |      |       |   |    |    |
+       |      |       |  Minion Eye!  |       |      |       |   |    |    |
+       |      |        \ (5 Lashes!) /        |      |       |   |    |    |
+       |      |         '-----------'         |      |       |   |    |    |
+       |      |                               |      |       |   |    |    |
+       |      +-------------------------------+      |       |    ====     |
+       |                                             |       |  [Chassis]  |
+       |               [Speaker Grill]               |       |             |
+       |                 . . . . .                   |       |   [Magnet]  |
+       +---------------------------------------------+       +-------------+
+                         FRONT VIEW                             SIDE VIEW
+      </pre>
+
+      <div class="specs-grid">
+        <div class="spec-item">
+          <strong>🧱 材质与机壳防尘防水设计</strong>
+          采用食品级超柔感聚氨酯（Soft-touch PU）橡皮泥质感一体压塑机身，防尘防水等级达 IP54，保障日常做菜、洗手触摸时的电路安全。
+        </div>
+        <div class="spec-item">
+          <strong>🧲 超强磁吸挂载背板</strong>
+          内置环形高规钕铁硼 N52 强磁体组件，最大可提供 18N 磁吸拉力，可牢固吸附于冰箱门、铁质厨房挡水板或任何钢制金属壁上。
+        </div>
+        <div class="spec-item">
+          <strong>🔌 磁吸接触式 Pogo-Pin 充电</strong>
+          底盘采用 4-Point 磁吸接触弹片座，单手放上即可自动归位对齐进行 5V 慢充，并支持长效电池续航（待机状态可达 14 天）。
+        </div>
+        <div class="spec-item">
+          <strong>🔘 正面微动软弹物理按键</strong>
+          正面下方微凸按键采用高寿命软弹橡胶包裹微动，提供极度解压和真实的清脆触觉确认感，可由 Python 快速编程定义按键逻辑。
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>wooooow.ai · SHIPPED WITH WARM FAMILY VIBE · MIT OPEN SOURCE HARDWARE LICENSE · 2026</p>
+  </footer>
+
+</body>
+</html>
