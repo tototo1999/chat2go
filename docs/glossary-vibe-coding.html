@@ -2176,16 +2176,29 @@ search.addEventListener('input', e => {
 
 rebuildFavorites();
 
-// URL ?import=<base64-json-array> 一键导入 — speak2go-worker push 进来,直接落到 NYC Global Center
+// URL ?import=<base64-utf8-json-array> 一键导入 — speak2go-worker push 进来,直接落到 NYC Global Center
+// ⚠️ atob() 返回 byte-string(Latin-1),JSON 是 UTF-8,必须用 TextDecoder 转码;否则中文 / IPA 音标乱码
 (function autoImportFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get('import');
   if (!raw) return;
   try {
-    const arr = JSON.parse(atob(decodeURIComponent(raw)));
+    const binary = atob(decodeURIComponent(raw));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const jsonStr = new TextDecoder('utf-8').decode(bytes);
+    const arr = JSON.parse(jsonStr);
     if (!Array.isArray(arr) || arr.length === 0) return;
     const catId = 'nyc-global-center';
     if (!state.userTerms[catId]) state.userTerms[catId] = [];
+    // 检测现有词条是否含 mojibake(UTF-8 被错解成 Latin-1 的特征字符)— 若有则全清,避免之前 bug 留下的脏数据
+    const HAS_MOJIBAKE = /Â|ä¾|å|°ç|é¨|É|Ê|Ë|Ï|Ð/;
+    const existing = state.userTerms[catId];
+    const dirty = existing.some(t => HAS_MOJIBAKE.test((t.zh || '') + (t.hint || '')));
+    if (dirty) {
+      console.warn('[glossary import] mojibake detected in existing NYC Global Center terms, clearing all before re-import');
+      state.userTerms[catId] = [];
+    }
     const seen = new Set(state.userTerms[catId].map(t => (t.en || '').toLowerCase()));
     const added = [];
     arr.forEach(t => {
@@ -2205,11 +2218,12 @@ rebuildFavorites();
     // 清 URL 防止刷新重复导入
     history.replaceState({}, '', location.pathname);
     // 简易 toast(用 alert;v2 可换 in-page toast)
-    if (added.length > 0) {
-      setTimeout(() => alert('✅ 已导入 ' + added.length + ' 个新词到 NYC Global Center\n(' + arr.length + ' 词中,' + (arr.length - added.length) + ' 个已存在)'), 200);
-    } else {
-      setTimeout(() => alert('🎉 这 ' + arr.length + ' 个词都已经在词表里了'), 200);
-    }
+    const msg = dirty
+      ? '✅ 检测到旧版乱码,已清理 + 重新导入 ' + added.length + ' 个词到 NYC Global Center'
+      : (added.length > 0
+        ? '✅ 已导入 ' + added.length + ' 个新词到 NYC Global Center\n(' + arr.length + ' 词中,' + (arr.length - added.length) + ' 个已存在)'
+        : '🎉 这 ' + arr.length + ' 个词都已经在词表里了');
+    setTimeout(() => alert(msg), 200);
   } catch (e) {
     console.error('[glossary import] failed:', e);
   }
