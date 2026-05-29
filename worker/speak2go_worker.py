@@ -138,6 +138,58 @@ SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面
 """
 
 
+# ── Prompt for 英文作文系统(同一条 Scribe transcript,提炼"写作"而非"词汇")──────────
+# essay 系统:把上课录音转写后,提炼老师讲的写作要点 + 自动出作文题(批改在 chat2go_worker Claude 路径)
+ESSAY_PROMPT = """你是一位英语写作课的课后 AI 助理。下面给你 ElevenLabs Scribe v2 已转写好的对话 transcript(带说话人标签 speaker_0 / speaker_1)+ 零到多张相关图片(板书/范文/作业照)。
+
+你的核心任务:**提炼这堂写作课的「写作要点」+ 自动出 2-4 道作文题**,重点是写作(不是背单词)。
+
+判断说话人角色(按优先级):谁主导讲解/出题/纠正 → "T"(老师);谁回应/提问/短应答 → "S"(学生);长 turn 倾向 T,短 turn 倾向 S;不能判断时 speaker_0→T,speaker_1→S。
+
+⚠️ **不要重复输出完整 transcript**。只输出下面结构化 JSON:
+
+{
+  "speaker_role_map": {"speaker_0": "T 或 S", "speaker_1": "T 或 S"},
+  "session_title": "一句话概括本课写作主题(≤ 20 字)",
+  "writing_points": [
+    {
+      "point": "thesis statement 要明确可辩论",
+      "category": "thesis|structure|linking|argument|evidence|style|grammar",
+      "explain": "老师怎么讲的(≤ 40 字)",
+      "example": "transcript 里老师讲这点时的真实原句",
+      "context_time": "5:42"
+    }
+  ],
+  "essay_prompts": [
+    {
+      "prompt": "Should schools ban smartphones? Argue for or against.",
+      "type": "argumentative|expository|narrative|descriptive",
+      "level": "A2|B1|B2|C1",
+      "hint": "用上今天讲的 thesis 写法 + 2 个衔接词",
+      "word_count": "250-300"
+    }
+  ],
+  "key_phrases": [
+    {"en": "on the other hand", "zh": "另一方面", "use": "对比衔接", "context_time": "7:10"}
+  ],
+  "summary_md": "(≤ 200 字 markdown,简述本课写作主题 + 学生进展)"
+}
+
+**writing_points 规则**(本系统重点,出 4-10 条):
+- 是老师真讲的**写作技巧/方法**:thesis 立论、段落结构、衔接词、论证手法、举证、文体/语气、常见语法错。
+- 每条必须**从 transcript 抽老师讲这点时的真实原句**放进 `example`(不要编),`context_time` 标该点首次出现时间戳(m:ss),方便回放原文。
+- `explain` 用中文简述,≤ 40 字。
+
+**essay_prompts 规则**(出 2-4 题):
+- 紧扣本课主题 + 学生水平(`level` 用 CEFR 估)出可写的作文题。
+- `hint` 提示用上今天的写作要点;`word_count` 给字数范围。
+
+**key_phrases 规则**(次要,5-10 条):写作里能用上的高分搭配/连接词,`en` 英文、`zh` 中文、`use` 用途、`context_time` 时间戳。
+
+**通用约束**:summary_md ≤ 200 字;绝不要把 transcript 整段复制进任何字段;如果不是写作/英语教学场景,writing_points 与 essay_prompts 返回空数组并在 summary_md 说明。
+"""
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -151,6 +203,7 @@ class IngestJob:
     photo_paths: list[str]
     captured_at: str | None
     lesson_segment_id: str | None
+    product: str = "speak2go"   # 决定提炼 prompt + 卡片(speak2go 词汇 / essay 写作 / korean 韩语)
 
 
 def _sb_client():
@@ -292,7 +345,8 @@ def _fmt_ts(seconds: float) -> str:
 
 def _call_gemini_summary(transcript_md: str,
                           photo_blobs: list[tuple[bytes, str]],
-                          hume_emotions: dict | None = None) -> dict[str, Any]:
+                          hume_emotions: dict | None = None,
+                          prompt: str = SUMMARY_PROMPT) -> dict[str, Any]:
     """Gemini 2.5 Flash 后置摘要:吃 transcript + 板书图 + Hume 情绪 → JSON。
 
     比直接吃 audio 安全:no audio = no hallucination loop。
@@ -317,7 +371,7 @@ def _call_gemini_summary(transcript_md: str,
         parts.append(types.Part.from_bytes(data=blob, mime_type=mime))
 
     config = types.GenerateContentConfig(
-        system_instruction=SUMMARY_PROMPT,
+        system_instruction=prompt,
         response_mime_type="application/json",
         temperature=0.3,
         max_output_tokens=16000,
@@ -605,6 +659,127 @@ def _build_summary_card(
     return "\n".join(lines)
 
 
+def _build_essay_card(
+    parsed: dict,
+    audio_name: str,
+    audio_url: str = "",
+    scribe_words: list | None = None,
+) -> str:
+    """英文作文系统的 multimodal_summary 卡片:写作要点 + 作文题 + 高分短语。
+
+    与 _build_summary_card 同结构,但提炼的是「写作」而非「词汇」。
+    写作要点带 [🔊](audio_url#t=秒) 回放老师讲该点的原句。
+    """
+    title = parsed.get("session_title") or audio_name
+    points = parsed.get("writing_points") or []
+    prompts = parsed.get("essay_prompts") or []
+    phrases = parsed.get("key_phrases") or []
+    summary_md = (parsed.get("summary_md") or "").strip()
+
+    _CAT_LABEL = {
+        "thesis": "立论", "structure": "结构", "linking": "衔接",
+        "argument": "论证", "evidence": "举证", "style": "文体", "grammar": "语法",
+    }
+    lines = [f"## ✍️ 今日写作要点 {len(points)} — {title}", "", f"📁 `{audio_name}`", ""]
+
+    if points:
+        for i, p in enumerate(points, 1):
+            point = (p.get("point") or "").strip()
+            if not point:
+                continue
+            cat = _CAT_LABEL.get((p.get("category") or "").strip(), "")
+            explain = (p.get("explain") or "").strip()
+            example = (p.get("example") or "").strip()
+            ctx_time = (p.get("context_time") or "").strip()
+            cat_tag = f"  ({cat})" if cat else ""
+            # 🔊 回放:用例句首词匹配 Scribe 时间戳,fallback context_time
+            play = ""
+            start = _vocab_start_seconds(scribe_words, example or point, ctx_time)
+            if audio_url and start is not None:
+                play = f"  [🔊]({audio_url}#t={round(start, 1)})"
+            lines.append(f"{i}. **{point}**{cat_tag}{play}")
+            if explain:
+                lines.append(f"   {explain}")
+            if example:
+                prefix = f"例 ({ctx_time})" if ctx_time else "例"
+                lines.append(f"   _{prefix}: {example}_")
+            lines.append("")
+    else:
+        lines.append("_(本次录音未检出写作教学内容)_")
+        lines.append("")
+
+    # 作文题
+    if prompts:
+        lines.append("## 📝 本课写作题")
+        lines.append("")
+        for i, q in enumerate(prompts, 1):
+            prompt_text = (q.get("prompt") or "").strip()
+            if not prompt_text:
+                continue
+            meta_bits = []
+            if q.get("type"):
+                meta_bits.append(str(q.get("type")))
+            if q.get("level"):
+                meta_bits.append(str(q.get("level")))
+            if q.get("word_count"):
+                meta_bits.append(f"{q.get('word_count')} 词")
+            meta = f"  ({' · '.join(meta_bits)})" if meta_bits else ""
+            lines.append(f"{i}. **{prompt_text}**{meta}")
+            hint = (q.get("hint") or "").strip()
+            if hint:
+                lines.append(f"   _提示: {hint}_")
+            lines.append("")
+        lines.append("> 直接回复任一题写出作文,AI 会按五维 rubric 批改打分。")
+        lines.append("")
+
+    # 高分短语(次要)+ 可选一键导入词库练习
+    if phrases:
+        lines.append("## 🔑 高分短语")
+        lines.append("")
+        for ph in phrases:
+            en = (ph.get("en") or "").strip()
+            if not en:
+                continue
+            zh = (ph.get("zh") or "").strip()
+            use = (ph.get("use") or "").strip()
+            tail = f" — {zh}" if zh else ""
+            tail += f"  _{use}_" if use else ""
+            lines.append(f"- **{en}**{tail}")
+        lines.append("")
+        # 复用 glossary 深链:把 key_phrases 映射成 vocab 形态(en/zh/hint),可拖进词库练习
+        vocab_like = [
+            {"en": ph.get("en"), "zh": ph.get("zh"), "example": ph.get("use"),
+             "context_time": ph.get("context_time")}
+            for ph in phrases if (ph.get("en") or "").strip()
+        ]
+        from datetime import datetime, timezone, timedelta
+        audio_label = (audio_name.rsplit('.', 1)[0] if '.' in audio_name else audio_name)[:40]
+        now_bj = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+        lesson_date = f"{audio_label} · {now_bj}"
+        import_url = _build_glossary_import_url(vocab_like, lesson_date, audio_url=audio_url, scribe_words=scribe_words)
+        if import_url:
+            lines.append(f"[📚 把高分短语加进词库练习({lesson_date}) →]({import_url})")
+            lines.append("")
+
+    if summary_md:
+        lines.append("## 📖 课程摘要")
+        lines.append("")
+        lines.append(summary_md)
+        lines.append("")
+
+    lines.append("_完整 transcript 见私聊频道_")
+    return "\n".join(lines)
+
+
+# ── 按 product 选 提炼 prompt / 卡片构造器(默认 speak2go,行为不变)──────────────────
+def _extraction_prompt_for(product: str) -> str:
+    return {"essay": ESSAY_PROMPT, "speak2go": SUMMARY_PROMPT}.get(product, SUMMARY_PROMPT)
+
+
+def _card_builder_for(product: str):
+    return {"essay": _build_essay_card}.get(product, _build_summary_card)
+
+
 def _call_hume(audio_bytes: bytes, audio_name: str,
                 poll_timeout_s: int = 720) -> dict[str, Any] | None:
     """Hume Expression Measurement(prosody)— 从语音 prosody 出情绪曲线。
@@ -816,6 +991,7 @@ def ingest(payload: dict) -> dict:
         photo_paths=payload.get("photo_paths") or [],
         captured_at=payload.get("captured_at"),
         lesson_segment_id=payload.get("lesson_segment_id"),
+        product=payload.get("product") or "speak2go",
     )
 
     sb = _sb_client()
@@ -862,9 +1038,12 @@ def ingest(payload: dict) -> dict:
             print("[info] Hume 已暂停 (HUME_ENABLED!=true) — 省 8-12 min + ~$9/课")
 
         # 4. Gemini 2.5 Flash 后置摘要(吃 transcript + 图 + Hume,不吃 audio,no loop 风险)
-        _update_placeholder(sb, job.placeholder_id,
-                            _prog("🧠", 4, 5, "Gemini 提炼 20 词 + 句式中..."))
-        parsed = _call_gemini_summary(transcript_raw, photo_blobs, hume_emotions=hume)
+        _prog_label = "Gemini 提炼写作要点 + 出题中..." if job.product == "essay" else "Gemini 提炼 20 词 + 句式中..."
+        _update_placeholder(sb, job.placeholder_id, _prog("🧠", 4, 5, _prog_label))
+        parsed = _call_gemini_summary(
+            transcript_raw, photo_blobs, hume_emotions=hume,
+            prompt=_extraction_prompt_for(job.product),
+        )
 
         # 5. 写回
         _update_placeholder(sb, job.placeholder_id, _prog("🧠", 5, 5, "写入单词卡片..."))
@@ -880,7 +1059,7 @@ def ingest(payload: dict) -> dict:
             _append_to_todo_template(sb, job.room_id, timeline)
 
         audio_url = _public_audio_url(job.audio_path)
-        summary_card = _build_summary_card(
+        summary_card = _card_builder_for(job.product)(
             parsed, job.audio_name, audio_url=audio_url, scribe_words=scribe.get("words"),
         )
         sb.table("messages").update({
