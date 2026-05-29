@@ -33,6 +33,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import time
 import urllib.parse
 from dataclasses import dataclass
@@ -44,7 +45,7 @@ import modal
 # speak2go.ai 原生托管,跟 speak2go.ai/chat.html 同站,品牌一致 + localStorage 跟 chat 同 origin
 GLOSSARY_IMPORT_BASE_URL = os.environ.get(
     "GLOSSARY_IMPORT_BASE_URL",
-    "https://speak2go.ai/glossary.html",
+    "https://speak2go.ai/glossary/",   # 2026-05-29: 唯一真文件 = glossary/index.html(带测验+录音回放);老 glossary.html 现在重定向到这
 )
 
 # ── Modal app + image ────────────────────────────────────────────────────────
@@ -408,16 +409,71 @@ def _append_to_todo_template(sb, room_id: str,
 _IMPORTANCE_LABEL = {"high": "高频", "medium": "中频", "low": "低频"}
 
 
-def _build_glossary_import_url(vocab_top20: list[dict], lesson_date: str = "") -> str:
-    """把 20 词打包成 glossary-vibe-coding.html 能消费的深链。
+def _public_audio_url(audio_path: str) -> str:
+    """把 storage 路径转成可直接播放的 public URL(chat-uploads 是 public bucket)。
 
-    glossary 数据结构: [{en, zh, hint}, ...]
-    把 example + frequency 拼进 hint 字段,学生在词表里就看到例句 + 频次。
-    lesson_date 参数(YYYY-MM-DD)让 glossary 按课次/日期分组成胶囊。
+    audio_path 形如 'chat-uploads/<room>/glass/abc.m4a' 或 '<room>/glass/abc.m4a'。
+    """
+    if not audio_path:
+        return ""
+    base = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    if not base:
+        return ""
+    rel = audio_path[len("chat-uploads/"):] if audio_path.startswith("chat-uploads/") else audio_path
+    rel = rel.lstrip("/")
+    return f"{base}/storage/v1/object/public/chat-uploads/{urllib.parse.quote(rel)}"
+
+
+def _parse_ts_to_seconds(s: str):
+    """'5:42' → 342;'342' → 342;无法解析 → None。"""
+    s = (s or "").strip()
+    if not s:
+        return None
+    m = re.match(r"^(\d+):(\d{1,2})(?:\.(\d+))?$", s)
+    if m:
+        return int(m.group(1)) * 60 + int(m.group(2)) + (float("0." + m.group(3)) if m.group(3) else 0)
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        return None
+
+
+def _vocab_start_seconds(scribe_words: list | None, en: str, context_time: str = ""):
+    """求该词在录音里的起播秒数:优先用 Scribe word-level 时间戳(更准),fallback 解析 context_time。
+
+    匹配规则:取 en 的第一个 token(去标点小写),在 scribe words[] 里找第一个相同 token 的 start。
+    """
+    first = ""
+    if (en or "").strip():
+        first = re.sub(r"[^a-z0-9]", "", en.strip().lower().split()[0])
+    if first and scribe_words:
+        for w in scribe_words:
+            wt = re.sub(r"[^a-z0-9]", "", (w.get("text") or "").lower())
+            if wt and wt == first:
+                try:
+                    return max(0.0, float(w.get("start") or 0.0))
+                except (TypeError, ValueError):
+                    break
+    return _parse_ts_to_seconds(context_time)
+
+
+def _build_glossary_import_url(
+    vocab_top20: list[dict],
+    lesson_date: str = "",
+    audio_url: str = "",
+    scribe_words: list | None = None,
+) -> str:
+    """把 20 词打包成 glossary.html 能消费的深链。
+
+    payload 两种形态(glossary 端都兼容):
+      - 老:数组 [{en, zh, hint}, ...]
+      - 新:对象 {audio_url, words:[{en, zh, hint, start}, ...]}  ← 有录音 URL 时
+    start = 该词在录音里的起播秒数(点 ▶️ 听当时那句)。
+    lesson_date 让 glossary 按课次/日期分组成胶囊。
     """
     if not vocab_top20:
         return ""
-    payload = []
+    words = []
     for w in vocab_top20:
         en = (w.get("en") or "").strip()
         if not en:
@@ -433,13 +489,18 @@ def _build_glossary_import_url(vocab_top20: list[dict], lesson_date: str = "") -
             hint_parts.append(f"例:{example}")
         if isinstance(freq, int) and freq > 0:
             hint_parts.append(f"出现 ×{freq}")
-        payload.append({
+        item = {
             "en": en,
             "zh": zh,
             "hint": " · ".join(hint_parts) if hint_parts else "",
-        })
-    if not payload:
+        }
+        start = _vocab_start_seconds(scribe_words, en, (w.get("context_time") or "").strip())
+        if start is not None:
+            item["start"] = round(start, 1)
+        words.append(item)
+    if not words:
         return ""
+    payload = {"audio_url": audio_url, "words": words} if audio_url else words
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
     encoded = urllib.parse.quote(b64, safe="")
@@ -449,10 +510,16 @@ def _build_glossary_import_url(vocab_top20: list[dict], lesson_date: str = "") -
     return url
 
 
-def _build_summary_card(parsed: dict, audio_name: str) -> str:
+def _build_summary_card(
+    parsed: dict,
+    audio_name: str,
+    audio_url: str = "",
+    scribe_words: list | None = None,
+) -> str:
     """构造主聊的 multimodal_summary 卡片 markdown。
 
     2026-05-27 改造:从「时段大纲 / 情绪 / 纠错 / 板书」改成「20 词 + 句式 + 摘要」。
+    2026-05-29:每个词加 [🔊](audio_url#t=秒) 播放链接 — chat.html 点了播该词当时那句。
     """
     title = parsed.get("session_title") or audio_name
     vocab = parsed.get("vocab_top20") or []
@@ -482,7 +549,12 @@ def _build_summary_card(parsed: dict, audio_name: str) -> str:
             meta = f"  ({' · '.join(meta_bits)})" if meta_bits else ""
             phon = f" {phonetic}" if phonetic else ""
             dash_zh = f" — {zh}" if zh else ""
-            lines.append(f"{i}. **{en}**{phon}{dash_zh}{meta}")
+            # 播放链接:点了播该词当时那句(chat.html 拦截 #t= 链接,播 ~该句 then stop)
+            play = ""
+            start = _vocab_start_seconds(scribe_words, en, ctx_time)
+            if audio_url and start is not None:
+                play = f"  [🔊]({audio_url}#t={round(start, 1)})"
+            lines.append(f"{i}. **{en}**{phon}{dash_zh}{meta}{play}")
 
             # 例句行
             if example:
@@ -517,7 +589,7 @@ def _build_summary_card(parsed: dict, audio_name: str) -> str:
     audio_label = (audio_name.rsplit('.', 1)[0] if '.' in audio_name else audio_name)[:40]  # 截 40 字符,避免 URL 过长
     now_bj = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
     lesson_date = f"{audio_label} · {now_bj}"
-    import_url = _build_glossary_import_url(vocab, lesson_date)
+    import_url = _build_glossary_import_url(vocab, lesson_date, audio_url=audio_url, scribe_words=scribe_words)
     if import_url:
         lines.append(f"[📚 一键加进 NYC Global Center 单词表({lesson_date}) →]({import_url})")
         lines.append("")
@@ -807,7 +879,10 @@ def ingest(payload: dict) -> dict:
         if timeline:
             _append_to_todo_template(sb, job.room_id, timeline)
 
-        summary_card = _build_summary_card(parsed, job.audio_name)
+        audio_url = _public_audio_url(job.audio_path)
+        summary_card = _build_summary_card(
+            parsed, job.audio_name, audio_url=audio_url, scribe_words=scribe.get("words"),
+        )
         sb.table("messages").update({
             "content": summary_card,
             "type": "markdown",
