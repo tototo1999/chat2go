@@ -52,6 +52,7 @@ app = modal.App("speak2go-glass-worker")
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
+    .apt_install("ffmpeg")            # 2026-05-28: 转码 iPhone .qta(QuickTime Audio)/ .mp4 等 → wav 喂 Scribe
     .pip_install(
         "supabase>=2.10.0",          # 新版,兼容新 httpx
         "google-genai>=2.6.0",        # 新 SDK,原生支持 thinking_budget(1.x 没有该字段)
@@ -180,6 +181,50 @@ def _download_from_storage(sb, storage_path: str) -> bytes:
     return res
 
 
+# Scribe 直接吃的标准音频;其余(iPhone .qta / .mp4 / .mov 等)先用 ffmpeg 转 wav
+_NEEDS_TRANSCODE = {"qta", "mp4", "mov", "m4v", "caf", "aiff", "aif", "amr", "3gp", "wma", "mkv", "avi"}
+_SCRIBE_MIME = {
+    "wav": "audio/wav", "mp3": "audio/mpeg", "m4a": "audio/mp4", "mp4": "audio/mp4",
+    "ogg": "audio/ogg", "flac": "audio/flac", "webm": "audio/webm", "aac": "audio/aac",
+}
+
+
+def _normalize_audio(audio_bytes: bytes, audio_name: str) -> tuple[bytes, str]:
+    """非标准格式(iPhone .qta 空间音频 / .mp4 等)→ ffmpeg 转 16k 单声道 wav。
+    标准音频原样返回。转码失败则回退原文件让 Scribe 试。"""
+    ext = audio_name.rsplit(".", 1)[-1].lower() if "." in audio_name else ""
+    if ext not in _NEEDS_TRANSCODE:
+        return audio_bytes, audio_name
+    import subprocess, tempfile
+    td = tempfile.mkdtemp()
+    inp = os.path.join(td, "in." + (ext or "bin"))
+    out = os.path.join(td, "out.wav")
+    with open(inp, "wb") as f:
+        f.write(audio_bytes)
+    tail = ["-vn", "-ac", "1", "-ar", "16000", out]
+    # 先用默认音频流;失败再显式取第一条音频流(.qta 含 AAC 兼容轨 + APAC 空间轨,APAC ffmpeg 解不了)
+    attempts = [
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", inp] + tail,
+        ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-i", inp, "-map", "0:a:0"] + tail,
+    ]
+    last_err = ""
+    for cmd in attempts:
+        try:
+            if os.path.exists(out):
+                os.remove(out)
+            res = subprocess.run(cmd, capture_output=True, timeout=900)
+            if res.returncode == 0 and os.path.exists(out) and os.path.getsize(out) > 0:
+                with open(out, "rb") as f:
+                    data = f.read()
+                print(f"[transcode] {ext} -> wav ok ({len(audio_bytes)//1024}KB -> {len(data)//1024}KB)")
+                return data, (audio_name.rsplit(".", 1)[0] + ".wav")
+            last_err = res.stderr.decode("utf-8", "ignore")[:300]
+        except Exception as e:
+            last_err = str(e)[:300]
+    print(f"[transcode] FAILED for {audio_name}: {last_err}; 回退原文件")
+    return audio_bytes, audio_name
+
+
 def _call_scribe(audio_bytes: bytes, audio_filename: str) -> dict[str, Any]:
     """ElevenLabs Scribe v2 转写 + diarization。
 
@@ -189,7 +234,9 @@ def _call_scribe(audio_bytes: bytes, audio_filename: str) -> dict[str, Any]:
     import httpx
     url = "https://api.elevenlabs.io/v1/speech-to-text"
     headers = {"xi-api-key": os.environ["ELEVENLABS_API_KEY"]}
-    files = {"file": (audio_filename, audio_bytes, "audio/mp4")}
+    _ext = audio_filename.rsplit(".", 1)[-1].lower() if "." in audio_filename else ""
+    _mime = _SCRIBE_MIME.get(_ext, "audio/mpeg")
+    files = {"file": (audio_filename, audio_bytes, _mime)}
     data = {
         "model_id": "scribe_v2",
         "diarize": "true",
@@ -700,6 +747,11 @@ def ingest(payload: dict) -> dict:
         _update_placeholder(sb, job.placeholder_id,
                             f"📥 下载文件中 — 音频 + {len(job.photo_paths)} 张照片...")
         audio_bytes = _download_from_storage(sb, job.audio_path)
+        # iPhone .qta(空间音频)/ .mp4 等非标准格式 → 转 wav 再喂 Scribe
+        _asr_ext = job.audio_name.rsplit(".", 1)[-1].lower() if "." in job.audio_name else ""
+        if _asr_ext in _NEEDS_TRANSCODE:
+            _update_placeholder(sb, job.placeholder_id, f"🔄 转码 {_asr_ext} → wav 中...")
+        audio_bytes, asr_name = _normalize_audio(audio_bytes, job.audio_name)
         photo_blobs: list[tuple[bytes, str]] = []
         for pp in job.photo_paths:
             try:
@@ -712,7 +764,7 @@ def ingest(payload: dict) -> dict:
         # 2. ElevenLabs Scribe v2 — 専用 ASR + diarize(无 LLM hallucination loop)
         _update_placeholder(sb, job.placeholder_id,
                             f"🎙 ElevenLabs Scribe v2 转写中(预计 2-3 min)...")
-        scribe = _call_scribe(audio_bytes, job.audio_name)
+        scribe = _call_scribe(audio_bytes, asr_name)
         transcript_raw = _scribe_to_markdown(scribe)
 
         # 3. Hume Expression Measurement — 默认暂停(2026-05-27 起)
