@@ -360,6 +360,13 @@ def _update_placeholder(sb, placeholder_id: str, content: str) -> None:
     sb.table("messages").update({"content": content}).eq("id", placeholder_id).execute()
 
 
+def _prog(emoji: str, step: int, total: int, tail: str) -> str:
+    """前端「打字指示器状态栏」识别的进度格式:`<emoji> [▰▰▱▱▱] N/M tail`。
+    前端 setAudioProgress 用 [🎙📝🧠] + [▰▱]条 + N/M 正则提取,务必带 `[`。"""
+    bar = "▰" * step + "▱" * max(0, total - step)
+    return f"{emoji} [{bar}] {step}/{total} {tail}"
+
+
 def _insert_transcript(sb, room_id: str, expert_user_id: str,
                        audio_name: str, transcript: str) -> None:
     """写一条 transcript_full 消息到 private 频道(expert_user)。"""
@@ -745,12 +752,12 @@ def ingest(payload: dict) -> dict:
     try:
         # 1. 拉文件
         _update_placeholder(sb, job.placeholder_id,
-                            f"📥 下载文件中 — 音频 + {len(job.photo_paths)} 张照片...")
+                            _prog("🎙", 1, 5, f"下载文件中 — 音频 + {len(job.photo_paths)} 张照片..."))
         audio_bytes = _download_from_storage(sb, job.audio_path)
         # iPhone .qta(空间音频)/ .mp4 等非标准格式 → 转 wav 再喂 Scribe
         _asr_ext = job.audio_name.rsplit(".", 1)[-1].lower() if "." in job.audio_name else ""
         if _asr_ext in _NEEDS_TRANSCODE:
-            _update_placeholder(sb, job.placeholder_id, f"🔄 转码 {_asr_ext} → wav 中...")
+            _update_placeholder(sb, job.placeholder_id, _prog("🎙", 2, 5, f"转码 {_asr_ext} → wav 中..."))
         audio_bytes, asr_name = _normalize_audio(audio_bytes, job.audio_name)
         photo_blobs: list[tuple[bytes, str]] = []
         for pp in job.photo_paths:
@@ -763,7 +770,7 @@ def ingest(payload: dict) -> dict:
 
         # 2. ElevenLabs Scribe v2 — 専用 ASR + diarize(无 LLM hallucination loop)
         _update_placeholder(sb, job.placeholder_id,
-                            f"🎙 ElevenLabs Scribe v2 转写中(预计 2-3 min)...")
+                            _prog("📝", 3, 5, "Scribe v2 转写中(预计 2-3 min)..."))
         scribe = _call_scribe(audio_bytes, asr_name)
         transcript_raw = _scribe_to_markdown(scribe)
 
@@ -772,7 +779,7 @@ def ingest(payload: dict) -> dict:
         # 想重开:在 Modal secret 加 HUME_ENABLED=true 即可,代码无需改
         if os.environ.get("HUME_ENABLED", "").lower() == "true":
             _update_placeholder(sb, job.placeholder_id,
-                                f"💗 Hume 情绪分析中(prosody 50+ 维度)...")
+                                _prog("📝", 3, 5, "Hume 情绪分析中(prosody)..."))
             hume = _call_hume(audio_bytes, job.audio_name)
             if hume:
                 print(f"[info] hume distilled {len(hume.get('per_minute_emotions', []))} per-minute buckets")
@@ -784,11 +791,11 @@ def ingest(payload: dict) -> dict:
 
         # 4. Gemini 2.5 Flash 后置摘要(吃 transcript + 图 + Hume,不吃 audio,no loop 风险)
         _update_placeholder(sb, job.placeholder_id,
-                            f"🧠 Gemini 摘要 + 多模态分析中...")
+                            _prog("🧠", 4, 5, "Gemini 提炼 20 词 + 句式中..."))
         parsed = _call_gemini_summary(transcript_raw, photo_blobs, hume_emotions=hume)
 
         # 5. 写回
-        _update_placeholder(sb, job.placeholder_id, "📝 写入 transcript + 大纲 + 情绪曲线...")
+        _update_placeholder(sb, job.placeholder_id, _prog("🧠", 5, 5, "写入单词卡片..."))
         # 用 Gemini 给的 speaker_role_map 把 Scribe 的 speaker_0/1 替换成 T/S(本地字符串替换,不消耗 token)
         transcript = _relabel_transcript(transcript_raw, parsed.get("speaker_role_map"))
         # 给每行追加 Hume 情绪标签(per-segment 时间戳对齐)
