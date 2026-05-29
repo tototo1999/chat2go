@@ -72,7 +72,7 @@ secrets = [modal.Secret.from_name("speak2go-secrets")]
 # 2026-05-27 改造:从「时段大纲/情绪曲线」高维摘要,改成「20 词 + 句式」原子化学习材料
 SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面给你 ElevenLabs Scribe v2 已转写好的对话 transcript(带说话人标签 speaker_0 / speaker_1)+ 零到多张相关图片(板书/教具/作业/场景照)。
 
-你的核心任务:**提炼整堂课的 20 个最值得学生背的英文生词 + 5-10 个练习句式**。不是写总结,是给学生留下可背、可练的学习材料。
+你的核心任务:**提炼整堂课最多 50 个值得学生背的英文生词 + 5-10 个练习句式**。不是写总结,是给学生留下可背、可练的学习材料。尽量多挑(把所有有学习价值的词都收进来,让学生在词库里自己勾选)。
 
 判断说话人角色的依据(按优先级):
 1. 谁在主导讲解 / 出题 / 纠正 / 评点 → "T"(Teacher / 主导方)
@@ -106,14 +106,14 @@ SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面
   "summary_md": "(≤ 200 字 markdown,简述本课主题 + 学生进展)"
 }
 
-**20 词挑选硬规则**(双重打分:频次 + AI 重点判断):
+**选词硬规则**(双重打分:频次 + AI 重点判断):
 - 频次 ≥ 2 的词优先入选
 - **排除高频虚词**:I / you / he / she / it / the / a / an / is / are / was / do / does / yes / no / and / but / or / so / 数字 / 介词 / 代词
 - AI 判断 `importance`:
   - `high` = 老师重点讲解 / 反复纠正 / 举多个例子(3+ 次)
   - `medium` = 提到 + 简短解释
   - `low` = 仅 1 次但 AI 认为有学习价值(如生僻词、固定搭配、本课主题词)
-- **总数 ≤ 20**;排序优先级:`high → medium → low`,同档内 frequency 降序
+- **总数 ≤ 50**(尽量多收,宁多勿漏 —— 学生会在词库里勾选要哪些);排序优先级:`high → medium → low`,同档内 frequency 降序
 - `phonetic` 用**罗马注音**(中国学生友好,不用 IPA 国际音标):
   - 全小写 ASCII;音节之间用 `·` 分隔;重读音节**全大写**;单音节词整词大写
   - 元音映射:ə→e, ɪ→i, ʌ→u, eɪ→ei, aɪ→ai, aʊ→au, oʊ→o, iː→i, uː→u/oo, ɔː→o, ɑː→a, æ→a, ɒ→o
@@ -133,7 +133,7 @@ SUMMARY_PROMPT = """你是一位英语 1v1 私教课后 AI 学习助理。下面
 **通用约束**:
 - `summary_md` 不超过 200 字
 - **绝对不要** 把 transcript 内容复制进任何字段(我们会自己拼接)
-- 如果整段录音内容太少不足 20 词,有多少出多少(可以 10 词、15 词)
+- 如果整段录音内容太少不足 50 词,有多少出多少(可以 10 词、20 词)
 - 如果不是英语教学场景(中文/其他),vocab_top20 返回空数组 [],summary_md 说明原因
 """
 
@@ -479,7 +479,7 @@ def _build_glossary_import_url(
         if not en:
             continue
         zh = (w.get("zh") or "").strip()
-        example = (w.get("example") or "").strip()
+        example = (w.get("example") or "").strip()[:50]   # 截断:50 词时控制深链 URL 长度(防 414)
         freq = w.get("frequency")
         phonetic = (w.get("phonetic") or "").strip()
         hint_parts = []
