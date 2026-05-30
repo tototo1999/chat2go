@@ -118,3 +118,21 @@ chat2go/
 - 数据库 role 字段保持英文（user/expert/ai），UI 显示中文（小白/大咖/AI 助手）
 - AI 模型默认 claude-sonnet-4-5，通过 room.model 可覆盖
 - `.env` 文件不提交，放 ANTHROPIC_API_KEY 等密钥
+
+## 默认开发流程（先验证再开发）
+
+用户的定位：**只负责出 idea、想体验、想优化**。流程纪律由 Claude 自动执行，用户只在 3 个关卡拍板。
+
+任何「做个功能 / 改个行为」的需求，默认走这条链，无需用户每次提醒：
+
+```
+idea → brainstorming → writing-plans → git-worktree → TDD → systematic-debugging → verification → Playwright/run → code-review → finishing-branch
+```
+
+- **纪律层（Claude 全自动）**：写测试再写实现、出 bug 先定位根因、声称做完前必须跑验证给出证据、隔离工作区、对抗性自审。
+- **判断层（必须找用户拍板的 3 个关卡）**：
+  1. **brainstorm 完** — 确认需求规格对不对
+  2. **plan 写完** — 确认方向 / 拆解对不对
+  3. **verify 完** — 看真实运行效果，确认体验对不对、要不要继续优化
+- 关卡之外不要逐步打断用户；关卡上必须停下来等用户判断，不要自己猜了就猛干。
+- 小改 / 低风险（doc、重启、轮询、SELECT、纯样式微调）可跳过完整链路直接做（参 `feedback_autonomous_low_risk`）。完整链路用于真正的功能开发。

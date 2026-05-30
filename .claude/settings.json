@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-before-done.sh\"",
+            "timeout": 10,
+            "statusMessage": "纪律守卫:检查是否已验证…"
+          }
+        ]
+      }
+    ]
+  }
+}
