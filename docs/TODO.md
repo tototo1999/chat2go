@@ -3,6 +3,27 @@
 > 形式:按计划日期分段;做完 `[x]`,新加 `[ ]` 追加到当天那段。
 > 跨天没做完的不挪,留在原日期,显示"延期"。
 
+## 2026-05-30
+
+### 🏗️ 多用户系统:三个系统(英语课 / 英文作文 / 韩语)单入口部署 ⭐ 进行中
+
+> 三个用户进三个系统。决策:**单入口、登录按用户路由**;**前端各系统独立**(改一个不动另俩);后端共享按 `rooms.product` 隔离。
+> 完整方案:`~/.claude/plans/witty-sparking-rainbow.md`。关键 ID:essay 房间 `01c240c3-9b94-472f-953b-d27584749008`、korean 房间 `f015f5d5-2163-490f-bf99-92a2ffa45bdd`、speak2go 房间 `5b622bc4...`;`iamarobot`(`0112a67b...`)已绑定 `profiles.system='essay'`。
+
+**已完成 [x]:**
+- [x] **英文作文 — 后端**:`speak2go_worker` 按 `product` 选提炼 prompt(新 `ESSAY_PROMPT`:writing_points + essay_prompts + key_phrases)+ `_build_essay_card`;`chat2go_worker.INDUSTRY_PROMPTS` 加「英文作文」五维 rubric 批改 prompt(+`essay-score` trailer);`speak2go-ingest` 读 `rooms.product` 传 worker。批改链路实测通过(B1 62分)。两 worker + edge fn v6 已部署。
+- [x] **英文作文 — 独立前端**:`speak2go/essay/index.html`(自己一份,不碰 chat.html),live `speak2go.ai/essay/`。发作文→`chat2go-ingest`→Claude 批改实时显示 + 写作进度侧栏。
+- [x] **P0 登录路由**:迁移 `20260530000000_add_system_to_profiles.sql`(`profiles.system` 默认 speak2go,51 用户零影响 + `handle_new_user` 更新 + `admin_set_user_system` RPC);`speak2go/assets/systems.js` 配置;`chat.html` 按 `profiles.system` 路由(well2go.ai 域名行为保留)。
+- [x] **韩语 — 后端**:`KOREAN_PROMPT`(한글/romaja/zh+句式)+ `_build_korean_card` + `_vocab_start_seconds` 支持 한글 时间戳 + `lang='ko'` 导入深链指向独立 `/korean/`(`KOREAN_GLOSSARY_IMPORT_BASE_URL`)。已部署,单测通过。korean 房间已建。
+
+**明天继续 [ ]:**
+- [ ] **韩语 — 独立前端 验收**:后台 agent 在建 `speak2go/korean/index.html`(从**已提交版** fork glossary,Korean 化:ko-KR TTS、한글 卡片、跳过英文专属自然拼读、**独立 localStorage `korean-glossary-*` 不跟英文串**、清空英文内置词)+ 把 `systems.js` korean.roomId 设为 `f015f5d5...`。**明早确认它跑完没 + 实测**:`?import=` 韩语深链能导入、한글 朗读、不污染英文词库。
+- [ ] **⚠️ Phase 1:RLS 硬隔离**(最高风险,**务必先在 Supabase 分支测再合**):现在隔离只在前端(`USING(true)` 洞还在,任何登录用户能 API 摸到别系统房间)。要:① 先把 speak2go 单例房间 RLS 策略(`speak2go_singleton_*` 只存在线上 DB、无迁移)固化进迁移 ② `products_for_system()` helper + 系统作用域的 rooms/room_members/templates 策略 ③ `profiles.system` 改名防自改触发器。验收:3 测试用户各只见自己系统、跨系统 join 被拒。
+- [ ] **well2go.ai systems.js 同步隐患**:well2go 是独立 repo(`tototo1999/well2go`),现在跑旧 chat.html **不受影响**;但以后谁同步新 chat.html 过去,**必须一起拷 `assets/systems.js`**,否则报 `Cannot read undefined 'speak2go'`。
+- [ ] **英文作文 — 录音→写作要点 端到端实测**:`_build_essay_card` 已单测,但提炼链路(作文课录音→writing_points+作文题卡)还没用真录音跑过一遍。传一节真课录音到 essay 房间验。
+- [ ] **绑定真实用户 + 房间成员**:给韩语/作文各绑一个真用户(`admin_set_user_system`)+ 加 `room_members`;现在只有 iamarobot 绑了 essay。
+- [ ] **(可选)韩语前端听写题**:phase ② 现在对韩语跳过;后续可做「ko-KR TTS 播→打 한글」听写模式。
+
 ## 2026-05-28
 
 ### 🛠️ 工具链探索 — Figma REST API 接入(待启动)
