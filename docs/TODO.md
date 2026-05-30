@@ -17,7 +17,8 @@
 - [x] **韩语 — 后端**:`KOREAN_PROMPT`(한글/romaja/zh+句式)+ `_build_korean_card` + `_vocab_start_seconds` 支持 한글 时间戳 + `lang='ko'` 导入深链指向独立 `/korean/`(`KOREAN_GLOSSARY_IMPORT_BASE_URL`)。已部署,单测通过。korean 房间已建。
 
 **明天继续 [ ]:**
-- [ ] **韩语 — 独立前端 验收**:后台 agent 在建 `speak2go/korean/index.html`(从**已提交版** fork glossary,Korean 化:ko-KR TTS、한글 卡片、跳过英文专属自然拼读、**独立 localStorage `korean-glossary-*` 不跟英文串**、清空英文内置词)+ 把 `systems.js` korean.roomId 设为 `f015f5d5...`。**明早确认它跑完没 + 实测**:`?import=` 韩语深链能导入、한글 朗读、不污染英文词库。
+- [x] **韩语 — 独立前端(已建+live,待实测验收)**:`speak2go/korean/index.html` 已 live `speak2go.ai/korean/`(从已提交版 fork glossary,Korean 化:ko-KR TTS、한글 卡片、跳过英文专属自然拼读 phase②、独立 localStorage `korean-glossary-*` 不跟英文串、清空英文内置词、romanizer-dict 指回 `../glossary/`);`systems.js` korean.roomId=`f015f5d5...`。headless 导入/测验测过。**明天用真韩语录音端到端实测验收**(传 korean 房间→提炼卡→点深链→한글 导入+朗读+测验)。
+- [ ] **修:韩语 lesson 胶囊 slug 不含 한글**(agent flag 的边界 bug):`autoImportFromUrl` 的 slug 正则 `[^a-z0-9一-鿿]` 没含谚文 Unicode 块 → 纯 한글 的 `date` 标签 slug 成空 `lesson-`,多个纯韩标签的课会撞进同一 catId。worker 的 `date` = `音频名 · 北京时间`,文件名若纯 한글 就中招(带 ASCII/数字/汉字的不受影响)。修:slug 正则加 `가-힣`(한글音节块)。词照常导入,只是分组会撞。
 - [ ] **⚠️ Phase 1:RLS 硬隔离**(最高风险,**务必先在 Supabase 分支测再合**):现在隔离只在前端(`USING(true)` 洞还在,任何登录用户能 API 摸到别系统房间)。要:① 先把 speak2go 单例房间 RLS 策略(`speak2go_singleton_*` 只存在线上 DB、无迁移)固化进迁移 ② `products_for_system()` helper + 系统作用域的 rooms/room_members/templates 策略 ③ `profiles.system` 改名防自改触发器。验收:3 测试用户各只见自己系统、跨系统 join 被拒。
 - [ ] **well2go.ai systems.js 同步隐患**:well2go 是独立 repo(`tototo1999/well2go`),现在跑旧 chat.html **不受影响**;但以后谁同步新 chat.html 过去,**必须一起拷 `assets/systems.js`**,否则报 `Cannot read undefined 'speak2go'`。
 - [ ] **英文作文 — 录音→写作要点 端到端实测**:`_build_essay_card` 已单测,但提炼链路(作文课录音→writing_points+作文题卡)还没用真录音跑过一遍。传一节真课录音到 essay 房间验。
