@@ -47,6 +47,11 @@ GLOSSARY_IMPORT_BASE_URL = os.environ.get(
     "GLOSSARY_IMPORT_BASE_URL",
     "https://speak2go.ai/glossary/",   # 2026-05-29: 唯一真文件 = glossary/index.html(带测验+录音回放);老 glossary.html 现在重定向到这
 )
+# 韩语系统独立词库页(2026-05-30):韩语生词导入到这,跟英文词库分开
+KOREAN_GLOSSARY_IMPORT_BASE_URL = os.environ.get(
+    "KOREAN_GLOSSARY_IMPORT_BASE_URL",
+    "https://speak2go.ai/korean/",
+)
 
 # ── Modal app + image ────────────────────────────────────────────────────────
 app = modal.App("speak2go-glass-worker")
@@ -578,6 +583,7 @@ def _build_glossary_import_url(
     audio_url: str = "",
     scribe_words: list | None = None,
     lang: str = "",
+    base_url: str = "",
 ) -> str:
     """把词打包成 glossary.html 能消费的深链。
 
@@ -626,7 +632,7 @@ def _build_glossary_import_url(
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
     encoded = urllib.parse.quote(b64, safe="")
-    url = f"{GLOSSARY_IMPORT_BASE_URL}?import={encoded}"
+    url = f"{base_url or GLOSSARY_IMPORT_BASE_URL}?import={encoded}"
     if lesson_date:
         url += f"&date={urllib.parse.quote(lesson_date, safe='')}"
     return url
@@ -918,7 +924,8 @@ def _build_korean_card(
     now_bj = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
     lesson_date = f"{audio_label} · {now_bj}"
     import_url = _build_glossary_import_url(
-        vocab_like, lesson_date, audio_url=audio_url, scribe_words=scribe_words, lang="ko",
+        vocab_like, lesson_date, audio_url=audio_url, scribe_words=scribe_words,
+        lang="ko", base_url=KOREAN_GLOSSARY_IMPORT_BASE_URL,
     )
     if import_url:
         lines.append(f"[📚 一键加进韩语单词表({lesson_date}) →]({import_url})")
