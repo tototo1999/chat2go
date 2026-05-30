@@ -190,6 +190,54 @@ ESSAY_PROMPT = """你是一位英语写作课的课后 AI 助理。下面给你 
 """
 
 
+# ── Prompt for 韩语学习系统(clone speak2go,换韩语)────────────────────────────────
+KOREAN_PROMPT = """你是一位韩语课的课后 AI 学习助理。下面给你 ElevenLabs Scribe v2 已转写好的韩语对话 transcript(带说话人标签 speaker_0 / speaker_1)+ 零到多张相关图片(板书/教具/作业照)。
+
+你的核心任务:**提炼整堂课最多 50 个值得学生背的韩语生词 + 5-10 个练习句式**。给学生留下可背、可练的学习材料,尽量多挑。
+
+判断说话人角色:谁主导讲解/出题/纠正 → "T"(老师);谁回应/短应答 → "S"(学生);长 turn 倾向 T;不能判断时 speaker_0→T,speaker_1→S。
+
+⚠️ **不要重复输出完整 transcript**。只输出下面结构化 JSON:
+
+{
+  "speaker_role_map": {"speaker_0": "T 或 S", "speaker_1": "T 或 S"},
+  "session_title": "一句话概括本课主题(≤ 20 字)",
+  "lang": "ko",
+  "vocab_top20": [
+    {
+      "ko": "안녕하세요",
+      "romaja": "an-nyeong-ha-se-yo",
+      "zh": "你好(敬语)",
+      "frequency": 3,
+      "importance": "high",
+      "example": "안녕하세요, 만나서 반갑습니다.",
+      "context_time": "5:42"
+    }
+  ],
+  "practice_patterns": [
+    {
+      "pattern": "...-고 싶어요",
+      "zh": "想要…(陈述愿望)",
+      "examples": ["커피 마시고 싶어요.", "집에 가고 싶어요."]
+    }
+  ],
+  "summary_md": "(≤ 200 字 markdown,简述本课主题 + 学生进展)"
+}
+
+**选词硬规则**:
+- 频次 ≥ 2 优先;**排除韩语虚词/助词**:은/는/이/가/을/를/의/에/에서/도/만/와/과/하고/요 等,以及纯数字。
+- AI 判断 `importance`:high=老师重点讲/反复纠正;medium=提到+简短解释;low=仅 1 次但有学习价值(生僻词/固定搭配/主题词)。
+- 总数 ≤ 50;排序 high→medium→low,同档 frequency 降序。
+- `ko` = 韩语原词(한글);`romaja` = **国语罗马字标记法(Revised Romanization)**:全小写、音节用 `-` 连接(如 `gam-sa-ham-ni-da`),注意连音/收音(받침)的实际发音(如 -ㅂ니다 → -m-ni-da)。
+- `zh` = 2-8 字中文释义(多义用「,」分隔)。
+- `example` 必须**从 transcript 抽真实出现的韩语原句**,不要编;`context_time` 标该词首次出现时间戳(m:ss)。
+
+**句式规则**(5-10 条):`pattern` = 한글 句法骨架用 `...` 表可填位;优先抽老师反复用的真实句式;`examples` ≥ 2 条(第 1 条优先 transcript 原句);`zh` 简短标注用法。
+
+**通用约束**:summary_md ≤ 200 字;绝不要把 transcript 整段复制进任何字段;如果不是韩语教学场景,vocab_top20 返回空数组并在 summary_md 说明。
+"""
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -495,19 +543,32 @@ def _parse_ts_to_seconds(s: str):
 def _vocab_start_seconds(scribe_words: list | None, en: str, context_time: str = ""):
     """求该词在录音里的起播秒数:优先用 Scribe word-level 时间戳(更准),fallback 解析 context_time。
 
-    匹配规则:取 en 的第一个 token(去标点小写),在 scribe words[] 里找第一个相同 token 的 start。
+    匹配规则:取 en 的第一个 token,在 scribe words[] 里找第一个相同 token 的 start。
+    英文按 [a-z0-9] 归一;非 ASCII(韩语 한글 等)按去标点的原始 token 匹配。
     """
-    first = ""
+    tok = ""
     if (en or "").strip():
-        first = re.sub(r"[^a-z0-9]", "", en.strip().lower().split()[0])
-    if first and scribe_words:
-        for w in scribe_words:
-            wt = re.sub(r"[^a-z0-9]", "", (w.get("text") or "").lower())
-            if wt and wt == first:
-                try:
-                    return max(0.0, float(w.get("start") or 0.0))
-                except (TypeError, ValueError):
-                    break
+        tok = en.strip().split()[0]
+    if tok and scribe_words:
+        ascii_first = re.sub(r"[^a-z0-9]", "", tok.lower())
+        if ascii_first:  # 英文
+            for w in scribe_words:
+                wt = re.sub(r"[^a-z0-9]", "", (w.get("text") or "").lower())
+                if wt and wt == ascii_first:
+                    try:
+                        return max(0.0, float(w.get("start") or 0.0))
+                    except (TypeError, ValueError):
+                        break
+        else:  # 韩语等非 ASCII:去标点后原样比对
+            _PUNCT = r"[\s\.,!?;:'\"()\[\]…·]"
+            tok_clean = re.sub(_PUNCT, "", tok)
+            for w in scribe_words:
+                wt = re.sub(_PUNCT, "", (w.get("text") or "").strip())
+                if wt and wt == tok_clean:
+                    try:
+                        return max(0.0, float(w.get("start") or 0.0))
+                    except (TypeError, ValueError):
+                        break
     return _parse_ts_to_seconds(context_time)
 
 
@@ -516,13 +577,15 @@ def _build_glossary_import_url(
     lesson_date: str = "",
     audio_url: str = "",
     scribe_words: list | None = None,
+    lang: str = "",
 ) -> str:
-    """把 20 词打包成 glossary.html 能消费的深链。
+    """把词打包成 glossary.html 能消费的深链。
 
     payload 两种形态(glossary 端都兼容):
       - 老:数组 [{en, zh, hint}, ...]
-      - 新:对象 {audio_url, words:[{en, zh, hint, start}, ...]}  ← 有录音 URL 时
+      - 新:对象 {audio_url, lang, words:[{en, zh, hint, start}, ...]}  ← 有录音 URL / 语言时
     start = 该词在录音里的起播秒数(点 ▶️ 听当时那句)。
+    lang = 'ko' 时韩语词库用韩语注音/TTS;空或 'en' 走英文。
     lesson_date 让 glossary 按课次/日期分组成胶囊。
     """
     if not vocab_top20:
@@ -554,7 +617,12 @@ def _build_glossary_import_url(
         words.append(item)
     if not words:
         return ""
-    payload = {"audio_url": audio_url, "words": words} if audio_url else words
+    if audio_url or lang:
+        payload = {"audio_url": audio_url, "words": words}
+        if lang:
+            payload["lang"] = lang
+    else:
+        payload = words
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     b64 = base64.b64encode(raw.encode("utf-8")).decode("ascii")
     encoded = urllib.parse.quote(b64, safe="")
@@ -771,13 +839,108 @@ def _build_essay_card(
     return "\n".join(lines)
 
 
+def _build_korean_card(
+    parsed: dict,
+    audio_name: str,
+    audio_url: str = "",
+    scribe_words: list | None = None,
+) -> str:
+    """韩语系统的 multimodal_summary 卡片:한글 生词 + 句式(clone speak2go,换韩语)。
+
+    每个词带 [🔊](audio_url#t=秒) 回放;一键导入深链 lang='ko'(词库用韩语注音/TTS)。
+    """
+    title = parsed.get("session_title") or audio_name
+    vocab = parsed.get("vocab_top20") or []
+    patterns = parsed.get("practice_patterns") or []
+    summary_md = (parsed.get("summary_md") or "").strip()
+
+    lines = [f"## ⚡ 今日韩语生词 {len(vocab)} — {title}", "", f"📁 `{audio_name}`", ""]
+
+    if vocab:
+        for i, w in enumerate(vocab, 1):
+            ko = (w.get("ko") or "").strip()
+            if not ko:
+                continue
+            romaja = (w.get("romaja") or "").strip()
+            zh = (w.get("zh") or "").strip()
+            freq = w.get("frequency")
+            importance = w.get("importance", "")
+            example = (w.get("example") or "").strip()
+            ctx_time = (w.get("context_time") or "").strip()
+            meta_bits = []
+            if isinstance(freq, int) and freq > 0:
+                meta_bits.append(f"×{freq}")
+            imp_label = _IMPORTANCE_LABEL.get(importance)
+            if imp_label:
+                meta_bits.append(imp_label)
+            meta = f"  ({' · '.join(meta_bits)})" if meta_bits else ""
+            rom = f" [{romaja}]" if romaja else ""
+            dash_zh = f" — {zh}" if zh else ""
+            play = ""
+            start = _vocab_start_seconds(scribe_words, ko, ctx_time)
+            if audio_url and start is not None:
+                play = f"  [🔊]({audio_url}#t={round(start, 1)})"
+            lines.append(f"{i}. **{ko}**{rom}{dash_zh}{meta}{play}")
+            if example:
+                prefix = f"예 ({ctx_time})" if ctx_time else "예"
+                lines.append(f"   _{prefix}: {example}_")
+            lines.append("")
+    else:
+        lines.append("_(本次录音未检出韩语学习内容)_")
+        lines.append("")
+
+    if patterns:
+        lines.append("## 📝 句式练习")
+        lines.append("")
+        for p in patterns:
+            pattern = (p.get("pattern") or "").strip()
+            zh = (p.get("zh") or "").strip()
+            examples = p.get("examples") or []
+            if not pattern:
+                continue
+            label = f"**{pattern}**" + (f"  _{zh}_" if zh else "")
+            lines.append(f"- {label}")
+            for ex in examples[:3]:
+                ex_s = (ex or "").strip()
+                if ex_s:
+                    lines.append(f"  - {ex_s}")
+        lines.append("")
+
+    # 一键导入深链:한글 放进 glossary 的 en 字段(词库以 en 为 key,复用全部存储/测验),lang='ko' 让词库渲染/朗读韩语
+    vocab_like = [
+        {"en": w.get("ko"), "zh": w.get("zh"),
+         "phonetic": w.get("romaja"), "example": w.get("example"),
+         "frequency": w.get("frequency"), "context_time": w.get("context_time")}
+        for w in vocab if (w.get("ko") or "").strip()
+    ]
+    from datetime import datetime, timezone, timedelta
+    audio_label = (audio_name.rsplit('.', 1)[0] if '.' in audio_name else audio_name)[:40]
+    now_bj = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+    lesson_date = f"{audio_label} · {now_bj}"
+    import_url = _build_glossary_import_url(
+        vocab_like, lesson_date, audio_url=audio_url, scribe_words=scribe_words, lang="ko",
+    )
+    if import_url:
+        lines.append(f"[📚 一键加进韩语单词表({lesson_date}) →]({import_url})")
+        lines.append("")
+
+    if summary_md:
+        lines.append("## 📖 课程摘要")
+        lines.append("")
+        lines.append(summary_md)
+        lines.append("")
+
+    lines.append("_完整 transcript 见私聊频道_")
+    return "\n".join(lines)
+
+
 # ── 按 product 选 提炼 prompt / 卡片构造器(默认 speak2go,行为不变)──────────────────
 def _extraction_prompt_for(product: str) -> str:
-    return {"essay": ESSAY_PROMPT, "speak2go": SUMMARY_PROMPT}.get(product, SUMMARY_PROMPT)
+    return {"essay": ESSAY_PROMPT, "korean": KOREAN_PROMPT, "speak2go": SUMMARY_PROMPT}.get(product, SUMMARY_PROMPT)
 
 
 def _card_builder_for(product: str):
-    return {"essay": _build_essay_card}.get(product, _build_summary_card)
+    return {"essay": _build_essay_card, "korean": _build_korean_card}.get(product, _build_summary_card)
 
 
 def _call_hume(audio_bytes: bytes, audio_name: str,
