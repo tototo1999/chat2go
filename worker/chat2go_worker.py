@@ -30,6 +30,8 @@ from typing import Any
 
 import modal
 
+import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
+
 # ── Modal app + image ────────────────────────────────────────────────────────
 app = modal.App("chat2go-worker")
 
@@ -41,6 +43,8 @@ image = (
         "httpx>=0.27",
         "fastapi[standard]>=0.115",
     )
+    # 外贸会计核算工具(纯 stdlib, 子项目②), 随 image 一起带进容器
+    .add_local_python_source("trade_accounting")
 )
 
 # 复用 speak2go-secrets(已有 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) + chat2go-extras
@@ -140,8 +144,29 @@ Hard rules:
 # 同义词映射(数据库里历史写法对齐 INDUSTRY_PROMPTS 的 key)
 INDUSTRY_ALIASES = {
     "命理": "算命",
-    "外贸跟单": "外贸",   # tradego 老房复用外贸 prompt;失去 contract_lib 等 Hermes 专属能力
+    "外贸跟单": "外贸",   # tradego 老房复用外贸 prompt
 }
+
+# 外贸会计核算指引 — 对任何外贸房追加到 system prompt(不管默认还是大咖自定义 prompt),
+# 让 AI 知道有精确计算工具且必须调用(子项目②, 重建 Hermes 时代 contract_lib/excel_lib 能力)。
+TRADE_ACCOUNTING_GUIDE = """
+
+## 会计核算(重要)
+你配有一套**精确计算工具**,任何涉及金额的核算都**必须调用工具**算,绝不自己心算口算:
+- calc_unit_cost — 单位成本(采购+运费+关税+杂费)/数量
+- quote_from_margin — 按目标利润率倒推报价 + FOB/CIF/CFR 换算
+- order_pnl — 单笔订单损益(毛利/净利/利润率)
+- fx_convert — 汇率换算(汇率由用户给出, 你不要编汇率)
+- export_rebate — 出口退税额
+- commission — 佣金核算 + 净利还原
+- reconcile — 对账 + 账期 aging
+规则:利润率/税率/退税率传**小数**(20% 传 0.2)。缺关键数字(数量、汇率、税率等)就先**追问**, 不要假设。
+算完用 **markdown 表格**清晰展示结果和明细(工具返回的 breakdown),让用户一眼看懂每一步。"""
+
+
+def _is_trade_room(industry: str) -> bool:
+    """该房是否外贸房(挂会计工具)。基于 industry, 不受 room.system_prompt 覆盖影响。"""
+    return INDUSTRY_ALIASES.get(industry, industry) == "外贸"
 
 DEFAULT_SYSTEM = """你是 Chat2GO.ai 平台的专属 AI 助手,工作在"Chat 调试室"中。
 你的目标是帮助小白和大咖共同理清需求,展示 AI 能做什么,最终为小白交付一个可以独立使用的专属 AI 助手。
@@ -170,6 +195,8 @@ HISTORY_LIMIT = 40
 DEFAULT_MODEL = "claude-sonnet-4-6"
 # 单次回复 max_tokens
 MAX_TOKENS = 4096
+# 外贸 tool-use 单轮最多工具调用次数(防失控/防成本爆炸)
+MAX_TOOL_ITERS = 5
 
 
 def _load_history(sb, room_id: str, channel: str, before_message_id: str) -> list[dict]:
@@ -273,6 +300,49 @@ def _looks_markdown(text: str) -> bool:
     return any(t in text for t in triggers)
 
 
+def _extract_text(resp) -> str:
+    out = ""
+    for blk in resp.content:
+        if getattr(blk, "type", None) == "text":
+            out += getattr(blk, "text", "")
+    return out
+
+
+def _run_completion(cli, model: str, system: str, messages: list[dict], is_trade: bool) -> str:
+    """非外贸房:单次调用。外贸房:带会计工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
+    if not is_trade:
+        resp = cli.messages.create(
+            model=model, max_tokens=MAX_TOKENS, system=system, messages=messages,
+        )
+        return _extract_text(resp).strip() or "(AI 没有返回内容)"
+
+    convo = list(messages)
+    for _ in range(MAX_TOOL_ITERS):
+        resp = cli.messages.create(
+            model=model, max_tokens=MAX_TOKENS, system=system,
+            messages=convo, tools=ta.TOOL_SCHEMAS,
+        )
+        tool_uses = [b for b in resp.content if getattr(b, "type", None) == "tool_use"]
+        if not tool_uses:
+            return _extract_text(resp).strip() or "(AI 没有返回内容)"
+        # 回放 assistant 的 tool_use turn, 再附上每个 tool_result
+        convo.append({"role": "assistant", "content": resp.content})
+        results = []
+        for tu in tool_uses:
+            out = ta.dispatch(tu.name, tu.input or {})
+            results.append({
+                "type": "tool_result",
+                "tool_use_id": tu.id,
+                "content": json.dumps(out, ensure_ascii=False),
+            })
+        convo.append({"role": "user", "content": results})
+    # 用尽迭代次数:再要一次最终文字总结(不给 tools, 逼它收尾)
+    resp = cli.messages.create(
+        model=model, max_tokens=MAX_TOKENS, system=system, messages=convo,
+    )
+    return _extract_text(resp).strip() or "(AI 没有返回内容)"
+
+
 def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | None = None) -> None:
     payload: dict[str, Any] = {"content": content}
     if msg_type:
@@ -318,19 +388,13 @@ def ingest(payload: dict) -> dict:
         mem_rows = _load_memories(sb, room_id)
         system = base_system + _format_memories(mem_rows)
 
+        # 外贸房:追加会计核算指引 + 挂计算工具(不受 room.system_prompt 覆盖影响)
+        is_trade = _is_trade_room(industry)
+        if is_trade:
+            system = system + TRADE_ACCOUNTING_GUIDE
+
         cli = _anthropic_client()
-        resp = cli.messages.create(
-            model=model,
-            max_tokens=MAX_TOKENS,
-            system=system,
-            messages=messages,
-        )
-        # 取 text
-        out_text = ""
-        for blk in resp.content:
-            if getattr(blk, "type", None) == "text":
-                out_text += getattr(blk, "text", "")
-        out_text = out_text.strip() or "(AI 没有返回内容)"
+        out_text = _run_completion(cli, model, system, messages, is_trade)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type)
