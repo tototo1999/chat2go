@@ -30,7 +30,6 @@ import time
 from typing import Any
 
 import modal
-from fastapi import Request  # ingest endpoint 读 Authorization header(审计#1)
 
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
@@ -488,8 +487,9 @@ def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | N
     memory=1024,
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest(payload: dict, request: "Request") -> dict:
-    """Modal web endpoint,被 supabase/functions/chat2go-ingest 调用。"""
+def ingest(payload: dict, request) -> dict:
+    """Modal web endpoint,被 supabase/functions/chat2go-ingest 调用。
+    request: fastapi.Request(运行时由 Modal 注入, 不在顶层 import 以免本地测试缺 fastapi)。"""
     # 审计#1: 鉴权(env-gated). 公开 URL, 防白嫖 Claude/Storage + 跨房篡改。
     from fastapi.responses import JSONResponse
     if not _check_worker_auth(request.headers.get("authorization", "")):
