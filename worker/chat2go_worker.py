@@ -31,6 +31,13 @@ from typing import Any
 
 import modal
 
+# FastAPI Request 类型: Modal 容器靠这个注解才会注入 Request 对象(读 header);
+# 本地测试环境无 fastapi → 降级为 object, 仅保证模块可 import(测试不调 ingest)。
+try:
+    from fastapi import Request as _FastAPIRequest
+except ImportError:  # pragma: no cover
+    _FastAPIRequest = object
+
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
 
@@ -487,9 +494,9 @@ def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | N
     memory=1024,
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest(payload: dict, request) -> dict:
+def ingest(payload: dict, request: _FastAPIRequest) -> dict:
     """Modal web endpoint,被 supabase/functions/chat2go-ingest 调用。
-    request: fastapi.Request(运行时由 Modal 注入, 不在顶层 import 以免本地测试缺 fastapi)。"""
+    request 必须带 _FastAPIRequest 注解, FastAPI 才会注入 Request 对象(读 header)。"""
     # 审计#1: 鉴权(env-gated). 公开 URL, 防白嫖 Claude/Storage + 跨房篡改。
     from fastapi.responses import JSONResponse
     if not _check_worker_auth(request.headers.get("authorization", "")):
