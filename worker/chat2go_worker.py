@@ -31,6 +31,10 @@ from typing import Any
 import modal
 
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
+import doc_gen as dg            # Excel/PDF 生成 (子项目③)
+
+# Supabase Storage bucket (public, 已存在)
+STORAGE_BUCKET = "chat-uploads"
 
 # ── Modal app + image ────────────────────────────────────────────────────────
 app = modal.App("chat2go-worker")
@@ -42,9 +46,12 @@ image = (
         "anthropic>=0.39.0",
         "httpx>=0.27",
         "fastapi[standard]>=0.115",
+        "openpyxl>=3.1",      # Excel 生成 (子项目③)
+        "reportlab>=4.0",     # PDF 生成 + 内置中文 CID 字体 (子项目③)
     )
-    # 外贸会计核算工具(纯 stdlib, 子项目②), 随 image 一起带进容器
+    # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
+    .add_local_python_source("doc_gen")
 )
 
 # 复用 speak2go-secrets(已有 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) + chat2go-extras
@@ -308,28 +315,60 @@ def _extract_text(resp) -> str:
     return out
 
 
-def _run_completion(cli, model: str, system: str, messages: list[dict], is_trade: bool) -> str:
-    """非外贸房:单次调用。外贸房:带会计工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
+def _make_doc_and_upload(sb, tool_name: str, tool_input: dict) -> tuple[dict, dict]:
+    """生成 Excel/PDF → 上传 Supabase Storage → 返回 (attachment, tool_result)。
+    storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。"""
+    builder, ext, mime = dg.DOC_BUILDERS[tool_name]
+    spec = tool_input or {}
+    data = builder(spec)
+    display_name = (spec.get("filename") or "文件") + "." + ext
+    path = dg.storage_path(spec.get("filename") or "file", ext)
+    sb.storage.from_(STORAGE_BUCKET).upload(
+        path, data, {"content-type": mime, "upsert": "true"},
+    )
+    url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
+    attachment = {
+        "name": display_name, "url": url, "size": len(data),
+        "mime_type": mime, "storage_path": path,
+    }
+    tool_result = {"ok": True, "url": url, "name": display_name, "size_bytes": len(data),
+                   "note": "文件已生成并附在本条消息下,用户可直接下载"}
+    return attachment, tool_result
+
+
+def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
+                    is_trade: bool) -> tuple[str, list[dict]]:
+    """返回 (最终文字, 生成的文件 attachments)。
+    非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
+    attachments: list[dict] = []
     if not is_trade:
         resp = cli.messages.create(
             model=model, max_tokens=MAX_TOKENS, system=system, messages=messages,
         )
-        return _extract_text(resp).strip() or "(AI 没有返回内容)"
+        return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
+    tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
             model=model, max_tokens=MAX_TOKENS, system=system,
-            messages=convo, tools=ta.TOOL_SCHEMAS,
+            messages=convo, tools=tools,
         )
         tool_uses = [b for b in resp.content if getattr(b, "type", None) == "tool_use"]
         if not tool_uses:
-            return _extract_text(resp).strip() or "(AI 没有返回内容)"
+            return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
         # 回放 assistant 的 tool_use turn, 再附上每个 tool_result
         convo.append({"role": "assistant", "content": resp.content})
         results = []
         for tu in tool_uses:
-            out = ta.dispatch(tu.name, tu.input or {})
+            if tu.name in dg.DOC_BUILDERS:
+                try:
+                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {})
+                    attachments.append(att)
+                except Exception as e:  # noqa: BLE001
+                    out = {"error": f"文件生成/上传失败: {type(e).__name__}: {e}"}
+            else:
+                out = ta.dispatch(tu.name, tu.input or {})
             results.append({
                 "type": "tool_result",
                 "tool_use_id": tu.id,
@@ -340,13 +379,16 @@ def _run_completion(cli, model: str, system: str, messages: list[dict], is_trade
     resp = cli.messages.create(
         model=model, max_tokens=MAX_TOKENS, system=system, messages=convo,
     )
-    return _extract_text(resp).strip() or "(AI 没有返回内容)"
+    return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
 
-def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | None = None) -> None:
+def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | None = None,
+                        attachments: list[dict] | None = None) -> None:
     payload: dict[str, Any] = {"content": content}
     if msg_type:
         payload["type"] = msg_type
+    if attachments:
+        payload["attachments"] = attachments
     sb.table("messages").update(payload).eq("id", placeholder_id).execute()
 
 
@@ -394,10 +436,11 @@ def ingest(payload: dict) -> dict:
             system = system + TRADE_ACCOUNTING_GUIDE
 
         cli = _anthropic_client()
-        out_text = _run_completion(cli, model, system, messages, is_trade)
+        out_text, doc_attachments = _run_completion(cli, sb, model, system, messages, is_trade)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
-        _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type)
+        _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,
+                            attachments=doc_attachments or None)
 
         dt = time.time() - t0
         return {

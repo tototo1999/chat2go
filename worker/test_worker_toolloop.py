@@ -71,6 +71,31 @@ class _FakeCli:
         return self._scripted.pop(0)
 
 
+class _FakeStorageBucket:
+    def __init__(self, log):
+        self._log = log
+
+    def upload(self, path, data, opts):
+        self._log.append({"path": path, "size": len(data), "opts": opts})
+
+    def get_public_url(self, path):
+        return f"https://fake.supabase/storage/{path}"
+
+
+class _FakeStorage:
+    def __init__(self):
+        self.uploads = []
+
+    def from_(self, bucket):
+        return _FakeStorageBucket(self.uploads)
+
+
+class _FakeSb:
+    """fake supabase client, 只实现 storage(文档上传用)。"""
+    def __init__(self):
+        self.storage = _FakeStorage()
+
+
 class TestIsTradeRoom(unittest.TestCase):
     def test_aliases(self):
         self.assertTrue(w._is_trade_room("外贸"))
@@ -82,8 +107,10 @@ class TestIsTradeRoom(unittest.TestCase):
 class TestRunCompletion(unittest.TestCase):
     def test_non_trade_single_call_no_tools(self):
         cli = _FakeCli([_Resp([_Block("text", text="你好")])])
-        out = w._run_completion(cli, "m", "sys", [{"role": "user", "content": "hi"}], is_trade=False)
+        out, atts = w._run_completion(cli, _FakeSb(), "m", "sys",
+                                      [{"role": "user", "content": "hi"}], is_trade=False)
         self.assertEqual(out, "你好")
+        self.assertEqual(atts, [])
         self.assertEqual(len(cli.calls), 1)
         self.assertNotIn("tools", cli.calls[0])  # 非外贸不挂工具
 
@@ -96,9 +123,10 @@ class TestRunCompletion(unittest.TestCase):
             _Resp([tool_block]),
             _Resp([_Block("text", text="单位成本 13.50")]),
         ])
-        out = w._run_completion(cli, "m", "sys",
-                                [{"role": "user", "content": "算成本"}], is_trade=True)
+        out, atts = w._run_completion(cli, _FakeSb(), "m", "sys",
+                                      [{"role": "user", "content": "算成本"}], is_trade=True)
         self.assertEqual(out, "单位成本 13.50")
+        self.assertEqual(atts, [])  # 纯核算无文件
         # 第一次带 tools
         self.assertIn("tools", cli.calls[0])
         # 第二次 convo 里应含 assistant(tool_use) + user(tool_result)
@@ -113,8 +141,8 @@ class TestRunCompletion(unittest.TestCase):
     def test_trade_no_tool_use_returns_text(self):
         # 外贸房但 AI 直接回答(不调工具, 比如纯咨询)
         cli = _FakeCli([_Resp([_Block("text", text="FOB 是离岸价")])])
-        out = w._run_completion(cli, "m", "sys",
-                                [{"role": "user", "content": "FOB啥意思"}], is_trade=True)
+        out, atts = w._run_completion(cli, _FakeSb(), "m", "sys",
+                                      [{"role": "user", "content": "FOB啥意思"}], is_trade=True)
         self.assertEqual(out, "FOB 是离岸价")
         self.assertEqual(len(cli.calls), 1)
 
@@ -125,11 +153,48 @@ class TestRunCompletion(unittest.TestCase):
         scripted = [_Resp([tb]) for _ in range(w.MAX_TOOL_ITERS)]
         scripted.append(_Resp([_Block("text", text="收尾总结")]))
         cli = _FakeCli(scripted)
-        out = w._run_completion(cli, "m", "sys",
-                                [{"role": "user", "content": "x"}], is_trade=True)
+        out, atts = w._run_completion(cli, _FakeSb(), "m", "sys",
+                                      [{"role": "user", "content": "x"}], is_trade=True)
         self.assertEqual(out, "收尾总结")
         # 最后一次收尾调用不带 tools
         self.assertNotIn("tools", cli.calls[-1])
+
+    def test_make_excel_uploads_and_attaches(self):
+        # AI 调 make_excel → worker 生成+上传 → attachment 累积 + tool_result 带 url
+        tb = _Block("tool_use", name="make_excel",
+                    input={"filename": "订单核算表", "headers": ["项目", "金额"],
+                           "rows": [["采购", 100]]}, id="x1")
+        cli = _FakeCli([
+            _Resp([tb]),
+            _Resp([_Block("text", text="已生成 Excel,见下方下载")]),
+        ])
+        sb = _FakeSb()
+        out, atts = w._run_completion(cli, sb, "m", "sys",
+                                      [{"role": "user", "content": "做成excel"}], is_trade=True)
+        self.assertEqual(out, "已生成 Excel,见下方下载")
+        # attachment 累积了 1 个 .xlsx
+        self.assertEqual(len(atts), 1)
+        self.assertEqual(atts[0]["name"], "订单核算表.xlsx")
+        self.assertTrue(atts[0]["url"].startswith("https://fake.supabase/"))
+        self.assertIn("spreadsheet", atts[0]["mime_type"])
+        # storage 路径 ASCII
+        self.assertTrue(atts[0]["storage_path"].isascii())
+        # 真有上传发生
+        self.assertEqual(len(sb.storage.uploads), 1)
+        # tool_result 回灌给 AI 含 url
+        tr = cli.calls[1]["messages"][-1]["content"][0]
+        self.assertIn("fake.supabase", tr["content"])
+
+    def test_make_pdf_attaches(self):
+        tb = _Block("tool_use", name="make_pdf",
+                    input={"filename": "报价单", "blocks": [
+                        {"type": "paragraph", "text": "你好客户"}]}, id="p1")
+        cli = _FakeCli([_Resp([tb]), _Resp([_Block("text", text="PDF 已生成")])])
+        out, atts = w._run_completion(cli, _FakeSb(), "m", "sys",
+                                      [{"role": "user", "content": "出pdf"}], is_trade=True)
+        self.assertEqual(len(atts), 1)
+        self.assertEqual(atts[0]["name"], "报价单.pdf")
+        self.assertEqual(atts[0]["mime_type"], "application/pdf")
 
 
 if __name__ == "__main__":
