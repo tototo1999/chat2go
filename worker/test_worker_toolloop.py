@@ -104,6 +104,57 @@ class TestIsTradeRoom(unittest.TestCase):
         self.assertFalse(w._is_trade_room("算命"))
 
 
+class TestBuildMessagesVision(unittest.TestCase):
+    def test_plain_text_stays_string(self):
+        # 无附件 → content 仍是字符串(向后兼容)
+        hist = [{"role": "user", "content": "你好", "attachments": []}]
+        out = w._build_messages(hist)
+        self.assertEqual(len(out), 1)
+        self.assertIsInstance(out[0]["content"], str)
+        self.assertIn("你好", out[0]["content"])
+
+    def test_image_becomes_vision_block(self):
+        # 图片附件 → content 变 block list, 含 image(url source) + text
+        hist = [{"role": "user", "content": "这单子写了啥",
+                 "attachments": [{"name": "a.png", "url": "https://x/a.png",
+                                  "mime_type": "image/png"}]}]
+        out = w._build_messages(hist)
+        self.assertEqual(len(out), 1)
+        content = out[0]["content"]
+        self.assertIsInstance(content, list)
+        kinds = [b["type"] for b in content]
+        self.assertIn("image", kinds)
+        self.assertIn("text", kinds)
+        img = next(b for b in content if b["type"] == "image")
+        self.assertEqual(img["source"]["type"], "url")
+        self.assertEqual(img["source"]["url"], "https://x/a.png")
+
+    def test_nonimage_attachment_no_vision(self):
+        # pdf/xlsx 附件不进 vision(避免 API 报错), content 保持字符串
+        hist = [{"role": "user", "content": "看这个",
+                 "attachments": [{"name": "b.pdf", "url": "https://x/b.pdf",
+                                  "mime_type": "application/pdf"}]}]
+        out = w._build_messages(hist)
+        self.assertIsInstance(out[0]["content"], str)
+
+    def test_image_by_extension(self):
+        # mime 缺失时按扩展名判断
+        hist = [{"role": "user", "content": "图",
+                 "attachments": [{"name": "photo.JPG", "url": "https://x/p.jpg"}]}]
+        out = w._build_messages(hist)
+        self.assertIsInstance(out[0]["content"], list)
+
+    def test_image_only_no_text(self):
+        # 只发图无文字 → 仍出 image block(text 可空或省略)
+        hist = [{"role": "user", "content": "",
+                 "attachments": [{"name": "a.png", "url": "https://x/a.png",
+                                  "mime_type": "image/png"}]}]
+        out = w._build_messages(hist)
+        self.assertEqual(len(out), 1)
+        kinds = [b["type"] for b in out[0]["content"]]
+        self.assertIn("image", kinds)
+
+
 class TestRunCompletion(unittest.TestCase):
     def test_non_trade_single_call_no_tools(self):
         cli = _FakeCli([_Resp([_Block("text", text="你好")])])

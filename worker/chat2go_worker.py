@@ -236,26 +236,73 @@ def _is_placeholder(row: dict) -> bool:
     return c == "..." or c.startswith("⚠️")
 
 
+# Claude Vision 支持的图片格式
+_VISION_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+
+
+def _image_atts(row: dict) -> list[dict]:
+    """从一条消息的 attachments 里挑出图片附件(按 mime 或扩展名)。"""
+    atts = row.get("attachments")
+    if not isinstance(atts, list):
+        return []
+    imgs = []
+    for a in atts:
+        if not isinstance(a, dict) or not a.get("url"):
+            continue
+        mime = (a.get("mime_type") or "").lower()
+        name = (a.get("name") or "").lower()
+        if mime.startswith("image/") or name.endswith(_VISION_EXTS):
+            imgs.append(a)
+    return imgs
+
+
+def _to_blocks(content) -> list[dict]:
+    """字符串 content → [{type:text}] block 列表(已是 list 则原样返回)。"""
+    if isinstance(content, list):
+        return content
+    return [{"type": "text", "text": content}] if content else []
+
+
 def _build_messages(history: list[dict]) -> list[dict]:
     """history → Anthropic messages array。
     role 映射:user / expert → 'user';ai → 'assistant'。
-    连续 same role 用换行拼接,Anthropic 要求 user/assistant 交替。
+    连续 same role 合并(纯文本拼字符串;含图片转 content block 列表)。
+    图片附件 → Claude Vision image block(url source),让 AI 能读图/OCR。
     """
     out: list[dict] = []
     for r in history:
         role = "assistant" if r.get("role") == "ai" else "user"
-        content = (r.get("content") or "").strip()
-        if not content:
+        text = (r.get("content") or "").strip()
+        imgs = _image_atts(r) if role == "user" else []  # 只对用户侧消息读图
+        if not text and not imgs:
             continue
-        # 把 user/expert 区分塞进 content 前缀,让 LLM 看到角色差异
-        if r.get("role") == "expert":
-            content = f"[大咖] {content}"
-        elif r.get("role") == "user":
-            content = f"[小白] {content}"
-        if out and out[-1]["role"] == role:
-            out[-1]["content"] += "\n\n" + content
+        # 把 user/expert 区分塞进 text 前缀,让 LLM 看到角色差异
+        if text:
+            if r.get("role") == "expert":
+                text = f"[大咖] {text}"
+            elif r.get("role") == "user":
+                text = f"[小白] {text}"
+
+        if imgs:
+            # 含图片 → content block 列表: 图片在前, 文字在后
+            blocks: list[dict] = [
+                {"type": "image", "source": {"type": "url", "url": a["url"]}}
+                for a in imgs
+            ]
+            if text:
+                blocks.append({"type": "text", "text": text})
+            cur_content: Any = blocks
         else:
-            out.append({"role": role, "content": content})
+            cur_content = text
+
+        if out and out[-1]["role"] == role:
+            prev = out[-1]["content"]
+            if isinstance(prev, str) and isinstance(cur_content, str):
+                out[-1]["content"] = prev + "\n\n" + cur_content
+            else:
+                out[-1]["content"] = _to_blocks(prev) + _to_blocks(cur_content)
+        else:
+            out.append({"role": role, "content": cur_content})
     # 必须以 user 起头
     while out and out[0]["role"] != "user":
         out.pop(0)
