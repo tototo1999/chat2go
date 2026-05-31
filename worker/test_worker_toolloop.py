@@ -3,9 +3,14 @@
 这样测的是 worker 里的真实循环逻辑, 不是副本。
 run: python3 -m unittest test_worker_toolloop -v
 """
+import os
 import sys
 import types
 import unittest
+
+# vision SSRF 校验需要 SUPABASE_URL; 测试统一用本项目 Storage 域名
+os.environ.setdefault("SUPABASE_URL", "https://qjnagbzqhoansixqharb.supabase.co")
+_SB = "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads"
 
 
 # ── fake modal: 让 chat2go_worker 顶层 import + 装饰器调用都能过 ───────────────
@@ -104,6 +109,34 @@ class TestIsTradeRoom(unittest.TestCase):
         self.assertFalse(w._is_trade_room("算命"))
 
 
+class TestVisionUrlSSRF(unittest.TestCase):
+    def setUp(self):
+        os.environ["SUPABASE_URL"] = "https://qjnagbzqhoansixqharb.supabase.co"
+
+    def test_allows_own_storage_url(self):
+        ok = "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/gen/a.png"
+        self.assertTrue(w._is_safe_image_url(ok))
+
+    def test_rejects_external_host(self):
+        # 审计#5: 不能让 Claude fetch 任意外部地址(SSRF)
+        self.assertFalse(w._is_safe_image_url("https://evil.example.com/x.png"))
+        self.assertFalse(w._is_safe_image_url("http://169.254.169.254/latest/meta-data/"))
+        self.assertFalse(w._is_safe_image_url("https://qjnagbzqhoansixqharb.supabase.co/evil"))
+
+    def test_rejects_non_https(self):
+        self.assertFalse(w._is_safe_image_url("http://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/x.png"))
+
+    def test_image_atts_filters_unsafe_url(self):
+        row = {"role": "user", "attachments": [
+            {"name": "a.png", "url": "https://evil.com/a.png", "mime_type": "image/png"},
+            {"name": "b.png", "url": "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/b.png", "mime_type": "image/png"},
+        ]}
+        imgs = w._image_atts(row)
+        urls = [a["url"] for a in imgs]
+        self.assertEqual(len(imgs), 1)
+        self.assertIn("supabase.co/storage", urls[0])
+
+
 class TestBuildMessagesVision(unittest.TestCase):
     def test_plain_text_stays_string(self):
         # 无附件 → content 仍是字符串(向后兼容)
@@ -116,7 +149,7 @@ class TestBuildMessagesVision(unittest.TestCase):
     def test_image_becomes_vision_block(self):
         # 图片附件 → content 变 block list, 含 image(url source) + text
         hist = [{"role": "user", "content": "这单子写了啥",
-                 "attachments": [{"name": "a.png", "url": "https://x/a.png",
+                 "attachments": [{"name": "a.png", "url": "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/a.png",
                                   "mime_type": "image/png"}]}]
         out = w._build_messages(hist)
         self.assertEqual(len(out), 1)
@@ -127,7 +160,7 @@ class TestBuildMessagesVision(unittest.TestCase):
         self.assertIn("text", kinds)
         img = next(b for b in content if b["type"] == "image")
         self.assertEqual(img["source"]["type"], "url")
-        self.assertEqual(img["source"]["url"], "https://x/a.png")
+        self.assertEqual(img["source"]["url"], "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/a.png")
 
     def test_nonimage_attachment_no_vision(self):
         # pdf/xlsx 附件不进 vision(避免 API 报错), content 保持字符串
@@ -140,14 +173,14 @@ class TestBuildMessagesVision(unittest.TestCase):
     def test_image_by_extension(self):
         # mime 缺失时按扩展名判断
         hist = [{"role": "user", "content": "图",
-                 "attachments": [{"name": "photo.JPG", "url": "https://x/p.jpg"}]}]
+                 "attachments": [{"name": "photo.JPG", "url": "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/p.jpg"}]}]
         out = w._build_messages(hist)
         self.assertIsInstance(out[0]["content"], list)
 
     def test_image_only_no_text(self):
         # 只发图无文字 → 仍出 image block(text 可空或省略)
         hist = [{"role": "user", "content": "",
-                 "attachments": [{"name": "a.png", "url": "https://x/a.png",
+                 "attachments": [{"name": "a.png", "url": "https://qjnagbzqhoansixqharb.supabase.co/storage/v1/object/public/chat-uploads/a.png",
                                   "mime_type": "image/png"}]}]
         out = w._build_messages(hist)
         self.assertEqual(len(out), 1)

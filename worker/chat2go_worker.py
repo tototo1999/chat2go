@@ -23,12 +23,14 @@
 """
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import time
 from typing import Any
 
 import modal
+from fastapi import Request  # ingest endpoint 读 Authorization header(审计#1)
 
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
@@ -240,8 +242,19 @@ def _is_placeholder(row: dict) -> bool:
 _VISION_EXTS = (".png", ".jpg", ".jpeg", ".gif", ".webp")
 
 
+def _is_safe_image_url(url: str) -> bool:
+    """SSRF 防护(审计#5): 只允许本项目 Supabase Storage 的 https URL 传给 Claude Vision。
+    Anthropic 服务端会 fetch image url-source, 不限制 = 任意外联/内网探测。"""
+    if not isinstance(url, str) or not url.startswith("https://"):
+        return False
+    base = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
+    if not base:
+        return False
+    return url.startswith(base + "/storage/v1/object/")
+
+
 def _image_atts(row: dict) -> list[dict]:
-    """从一条消息的 attachments 里挑出图片附件(按 mime 或扩展名)。"""
+    """从一条消息的 attachments 里挑出图片附件(按 mime 或扩展名), 且 URL 通过 SSRF 校验。"""
     atts = row.get("attachments")
     if not isinstance(atts, list):
         return []
@@ -249,6 +262,8 @@ def _image_atts(row: dict) -> list[dict]:
     for a in atts:
         if not isinstance(a, dict) or not a.get("url"):
             continue
+        if not _is_safe_image_url(a["url"]):
+            continue  # 拒绝非本项目 Storage 的 URL(SSRF)
         mime = (a.get("mime_type") or "").lower()
         name = (a.get("name") or "").lower()
         if mime.startswith("image/") or name.endswith(_VISION_EXTS):
@@ -429,6 +444,30 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
 
+def _check_worker_auth(authorization: str) -> bool:
+    """审计#1: env-gated bearer token 校验。
+    CHAT2GO_MODAL_WORKER_TOKEN 未设 → 放行(灰度: 部署不破线, 两边密钥配齐前不强制)。
+    已设 → 必须 Authorization: Bearer <token> 常数时间匹配, 否则拒。"""
+    expected = os.environ.get("CHAT2GO_MODAL_WORKER_TOKEN", "")
+    if not expected:
+        return True
+    got = (authorization or "")
+    if not got.startswith("Bearer "):
+        return False
+    return hmac.compare_digest(got[len("Bearer "):].strip(), expected)
+
+
+def _verify_placeholder(sb, placeholder_id: str, room_id: str) -> bool:
+    """审计#1 纵深: 只允许更新本房 role='ai' 的占位消息, 防止攻击者传任意 message_id
+    覆盖用户/大咖正文(worker 持 service-role 绕 RLS)。"""
+    try:
+        row = sb.table("messages").select("role, room_id").eq("id", placeholder_id) \
+                .single().execute().data
+    except Exception:
+        return False
+    return bool(row) and row.get("role") == "ai" and row.get("room_id") == room_id
+
+
 def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | None = None,
                         attachments: list[dict] | None = None) -> None:
     payload: dict[str, Any] = {"content": content}
@@ -449,8 +488,13 @@ def _update_placeholder(sb, placeholder_id: str, content: str, msg_type: str | N
     memory=1024,
 )
 @modal.fastapi_endpoint(method="POST")
-def ingest(payload: dict) -> dict:
+def ingest(payload: dict, request: "Request") -> dict:
     """Modal web endpoint,被 supabase/functions/chat2go-ingest 调用。"""
+    # 审计#1: 鉴权(env-gated). 公开 URL, 防白嫖 Claude/Storage + 跨房篡改。
+    from fastapi.responses import JSONResponse
+    if not _check_worker_auth(request.headers.get("authorization", "")):
+        return JSONResponse({"ok": False, "error": "unauthorized"}, status_code=401)
+
     placeholder_id = payload.get("placeholder_id")
     room_id = payload.get("room_id")
     trigger_message_id = payload.get("trigger_message_id")
@@ -463,6 +507,9 @@ def ingest(payload: dict) -> dict:
         return {"ok": False, "error": "missing_required_fields"}
 
     sb = _sb_client()
+    # 审计#1 纵深: 只更新本房 role='ai' 占位, 防覆盖任意消息正文
+    if not _verify_placeholder(sb, placeholder_id, room_id):
+        return JSONResponse({"ok": False, "error": "invalid_placeholder"}, status_code=403)
     t0 = time.time()
 
     try:

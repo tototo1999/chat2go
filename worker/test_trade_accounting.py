@@ -126,6 +126,42 @@ class TestReconcile(unittest.TestCase):
         self.assertEqual(r["balance"], "0.00")
 
 
+class TestCalcUnitCostDefaults(unittest.TestCase):
+    def test_only_required_args(self):
+        # 审计#2: schema required 只列 purchase_total+quantity, 模型只传这俩不能崩
+        r = ta.calc_unit_cost(purchase_total=100, quantity=10)
+        self.assertEqual(r["total_cost"], "100.00")
+        self.assertEqual(r["unit_cost"], "10.0000")
+
+    def test_dispatch_only_required(self):
+        r = ta.dispatch("calc_unit_cost", {"purchase_total": 100, "quantity": 10})
+        self.assertNotIn("error", r)
+        self.assertEqual(r["total_cost"], "100.00")
+
+
+class TestAgingBucketBound(unittest.TestCase):
+    def test_not_yet_due_is_current_not_overdue(self):
+        # 审计#3: 未到期(天数为负)不能记入 0-30 逾期桶
+        self.assertEqual(ta._aging_bucket(-5), "current")
+        self.assertEqual(ta._aging_bucket(-1), "current")
+        self.assertEqual(ta._aging_bucket(0), "0-30")   # 当天到期算逾期起点
+        self.assertEqual(ta._aging_bucket(30), "0-30")
+        self.assertEqual(ta._aging_bucket(31), "31-60")
+
+    def test_reconcile_future_receivable_in_current(self):
+        recv = [
+            {"amount": 1000, "due_date": "2026-07-01", "paid": False},  # as_of 之后 → 未到期
+            {"amount": 500, "due_date": "2026-05-01", "paid": False},   # 逾期 0-30
+        ]
+        r = ta.reconcile(receivables=recv, payables=[], as_of_date="2026-05-30")
+        self.assertEqual(r["total_recv"], "1500.00")          # 合计不变
+        self.assertEqual(r["aging_buckets"]["current"], "1000.00")  # 未到期单列
+        self.assertEqual(r["aging_buckets"]["0-30"], "500.00")
+        # 逾期合计(不含 current)应只有 500
+        overdue = sum(float(v) for k, v in r["aging_buckets"].items() if k != "current")
+        self.assertEqual(overdue, 500.0)
+
+
 class TestDispatch(unittest.TestCase):
     def test_dispatch_known(self):
         r = ta.dispatch("calc_unit_cost",

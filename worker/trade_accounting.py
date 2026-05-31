@@ -39,8 +39,9 @@ def _pct(x: Decimal) -> str:
 
 # ── 1. 单位成本 ──────────────────────────────────────────────────────────────
 
-def calc_unit_cost(purchase_total, freight, duty, misc_fees, quantity) -> dict:
-    """采购+运费+关税+杂费 → 总成本 + 单位成本。"""
+def calc_unit_cost(purchase_total, quantity, freight=0, duty=0, misc_fees=0) -> dict:
+    """采购+运费+关税+杂费 → 总成本 + 单位成本。
+    freight/duty/misc_fees 默认 0(对齐 TOOL_SCHEMAS required 只含 purchase_total+quantity)。"""
     qty = _d(quantity)
     if qty <= 0:
         raise ValueError("quantity 必须 > 0")
@@ -180,6 +181,8 @@ def _parse_date(s) -> date:
 
 
 def _aging_bucket(days_overdue: int) -> str:
+    if days_overdue < 0:
+        return "current"   # 未到期, 不算逾期
     if days_overdue <= 30:
         return "0-30"
     if days_overdue <= 60:
@@ -195,7 +198,8 @@ def reconcile(receivables=None, payables=None, as_of_date=None) -> dict:
     payables = payables or []
     as_of = _parse_date(as_of_date) if as_of_date else date.today()
 
-    buckets = {"0-30": Decimal(0), "31-60": Decimal(0), "61-90": Decimal(0), "90+": Decimal(0)}
+    buckets = {"current": Decimal(0), "0-30": Decimal(0), "31-60": Decimal(0),
+               "61-90": Decimal(0), "90+": Decimal(0)}
     total_recv = Decimal(0)
     for r in receivables:
         if r.get("paid"):
