@@ -39,7 +39,7 @@ RLS 策略：所有人可读 rooms/messages，登录用户可发消息/建房，
 5. **AI 响应** — bridge.py 通过 Realtime 监听 → Claude API → 写回（对 user 和 expert 消息都响应）
 6. **文件上传** — 支持 txt/md/pdf/docx/csv/json/html/xml/图片，上传到 Supabase Storage
 7. **AI 读文件** — bridge.py 下载附件、提取文本（PDF/DOCX/文本），拼入 context
-8. **AI 看图** — Claude Vision，图片 URL 直接传给 API
+8. **AI 看图** — Claude Vision，图片 URL 传给 API（serverless worker `_build_messages` 重建，2026-05-30）
 9. **Markdown 渲染** — AI 输出自动检测 markdown，渲染为格式化内容
 10. **PDF 导出** — 浏览器端 html2pdf.js，AI 的 markdown 输出可导出 PDF
 11. **语音输入** — Web Speech API，浏览器原生中文实时识别
@@ -82,7 +82,7 @@ RLS 策略：所有人可读 rooms/messages，登录用户可发消息/建房，
 
 ### Phase 3 — 体验完善
 
-- [ ] **图片 OCR** — 用 Claude Vision 或腾讯云 OCR
+- [x] **图片 OCR / 读图** — 2026-05-30 done(tradego)：worker `_build_messages` 把图片附件转 Claude Vision image block(url source)，中英文/数字/金额精确识别。cutover 后 worker 曾丢失此能力(只取 content 文本)，已重建。其它产品待推广
 - [ ] **Web 搜索** — 接入 Tavily/SerpAPI，实时信息查询
 - [ ] **语音转文字（服务端）** — 上传录音 → Whisper API 转写
 
