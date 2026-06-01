@@ -1,0 +1,64 @@
+/* worker/templates/brand.css —— 全套单证共用品牌系统（绿色确认稿）*/
+:root{
+  --ink:#1a2230; --muted:#6b7686; --line:#e3e7ee; --line2:#cfd6e0;
+  --brand:#0f5a52; --brand-2:#0f766e; --brand-wash:#f1f6f5; --amount:#0f5a52;
+}
+@page{
+  size:A4; margin:18mm 16mm 22mm;
+  @bottom-left{ content: element(footer); }
+  @bottom-right{ content:"第 " counter(page) " 页 / 共 " counter(pages) " 页";
+                 font-size:9.5px; color:#6b7686; }
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{font-family:"Noto Sans SC",sans-serif; color:var(--ink); font-size:11.5px;}
+.page-footer{position:running(footer); font-size:9.5px; color:var(--muted);}
+
+.head{display:flex; justify-content:space-between; align-items:flex-start;
+      border-bottom:2.5px solid var(--brand); padding-bottom:14px;}
+.brand{display:flex; gap:13px; align-items:center;}
+.logo{width:46px; height:46px; border-radius:10px; background:var(--brand);
+      color:#fff; display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:20px;}
+.co-name{font-size:17px; font-weight:700;}
+.co-sub{font-size:11px; color:var(--muted); margin-top:3px; line-height:1.5;}
+.doc-title{text-align:right;}
+.doc-title h1{font-size:25px; font-weight:700; letter-spacing:3px; color:var(--brand); line-height:1;}
+.doc-title .en{font-size:11px; color:var(--muted); letter-spacing:2px; margin-top:4px; text-transform:uppercase;}
+.meta{display:flex; gap:30px; justify-content:flex-end; margin-top:12px; font-size:11.5px;}
+.meta div span{color:var(--muted); margin-right:6px;}
+.meta div b{font-weight:600;}
+
+.parties{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:18px;}
+.party{border:1px solid var(--line); border-radius:8px; padding:12px 14px;}
+.party .label{font-size:10px; color:var(--brand); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:7px;}
+.party .nm{font-size:13.5px; font-weight:600;}
+.party .ln{font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.55;}
+
+table.items{width:100%; border-collapse:collapse; margin-top:18px; font-size:11.5px;}
+table.items thead th{background:var(--brand); color:#fff; font-weight:600; padding:9px 10px; text-align:left; font-size:11px;}
+table.items thead th.num{text-align:right;}
+table.items tbody td{padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
+table.items tbody td.num{text-align:right; font-variant-numeric:tabular-nums;}
+table.items tbody tr:nth-child(even){background:var(--brand-wash);}
+.desc-main{font-weight:600;}
+.desc-sub{color:var(--muted); font-size:10.5px; margin-top:2px;}
+
+table.totals{width:100%; border-collapse:collapse;}
+table.totals td{padding:7px 10px; font-size:12px;}
+table.totals .tl{text-align:right; color:var(--muted);}
+table.totals .tv{text-align:right; width:140px; font-variant-numeric:tabular-nums; font-weight:600;}
+table.totals .grand td{border-top:2px solid var(--brand); font-size:14px; font-weight:700; color:var(--amount); padding-top:10px;}
+
+.terms-title,.bank-title{font-size:10px; color:var(--brand); font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin:20px 0 8px;}
+.terms{display:grid; grid-template-columns:1fr 1fr; gap:8px 26px; font-size:11.5px;}
+.terms .row{display:flex; gap:8px; padding:3px 0;}
+.terms .k{color:var(--muted); min-width:74px; flex-shrink:0;}
+.terms .v{font-weight:500;}
+.bank{font-size:11px; background:var(--brand-wash); border-left:3px solid var(--brand); padding:10px 14px; border-radius:0 6px 6px 0; line-height:1.7;}
+.bank b{font-weight:600;}
+
+.sign{margin-top:40px; display:grid; grid-template-columns:1fr 1fr; gap:40px;}
+.sign .box{font-size:11.5px;}
+.sign .box .lab{color:var(--muted); margin-bottom:30px;}
+.sign .box .line{border-top:1px solid var(--line2); padding-top:6px; position:relative;}
+.seal{position:absolute; right:24px; top:-46px; width:42mm; height:42mm; opacity:.85; transform:rotate(-14deg);}

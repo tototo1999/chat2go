@@ -1,0 +1,32 @@
+{# worker/templates/quote.html #}
+{% extends "base.html" %}
+{% block body %}
+  <table class="items">
+    <thead><tr><th style="width:36px;">#</th><th>品名 / Description</th>
+      <th class="num" style="width:70px;">数量</th><th class="num" style="width:90px;">单价({{ currency }})</th>
+      <th class="num" style="width:100px;">金额({{ currency }})</th></tr></thead>
+    <tbody>
+    {% for it in items %}
+      <tr><td class="num">{{ loop.index }}</td>
+        <td><div class="desc-main">{{ it.name }}</div>{% if it.spec %}<div class="desc-sub">{{ it.spec }}</div>{% endif %}</td>
+        <td class="num">{{ "{:,.0f}".format(it.qty) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.unit_price) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.amount) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <table class="totals">
+    <tr><td class="tl">小计 Subtotal</td><td class="tv">{{ "{:,.2f}".format(subtotal) }}</td></tr>
+    {% for e in extras %}<tr><td class="tl">{{ e.label }}</td><td class="tv">{{ "{:,.2f}".format(e.amount) }}</td></tr>{% endfor %}
+    <tr class="grand"><td>合计 TOTAL{% if trade_term %}（{{ trade_term }}）{% endif %}</td><td class="tv">{{ currency }} {{ "{:,.2f}".format(total) }}</td></tr>
+  </table>
+  {% if terms %}<div class="terms-title">贸易条款 / Terms</div><div class="terms">
+    {% for k, v in terms.items() %}<div class="row"><span class="k">{{ k }}</span><span class="v">{{ v }}</span></div>{% endfor %}
+  </div>{% endif %}
+  {% if seller.bank %}<div class="bank-title">收款银行 / Bank Info</div><div class="bank">
+    {% if seller.bank.beneficiary %}<b>Beneficiary:</b> {{ seller.bank.beneficiary }} {% endif %}
+    {% if seller.bank.bank_name %}<b>Bank:</b> {{ seller.bank.bank_name }}<br>{% endif %}
+    {% if seller.bank.account %}<b>A/C No.:</b> {{ seller.bank.account }}　{% endif %}
+    {% if seller.bank.swift %}<b>SWIFT:</b> {{ seller.bank.swift }}{% endif %}
+  </div>{% endif %}
+{% endblock %}

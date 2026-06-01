@@ -39,3 +39,29 @@ class TestPrepareContext(unittest.TestCase):
     def test_empty_profile_no_crash(self):
         ctx = dr.prepare_context("quote", self._data(), {})
         self.assertEqual(ctx["seller"].get("name_cn", ""), "")
+
+
+from pypdf import PdfReader
+import io
+
+class TestRender(unittest.TestCase):
+    def _data(self):
+        return {"doc_type": "quote", "doc_no": "QT-9", "date": "2026-06-01",
+                "buyer": {"name": "EURO STANDARD"},
+                "items": [{"name": "Acrylic Box", "qty": 2000, "unit_price": 3.85}],
+                "trade_term": "CNF Busan",
+                "terms": {"付款方式": "30% 定金"}}
+
+    def test_quote_pdf_nonempty_and_text(self):
+        prof = {"name_cn": "佛山外艾斯进出口贸易有限公司", "logo_text": "W",
+                "bank": {"swift": "BKCHCNBJ400"}}
+        pdf = dr.render_document("quote", self._data(), prof)
+        self.assertGreater(len(pdf), 2000)
+        text = "".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(pdf)).pages)
+        self.assertIn("QT-9", text)
+        self.assertIn("EURO STANDARD", text)
+        self.assertIn("报价单", text)
+
+    def test_pi_renders(self):
+        pdf = dr.render_document("pi", self._data(), {"name_cn": "X"})
+        self.assertGreater(len(pdf), 2000)

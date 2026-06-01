@@ -41,3 +41,33 @@ def prepare_context(doc_type: str, data: dict, profile: dict) -> dict:
         "seller": seller,
         "seal_img": None,
     }
+
+
+import os
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+_DOC_EN = {"quote": "Quotation", "pi": "Proforma Invoice"}
+
+_env = Environment(
+    loader=FileSystemLoader(_TEMPLATE_DIR),
+    autoescape=select_autoescape(["html"]),
+)
+
+
+def render_document(doc_type: str, data: dict, profile: dict,
+                    seal_png: bytes | None = None) -> bytes:
+    """结构化数据 → PDF bytes。doc_type ∈ {quote, pi}。"""
+    from weasyprint import HTML
+    import base64
+
+    ctx = prepare_context(doc_type, data, profile)
+    ctx["doc_en"] = _DOC_EN.get(doc_type, "")
+    ctx["seller_label"] = "报价方 / From Seller" if doc_type == "quote" else "卖方 / From Seller"
+    ctx["seller_seal_label"] = "报价方盖章：" if doc_type == "quote" else "卖方盖章："
+    if seal_png and data.get("stamp"):
+        ctx["seal_img"] = "data:image/png;base64," + base64.b64encode(seal_png).decode()
+
+    template = _env.get_template(f"{doc_type}.html")
+    html_str = template.render(**ctx)
+    return HTML(string=html_str, base_url=_TEMPLATE_DIR).write_pdf()

@@ -1,0 +1,43 @@
+{# worker/templates/base.html #}
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<link rel="stylesheet" href="brand.css">
+</head><body>
+  <div class="page-footer">{{ seller.name_cn or "" }} · 本单据由 Trade2GO.ai 生成</div>
+  <div class="head">
+    <div class="brand">
+      <div class="logo">{{ seller.logo_text or "T" }}</div>
+      <div>
+        <div class="co-name">{{ seller.name_cn or "" }}</div>
+        <div class="co-sub">{{ seller.name_en or "" }}{% if seller.address %}<br>{{ seller.address }}{% endif %}</div>
+      </div>
+    </div>
+    <div class="doc-title"><h1>{{ title_cn }}</h1><div class="en">{{ doc_en }}</div></div>
+  </div>
+  <div class="meta">
+    {% if doc_no %}<div><span>单号</span><b>{{ doc_no }}</b></div>{% endif %}
+    {% if date %}<div><span>日期</span><b>{{ date }}</b></div>{% endif %}
+    {% if validity %}<div><span>有效期</span><b>{{ validity }}</b></div>{% endif %}
+  </div>
+
+  <div class="parties">
+    <div class="party"><div class="label">致 / To Buyer</div>
+      <div class="nm">{{ buyer.name or "" }}</div>
+      <div class="ln">{% if buyer.attn %}Attn: {{ buyer.attn }}<br>{% endif %}{{ buyer.address or "" }}{% if buyer.tel %}<br>Tel: {{ buyer.tel }}{% endif %}</div>
+    </div>
+    <div class="party"><div class="label">{{ seller_label }}</div>
+      <div class="nm">{{ seller.name_cn or "" }}</div>
+      <div class="ln">{% if seller.contact %}联系人：{{ seller.contact }}<br>{% endif %}{% if seller.tel %}Tel: {{ seller.tel }}<br>{% endif %}{% if seller.email %}Email: {{ seller.email }}{% endif %}</div>
+    </div>
+  </div>
+
+  {% block body %}{% endblock %}
+
+  <div class="sign">
+    <div class="box"><div class="lab">买方确认（盖章/签字）：</div><div class="line">Buyer Confirmation</div></div>
+    <div class="box"><div class="lab">{{ seller_seal_label }}</div>
+      <div class="line">{{ seller.name_cn or "" }}
+        {% if seal_img %}<img class="seal" src="{{ seal_img }}">{% endif %}
+      </div>
+    </div>
+  </div>
+</body></html>
