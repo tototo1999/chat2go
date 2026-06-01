@@ -116,6 +116,65 @@ class TestPhase2Context(unittest.TestCase):
         self.assertEqual(c["customer"],"EURO")
 
 
+class TestPhase2Render(unittest.TestCase):
+    def _prof(self):
+        return {"name_cn": "佛山外艾斯进出口贸易有限公司", "name_en": "FOSHAN WAI-AISI",
+                "logo_text": "W", "address": "广东省佛山市", "tel": "+86-757",
+                "bank": {"beneficiary": "FOSHAN WAI-AISI", "bank_name": "Bank of China",
+                         "account": "7501", "swift": "BKCHCNBJ400"}}
+
+    def _text(self, pdf):
+        return "".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(pdf)).pages)
+
+    def test_contract_renders(self):
+        d = {"buyer": {"name": "EURO STANDARD", "address": "Korea"},
+             "items": [{"name": "Acrylic Box", "qty": 2000, "unit_price": 3.85}],
+             "doc_no": "SC-2603", "sign_place": "Foshan", "date": "2026-06-01",
+             "trade_term": "CNF BUSAN",
+             "clauses": [{"no": "(1) PACKING", "text": "Standard export carton"},
+                         {"no": "(3) PAYMENT", "text": "30% deposit"}]}
+        pdf = dr.render_document("contract", d, self._prof())
+        self.assertGreater(len(pdf), 2000)
+        t = self._text(pdf)
+        self.assertIn("SC-2603", t)
+        self.assertIn("销售合同", t)
+        self.assertIn("PACKING", t)
+
+    def test_ci_renders(self):
+        d = {"consignee": {"name": "EURO STANDARD", "address": "Korea"},
+             "items": [{"name": "Acrylic Box", "qty": 2000, "unit_price": 3.85, "hs": "3924.90"}],
+             "doc_no": "CI-2603", "date": "2026-06-08", "contract_no": "SC-2603",
+             "port": "Ningbo to Busan", "trade_term": "CNF BUSAN",
+             "amount_words": "SAY TOTAL USD THIRTEEN THOUSAND"}
+        pdf = dr.render_document("ci", d, self._prof())
+        self.assertGreater(len(pdf), 2000)
+        t = self._text(pdf)
+        self.assertIn("CONSIGNEE", t)   # CSS text-transform:uppercase
+        self.assertIn("SC-2603", t)
+        self.assertIn("商业发票", t)
+
+    def test_packing_renders(self):
+        d = {"items": [{"name": "Acrylic Box", "qty": 2000, "ctns": 100, "nw": 880, "gw": 980, "cbm": 6.2},
+                       {"name": "Buckle", "qty": 5000, "ctns": 50, "nw": 420, "gw": 470, "cbm": 1.8}],
+             "doc_no": "PL-2603", "date": "2026-06-08", "marks": "WAI-AISI/BUSAN"}
+        pdf = dr.render_document("packing", d, self._prof())
+        self.assertGreater(len(pdf), 2000)
+        t = self._text(pdf)
+        self.assertIn("装箱单", t)
+        self.assertIn("150", t)   # 箱数总计
+
+    def test_statement_renders(self):
+        d = {"customer": "EURO STANDARD", "as_of": "2026-06-30",
+             "rows": [{"date": "2026-06-01", "ref": "SC 30%", "receivable": 4110, "received": 4110, "balance": 0},
+                      {"date": "2026-06-08", "ref": "CI 70%", "receivable": 9590, "received": 0, "balance": 9590}]}
+        pdf = dr.render_document("statement", d, self._prof())
+        self.assertGreater(len(pdf), 2000)
+        t = self._text(pdf)
+        self.assertIn("对账单", t)
+        self.assertIn("BALANCE", t)
+        self.assertIn("9,590.00", t)
+
+
 class TestSchema(unittest.TestCase):
     def test_schema_shape(self):
         s = dr.DOCUMENT_TOOL_SCHEMA
