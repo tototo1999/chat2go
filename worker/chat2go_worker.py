@@ -42,6 +42,7 @@ import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
 import doc_render as dr          # 品牌化 PDF 模板渲染 (make_document)
 import trade_memory as tm       # 订单状态机 + 冻结规则(记忆 P0)
+import trade_trace as ttrace     # Trace 采集:真实请求落库可回放
 
 # Supabase Storage bucket (public, 已存在)
 STORAGE_BUCKET = "chat-uploads"
@@ -77,6 +78,7 @@ image = (
     .add_local_python_source("doc_gen")
     .add_local_python_source("doc_render")
     .add_local_python_source("trade_memory")
+    .add_local_python_source("trade_trace")
     # 品牌化单证模板目录(brand.css/base.html/quote.html/pi.html)挂进容器,放最后
     .add_local_dir("templates", "/root/templates")
 )
@@ -887,15 +889,24 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         print(f"[chat2go] room={room_id[:8]} provider={provider} model={model} "
               f"industry={industry or '-'} trade={is_trade}")
         image_map = _image_url_map(img_choices) if is_trade else None
+        trace_steps = [] if is_trade else None
         out_text, doc_attachments = _run_completion(
             cli, sb, model, system, messages, is_trade,
             room_id=room_id, expert_id=expert_id, product=product,
             trigger_message_id=trigger_message_id,
-            image_map=image_map, img_choices=(img_choices if is_trade else None))
+            image_map=image_map, img_choices=(img_choices if is_trade else None),
+            trace_steps=trace_steps)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,
                             attachments=doc_attachments or None)
+
+        if is_trade:
+            ttrace.persist_trace(sb, ttrace.build_trace_row(
+                room_id=room_id, trigger_message_id=trigger_message_id,
+                expert_id=expert_id, product=product, model=model,
+                system=system, input_messages=messages,
+                steps=trace_steps, output_text=out_text))
 
         dt = time.time() - t0
         return {
