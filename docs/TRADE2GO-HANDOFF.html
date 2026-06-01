@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade2GO Handoff · v1.0 冻结基线</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-glow:#3b82f6; --cyan:#22d3ee;
+    --bg:#0a0e1a; --card:#121a2e; --line:#1e2a44;
+    --txt:#dbe4f3; --dim:#8a9bbd; --warn:#fbbf24; --ok:#34d399; --bad:#f87171;
+    --code:#0d1424;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(37,99,235,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(34,211,238,.10), transparent 55%),
+      var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    line-height:1.7; font-size:15px;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:48px 28px 120px}
+  header{
+    border:1px solid var(--line); border-radius:18px; padding:34px 32px;
+    background:linear-gradient(135deg, rgba(37,99,235,.16), rgba(15,22,38,.6));
+    box-shadow:0 0 0 1px rgba(59,130,246,.12), 0 20px 60px -20px rgba(37,99,235,.4);
+    position:relative; overflow:hidden;
+  }
+  .badge{display:inline-block; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--cyan); border:1px solid rgba(34,211,238,.35); padding:3px 12px; border-radius:999px;
+    background:rgba(34,211,238,.06)}
+  h1{margin:14px 0 6px; font-size:34px; font-weight:800; letter-spacing:-.5px;
+    background:linear-gradient(90deg,#fff,#bcd4ff 60%,var(--cyan));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{color:var(--dim); font-size:14px; margin-top:8px}
+  .frozen{margin-top:18px; padding:12px 16px; border-radius:10px; font-size:13.5px;
+    background:rgba(52,211,153,.08); border:1px solid rgba(52,211,153,.3); color:#86efac}
+  h2{margin:48px 0 14px; font-size:23px; font-weight:700; color:#fff;
+    padding-bottom:10px; border-bottom:1px solid var(--line); position:relative}
+  h2::before{content:""; position:absolute; left:0; bottom:-1px; width:60px; height:2px;
+    background:linear-gradient(90deg,var(--blue),var(--cyan)); box-shadow:0 0 12px var(--blue-glow)}
+  h3{margin:26px 0 8px; font-size:16.5px; color:var(--cyan); font-weight:700}
+  p{margin:10px 0}
+  a{color:var(--blue-glow); text-decoration:none; border-bottom:1px dotted rgba(59,130,246,.5)}
+  a:hover{color:var(--cyan)}
+  code{background:var(--code); color:#7dd3fc; padding:1.5px 6px; border-radius:5px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.86em; border:1px solid var(--line)}
+  pre{background:var(--code); border:1px solid var(--line); border-radius:12px; padding:18px 20px;
+    overflow:auto; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:13px; line-height:1.6}
+  pre code{background:none; border:none; color:#9fb6da; padding:0}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:4px 22px; margin:16px 0; box-shadow:0 8px 30px -18px rgba(0,0,0,.8)}
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{color:var(--cyan); font-weight:600; background:rgba(34,211,238,.04)}
+  tr:hover td{background:rgba(59,130,246,.04)}
+  ul,ol{padding-left:22px} li{margin:6px 0}
+  .tag{font-size:11px; padding:1px 8px; border-radius:6px; font-weight:600}
+  .t-ok{background:rgba(52,211,153,.12); color:var(--ok); border:1px solid rgba(52,211,153,.3)}
+  .t-warn{background:rgba(251,191,36,.12); color:var(--warn); border:1px solid rgba(251,191,36,.3)}
+  .t-new{background:rgba(59,130,246,.14); color:#93c5fd; border:1px solid rgba(59,130,246,.35)}
+  .lede{font-size:16px; color:#cdd9ee; background:rgba(37,99,235,.07);
+    border-left:3px solid var(--blue); padding:14px 18px; border-radius:0 10px 10px 0; margin:14px 0}
+  .toc{display:flex; flex-wrap:wrap; gap:8px; margin-top:22px}
+  .toc a{font-size:12.5px; padding:5px 12px; border:1px solid var(--line); border-radius:999px;
+    background:rgba(255,255,255,.02); border-bottom:1px solid var(--line)}
+  .toc a:hover{border-color:var(--blue); color:var(--cyan)}
+  footer{margin-top:60px; text-align:center; color:var(--dim); font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="badge">Handoff · 单一交接入口</span>
+  <h1>Trade2GO 项目交接 · v1.0</h1>
+  <div class="sub">最后更新 2026-05-31 ｜ 外贸跟单垂直站 ｜ chat2go.xyz ｜ repo <code>tototo1999/tradego</code></div>
+  <div class="frozen">🧊 <b>已冻结基线</b>:git tag <code>tradego-v1.0</code> @ commit <code>1bc9b64</code>(已推送)。回滚 = <code>git reset --hard tradego-v1.0 && git push -f</code> → GitHub Pages 自动重建。</div>
+  <div class="toc">
+    <a href="#s1">1 定位</a><a href="#s2">2 架构</a><a href="#s3">3 模型/路由</a>
+    <a href="#s4">4 后端</a><a href="#s5">5 前端 v1.0</a><a href="#s6">6 部署</a>
+    <a href="#s7">7 密钥</a><a href="#s8">8 待办/已知</a><a href="#s9">9 索引</a>
+  </div>
+</header>
+
+<h2 id="s1">1 · 一句话定位</h2>
+<div class="lede"><b>Trade2GO.ai = chat2go 平台的「外贸跟单」垂直站</b>:独立 GitHub repo(<code>tototo1999/tradego</code>)、独立域名 chat2go.xyz、独立蓝色主题前端;<b>共用同一个 Supabase 后端 + 同一个 Modal worker</b>,靠 <code>rooms.product='tradego'</code> / <code>industry='外贸跟单'</code> 隔离。AI 是外贸跟单员助手,能做精确会计核算、出 Excel/PDF 单证、读图。</div>
+
+<h2 id="s2">2 · 架构全景</h2>
+<pre><code>chat2go.xyz (前端, GitHub Pages, repo tototo1999/tradego)
+   │  用户发消息 → INSERT messages → fetch /functions/v1/chat2go-ingest
+   ▼
+Supabase Edge Function  chat2go-ingest   (建占位 AI 消息 + fire-and-forget POST)
+   ▼
+Modal worker  chat2go-worker             (4 产品共用一个 app)
+   │  拉 history(40) + memories(scope=room) + 行业 prompt
+   │  外贸房:挂会计/文档工具 → Claude tool-use 循环
+   │  ── 经 OpenRouter Anthropic-skin ──→  Claude Sonnet 4.6
+   │  UPDATE 占位消息 content (+ attachments)
+   ▼
+Supabase Realtime → chat.html 自动重渲</code></pre>
+<div class="card"><table>
+  <tr><th>项</th><th>值</th></tr>
+  <tr><td>外贸大咖账号</td><td><code>388388@vip.163.com</code>(expert_id <code>5dcec9b4-…</code>)</td></tr>
+  <tr><td>tradego 房间 id</td><td><code>0ac15b5b-e9ab-4737-873e-9ab9651f0f25</code>(<code>product=tradego</code>, <code>industry=外贸跟单</code>, <code>serverless=true</code>)</td></tr>
+  <tr><td>Supabase project</td><td><code>qjnagbzqhoansixqharb</code></td></tr>
+  <tr><td>Modal app</td><td><code>chat2go-worker</code> · <code>https://tototo1999--chat2go-worker-ingest.modal.run</code></td></tr>
+</table></div>
+<p class="sub">注:<code>industry='外贸跟单'</code> 经 worker <code>INDUSTRY_ALIASES</code> 映射到 prompt key <code>外贸</code>。</p>
+
+<h2 id="s3">3 · 模型 / 路由 <span class="tag t-new">本次变更</span></h2>
+<div class="card">
+  <p><b>当前:经 OpenRouter,模型 Claude Sonnet 4.6</b></p>
+  <ul>
+    <li>worker <code>_anthropic_client()</code>:env 有 <code>OPENROUTER_API_KEY</code> → <code>Anthropic(api_key=or_key, base_url="https://openrouter.ai/api")</code>(OpenRouter 的 Anthropic-skin,原生 Messages 协议,<b>tool use 透传</b>)。</li>
+    <li><code>DEFAULT_MODEL</code>:OpenRouter 模式 = <code>anthropic/claude-sonnet-4.6</code>(点号);直连模式 = <code>claude-sonnet-4-6</code>(横杠)。</li>
+    <li><b>可逆开关</b>:删 Modal secret 里的 <code>OPENROUTER_API_KEY</code> + redeploy → 自动切回直连官方 Anthropic。</li>
+    <li>每次请求会打一行日志:<code>[chat2go] room=… provider=openrouter model=anthropic/claude-sonnet-4.6 industry=外贸跟单 trade=True</code>。</li>
+  </ul>
+  <p class="sub">验证(2026-05-31):OpenRouter 直测 200 + tool_use 透传正常;线上 3 次真实请求 200 OK(8–12s);OpenRouter 用量从 0 起计。</p>
+</div>
+
+<h2 id="s4">4 · 后端实现(<code>worker/</code>,改 AI 行为的唯一处)</h2>
+<p>改完 <code>~/.venv-c2g/bin/modal deploy worker/chat2go_worker.py</code> 约 1 秒热生效。worker 源码在主仓库 <code>tototo1999/chat2go</code> 的 <code>worker/</code>(不在 tradego repo)。</p>
+<div class="card"><table>
+  <tr><th>能力</th><th>文件 / 说明</th></tr>
+  <tr><td>外贸行业 prompt</td><td><code>INDUSTRY_PROMPTS["外贸"]</code>(FOB/CIF/CFR、信用证、提单、装箱单、报关、物流、汇率)</td></tr>
+  <tr><td>会计核算 7 工具</td><td><code>trade_accounting.py</code>:<code>calc_unit_cost / quote_from_margin / order_pnl / fx_convert / export_rebate / commission / reconcile</code>(全 Decimal,禁 float)</td></tr>
+  <tr><td>Excel/PDF 生成</td><td><code>doc_gen.py</code>:<code>make_excel</code>(openpyxl)、<code>make_pdf</code>(reportlab,内置中文 CID 字体,不出豆腐块)</td></tr>
+  <tr><td>tool-use 循环</td><td><code>_run_completion</code>:外贸房追加 <code>TRADE_ACCOUNTING_GUIDE</code> + 挂工具,最多 <code>MAX_TOOL_ITERS=5</code> 轮;非外贸房单次调用</td></tr>
+  <tr><td>鉴权</td><td><code>_check_worker_auth</code>(env-gated bearer)+ <code>_verify_placeholder</code>(只更新本房 role=ai 占位,防越权)</td></tr>
+</table></div>
+
+<h2 id="s5">5 · 前端 v1.0(本次冻结的样子) <span class="tag t-new">本次变更</span></h2>
+<p>repo <code>tototo1999/tradego</code> 的 <code>chat.html</code>。本轮 4 项 UI 改动已冻结在 <code>tradego-v1.0</code>:</p>
+<div class="card"><table>
+  <tr><th>改动</th><th>实现</th></tr>
+  <tr><td>① 徽章显示模型名</td><td><code>shortModelName</code> 保留 Claude 前缀(<code>claude-sonnet-4-6</code>→「Claude Sonnet 4.6」);<code>loadRoomCost</code> 在 model_usage 为空时回退 <code>currentRoom.model || 'claude-sonnet-4-6'</code></td></tr>
+  <tr><td>② 取消左边栏</td><td><code>.sidebar { display:none }</code> → 全屏单房对话(进页面自动开 <code>rooms[0]</code>)</td></tr>
+  <tr><td>③ 整体宽度缩 1/4</td><td>body <code>max-width: 800px → 600px</code>,<code>margin:0 auto</code> 居中,<code>html</code> 背景填两侧</td></tr>
+  <tr><td>④ 内容居中对称</td><td>消息头像保留;<code>.msg-bubble.markdown { align-self:stretch }</code> 撑满列;<code>.msg-body { padding-right:36px }</code> 右补与左侧头像通道等宽留白 → 内容左右各 ~52px、对称,头像落在左侧留白里</td></tr>
+</table></div>
+<p class="sub">主题色 <code>#2563eb</code>(蓝,区别于主站绿)。侧栏取消后无「新建/切换房间」入口 → 单房全屏,符合 tradego 单主房场景。</p>
+
+<h2 id="s6">6 · 部署 / 改动 SOP</h2>
+<div class="card">
+  <p><b>⚠️ 旧的「ssh mini 改 ~/tradego-site」SOP 已作废</b>(mini ssh 已不通)。GitHub Pages 直接从 GitHub 仓库出服务,本机操作即可:</p>
+  <pre><code># 1. clone(本机)
+git clone https://github.com/tototo1999/tradego.git ~/tradego-site
+# 2. 改 chat.html → commit → push
+git add chat.html && git commit -m "…" && git push origin main
+# 3. GitHub Pages 自动重建(~30–60s),轮询 https://chat2go.xyz/chat.html 验证</code></pre>
+  <p class="sub">push 凭证已在 macOS keychain(github.com / tototo1999)。改后端 prompt/工具:编辑 <code>tototo1999/chat2go</code> 的 <code>worker/*.py</code> → <code>modal deploy</code>。</p>
+</div>
+
+<h2 id="s7">7 · 密钥 / 计费</h2>
+<ul>
+  <li>Modal secret <code>chat2go-extras</code> 含两把 key:<code>OPENROUTER_API_KEY</code>(当前生效)+ <code>ANTHROPIC_API_KEY</code>(留作直连回退)。</li>
+  <li><span class="tag t-warn">注意</span> OpenRouter key 未设单 key 限额,直接扣账户余额。<b>确保 OpenRouter 账户有余额 / 自动充值</b>,否则余额见底时 4 产品 AI 一起 401。</li>
+</ul>
+
+<h2 id="s8">8 · 待办 / 已知问题</h2>
+<ul>
+  <li><span class="tag t-warn">已知</span> serverless worker <b>不写 <code>model_usage</code> 表</b> → 徽章模型名靠前端推断;<b>token 进度环 / 累计消费 ¥ 对 serverless 房不准</b>。要真实记录需给 worker 加写 model_usage(影响 4 产品,另立项)。</li>
+  <li>worker 测试本地缺 <code>openpyxl/reportlab/pypdf</code>(只在 Modal image 内)→ 本地跑 doc_gen 测试报 ModuleNotFound,非回归;<code>trade_accounting</code> 纯逻辑测试 27/27 通过。</li>
+  <li><code>388388 的 Chat</code> 房间 system_prompt 仍有 Hermes 时代「gateway 拦截生成文件」旧文案,与现状(worker tool-use)不符,可更新。</li>
+</ul>
+
+<h2 id="s9">9 · 文件 / memory 索引</h2>
+<ul>
+  <li>前端:<code>tototo1999/tradego</code> · <code>chat.html</code>(本机 clone <code>~/tradego-site</code>)· tag <code>tradego-v1.0</code></li>
+  <li>后端:<code>tototo1999/chat2go</code> · <code>worker/chat2go_worker.py</code> / <code>trade_accounting.py</code> / <code>doc_gen.py</code></li>
+  <li>设计:<code>docs/superpowers/specs/2026-05-30-外贸会计核算技能-design.md</code> · <code>…-excel-pdf-多模态生成-design.md</code></li>
+  <li>memory:<code>project_worker_via_openrouter_2026_05_31</code>(OpenRouter 切换)· <code>project_all_cloud_2026_05_26</code>(cloud cutover,已更正)· <code>project_tradego_architecture</code> · <code>project_tradego_accounting_multimodal</code></li>
+  <li>旧文档:<code>docs/TRADEGO-MINI-HANDOFF.md</code> — <span class="tag t-warn">Hermes 时代已作废</span>,仅供历史</li>
+</ul>
+
+<footer>Trade2GO.ai · chat2go.xyz · v1.0 冻结基线 (tradego-v1.0 @ 1bc9b64) · 2026-05-31</footer>
+</div>
+</body>
+</html>
