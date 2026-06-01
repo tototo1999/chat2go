@@ -60,6 +60,7 @@ image = (
         "Pillow>=10",         # 公章图抠白底 + PDF 图片嵌入(reportlab 也依赖)
         "pypdf>=4.0",         # PDF 文本提取 (读文件)
         "python-docx>=1.1",   # Word 文本提取 (读文件)
+        "xlrd>=2.0",          # 老式 .xls 读取(报关/开票资料,openpyxl 不认 .xls)
     )
     # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
@@ -374,7 +375,7 @@ def _pick_seal_url(choices: list[dict]) -> str | None:
 
 # ── 读文件: 非图片附件文本提取(重建 bridge.py 功能#7, cutover 后丢失)─────────
 # 文档附件(PDF/Excel/Word/文本)→ 从 Storage 下载 → 抽文本 → 注入上下文让 AI 能读。
-_DOC_EXTS = (".pdf", ".xlsx", ".xlsm", ".docx", ".txt", ".csv",
+_DOC_EXTS = (".pdf", ".xlsx", ".xlsm", ".xls", ".docx", ".txt", ".csv",
              ".md", ".json", ".xml", ".html", ".log", ".tsv")
 MAX_DOC_BYTES = 8_000_000   # 单附件最多下载 8MB
 MAX_DOC_CHARS = 16_000      # 单附件注入文本上限(防爆 token)
@@ -443,6 +444,17 @@ def _extract_doc_text(name: str, data: bytes) -> str:
                 parts.append(f"# {ws.title}")
                 for rw in ws.iter_rows(values_only=True):
                     cells = [str(c) for c in rw if c is not None]
+                    if cells:
+                        parts.append("\t".join(cells))
+            return "\n".join(parts).strip()
+        if n.endswith(".xls"):   # 老式二进制 Excel(报关/开票资料常见)→ xlrd
+            import xlrd
+            book = xlrd.open_workbook(file_contents=data)
+            parts = []
+            for sh in book.sheets():
+                parts.append(f"# {sh.name}")
+                for r in range(sh.nrows):
+                    cells = [str(c.value) for c in sh.row(r) if c.value not in (None, "")]
                     if cells:
                         parts.append("\t".join(cells))
             return "\n".join(parts).strip()
