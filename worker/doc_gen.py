@@ -133,15 +133,23 @@ def _build_pdf_bytes(spec: dict, scale: float = 1.0) -> bytes:
             story.append(tbl)
             story.append(Spacer(1, 4 * mm * scale))
         elif btype == "image":
-            # 图片块(公章等):worker 已把 source:'seal' 解析成 url
+            # 图片块(公章等):worker 已把 source:'imgN' 解析成 url
             url = blk.get("url")
             if not url:
                 continue
-            wmm = float(blk.get("width_mm") or 35)
-            img = _image_flowable(url, wmm * scale)
-            if img is not None:
-                story.append(img)
-                story.append(Spacer(1, 2 * mm * scale))
+            wmm = float(blk.get("width_mm") or 38)
+            if blk.get("overlay"):
+                # 精确盖章:零高度叠加,压在上一行(需方盖章:)上,随内容/缩放自动跟位
+                ov = _seal_overlay(url, wmm * scale,
+                                   float(blk.get("offset_x_mm") or 2) * scale,
+                                   blk.get("offset_y_mm"), scale)
+                if ov is not None:
+                    story.append(ov)
+            else:
+                img = _image_flowable(url, wmm * scale)
+                if img is not None:
+                    story.append(img)
+                    story.append(Spacer(1, 2 * mm * scale))
 
     if not story:
         story.append(Paragraph(" ", body))
@@ -214,6 +222,38 @@ def _image_flowable(url: str, width_mm: float):
         return None
 
 
+def _seal_overlay(url: str, width_mm: float, offset_x_mm: float,
+                  offset_y_mm, scale: float):
+    """精确盖章:返回一个零高度 Flowable,把章画在自己流位置的上方左侧
+    (压住上一行「需方盖章:」),不占版面、不推开后续内容,随排版自动跟位。"""
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.platypus import Flowable
+    data = _fetch_bytes(url)
+    if not data:
+        return None
+    png = _seal_png(data)
+    try:
+        ir = ImageReader(io.BytesIO(png))
+        iw, ih = ir.getSize()
+        w = width_mm * mm
+        h = w * ih / iw if iw else w
+    except Exception:
+        return None
+    dx = offset_x_mm * mm
+    # 默认让章竖向中心落在流线上(= 压在上一行签字行上,上下各探一半)
+    dy = (float(offset_y_mm) * mm * scale) if offset_y_mm is not None else (-h / 2)
+
+    class _Stamp(Flowable):
+        def wrap(self, aw, ah):
+            return (0, 0)          # 零尺寸,不挤占版面
+        def draw(self):
+            self.canv.drawImage(ir, dx, dy, width=w, height=h,
+                                mask="auto", preserveAspectRatio=True)
+
+    return _Stamp()
+
+
 def build_pdf(spec: dict) -> bytes:
     """结构化文档 → .pdf bytes (中文用 STSong-Light, 无豆腐块)。
     spec: {filename, title?, blocks[], fit_pages?}
@@ -258,8 +298,9 @@ DOC_TOOL_SCHEMAS = [
             "title": {"type": "string"},
             "blocks": {"type": "array", "items": {"type": "object"},
                        "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]} 或 "
-                                      "{type:'image',source:'imgN',width_mm:35}(盖公章/插图:source 用 system 里「可贴入图片」列出的编号 imgN,"
-                                      "**挑红色圆/方章那张图,别选合同照片**;系统自动抠白底叠到签字栏 —— 你能盖章,别让用户去 WPS)"},
+                                      "{type:'image',source:'imgN',overlay:true,width_mm:40}(盖公章:source 用 system「可贴入图片」里的编号,"
+                                      "**挑红色圆/方章那张,别选合同照片**;overlay:true=精确压在上一行文字上(把这块紧跟在「需方盖章:」那段之后,章就盖在它上面),"
+                                      "系统自动抠白底;可选 offset_x_mm/offset_y_mm 微调位置。盖章你能做,别让用户去 WPS)"},
             "fit_pages": {"type": "integer",
                           "description": "把内容压到几页内(用户要一页就传 1)。系统自动等比缩字号/边距适配。不传=默认字号自动分页。"},
         }, "required": ["filename", "blocks"]},
