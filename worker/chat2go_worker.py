@@ -312,16 +312,23 @@ def _image_atts(row: dict) -> list[dict]:
     return imgs
 
 
-def _image_choices(history: list[dict], max_n: int = 6) -> list[dict]:
-    """history 里用户上传的图片(新→旧),给 AI 按编号挑(如盖章选哪张)。
-    返回 [{ref:'img1', name, url}],ref 越小越新。"""
+def _image_choices(sb, room_id: str, max_n: int = 6) -> list[dict]:
+    """本房最近上传的图片(新→旧),直接查库(不受 HISTORY_LIMIT 文本窗口限制 ——
+    公章可能在很多轮之前发的,聊久了会滚出文本历史)。返回 [{ref,name,url}]。"""
+    try:
+        rows = sb.table("messages") \
+            .select("attachments, created_at") \
+            .eq("room_id", room_id).in_("role", ["user", "expert"]) \
+            .not_.is_("attachments", "null") \
+            .order("created_at", desc=True).limit(40).execute().data or []
+    except Exception:
+        return []
     out = []
-    for r in reversed(history or []):
-        if r.get("role") in ("user", "expert"):
-            for a in reversed(_image_atts(r)):
-                out.append({"name": a.get("name") or "图片", "url": a["url"]})
-                if len(out) >= max_n:
-                    break
+    for r in rows:
+        for a in reversed(_image_atts(r)):
+            out.append({"name": a.get("name") or "图片", "url": a["url"]})
+            if len(out) >= max_n:
+                break
         if len(out) >= max_n:
             break
     return [{"ref": f"img{i+1}", "name": c["name"], "url": c["url"]} for i, c in enumerate(out)]
@@ -765,7 +772,7 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
             rules = tm.load_frozen_rules(sb, expert_id, product)
             orders = tm.load_active_orders(sb, room_id)
             system = system + tm.format_rules_for_prompt(rules) + tm.format_orders_for_prompt(orders)
-            img_choices = _image_choices(history)
+            img_choices = _image_choices(sb, room_id)
             system = system + _format_image_choices(img_choices)
             cli = _anthropic_client(force_direct=True)
             model = DIRECT_MODEL
