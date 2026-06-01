@@ -91,5 +91,29 @@ class TestPlanMemoryWrite(unittest.TestCase):
         self.assertTrue(blocked)
 
 
+class TestMemoryFormat(unittest.TestCase):
+    def test_block_wraps_and_groups(self):
+        frozen = [{"kind": "rule", "title": "报价口径", "content": "默认 USD/FOB 深圳/+12%", "version": 2}]
+        cand = [{"kind": "template", "title": "PI模板", "content": "抬头+银行+签字", "version": 1}]
+        out = tm.format_memory_block(frozen, cand)
+        self.assertIn("<memory-data", out)
+        self.assertIn("</memory-data>", out)
+        self.assertIn("默认 USD", out)
+        self.assertIn("PI模板", out)
+        self.assertIn("v2", out)
+        self.assertIn("冻结", out)
+        self.assertIn("候选", out)
+
+    def test_block_empty(self):
+        self.assertEqual(tm.format_memory_block([], []), "")
+
+    def test_remember_schema(self):
+        s = tm.REMEMBER_TOOL_SCHEMA
+        self.assertEqual(s["name"], "remember")
+        props = s["input_schema"]["properties"]
+        self.assertEqual(set(s["input_schema"]["required"]), {"title", "content", "kind"})
+        self.assertIn("freeze", props)
+
+
 if __name__ == "__main__":
     unittest.main()
