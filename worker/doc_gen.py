@@ -299,9 +299,8 @@ DOC_TOOL_SCHEMAS = [
             "title": {"type": "string"},
             "blocks": {"type": "array", "items": {"type": "object"},
                        "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]} 或 "
-                                      "{type:'image',source:'imgN',overlay:true,width_mm:40}(盖公章:source 用 system「可贴入图片」里的编号,"
-                                      "**挑红色圆/方章那张,别选合同照片**;overlay:true=精确压在上一行文字上(把这块紧跟在「需方盖章:」那段之后,章就盖在它上面),"
-                                      "系统自动抠白底;可选 offset_x_mm/offset_y_mm 微调位置。盖章你能做,别让用户去 WPS)"},
+                                      "{type:'image',overlay:true,width_mm:42}(盖公章:不用指定哪张图,系统自动挑用户传的方形红章、抠白底,"
+                                      "overlay:true=精确压在上一行文字上 —— 把这块紧跟在「需方盖章:」那段之后即可;可选 offset_x_mm/offset_y_mm 微调)"},
             "fit_pages": {"type": "integer",
                           "description": "把内容压到几页内(用户要一页就传 1)。系统自动等比缩字号/边距适配。不传=默认字号自动分页。"},
         }, "required": ["filename", "blocks"]},

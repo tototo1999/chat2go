@@ -189,7 +189,7 @@ TRADE_ACCOUNTING_GUIDE = """
 2. **绝对禁止自己在正文里写下载链接 / URL / 文件路径**(例如 `gen/xxx.pdf`、`[合同](http://…/gen/…pdf)`)。这些路径你**编不出来也不许编** —— 真实链接只能由工具返回。生成的文件会**自动作为可下载附件卡片显示在本条消息下方**,你只需用文字简述生成了哪几份即可,**不要写任何 markdown 链接**。
 3. **没调用工具,就绝对不能说「已生成」「点击下载」**。没生成成功就如实说,别谎称已生成。
 4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。
-5. **用户要「盖公章 / 加章」**:看 system 里「可贴入图片」清单(你也能在对话里看到这些图),**挑出公章那张**(红色圆/方章,**不是合同照片/模板**)。在 blocks 里**紧跟「需方盖章:」那段之后**放 **`{type:'image', source:'imgN', overlay:true, width_mm:40}`**(N=章编号)—— overlay:true 把章**精确压在「需方盖章:」那行上**(真盖章效果);系统自动抠白底。**你能盖章,别让用户去 WPS;别把合同照片当成章。**"""
+5. **用户要「盖公章 / 加章」**:在 blocks 里**紧跟「需方盖章:」那段之后**放一个 **`{type:'image', overlay:true, width_mm:42}`** 块(**不用指定哪张图** —— 系统会自动从用户传的图里挑出那张方形红章、抠白底、精确压在「需方盖章:」那行上,真盖章效果)。**你能盖章,别让用户去 WPS。**"""
 
 
 def _is_trade_room(industry: str) -> bool:
@@ -340,11 +340,29 @@ def _format_image_choices(choices: list[dict]) -> str:
 
 
 def _image_url_map(choices: list[dict]) -> dict:
-    """{'imgN': url, ..., 'seal': 最新图url(兜底)}。"""
-    m = {c["ref"]: c["url"] for c in choices}
-    if choices:
-        m["seal"] = choices[0]["url"]  # 兜底:最新一张(AI 没指定编号时)
-    return m
+    """{'imgN': url, ...}。'seal' 由 _pick_seal_url 可靠选(最方形那张)。"""
+    return {c["ref"]: c["url"] for c in choices}
+
+
+def _pick_seal_url(choices: list[dict]) -> str | None:
+    """从候选图里挑公章:**最接近正方形**的那张(圆/方章≈1:1;合同照片/模板是竖版)。
+    不靠 AI 视觉挑编号(实测不可靠)。下载量小、仅盖章时调一次。"""
+    import io as _io
+    best, best_diff = None, 9.9
+    for c in choices:
+        data = dg._fetch_bytes(c["url"])
+        if not data:
+            continue
+        try:
+            from PIL import Image as _PILImage
+            w, h = _PILImage.open(_io.BytesIO(data)).size
+            diff = abs(1.0 - (w / h)) if h else 9.9
+        except Exception:
+            continue
+        if diff < best_diff:
+            best, best_diff = c["url"], diff
+    # 只有当存在「足够方」的图(差<0.3)才认作章;否则不盖(避免把竖版合同当章)
+    return best if best_diff < 0.3 else None
 
 
 # ── 读文件: 非图片附件文本提取(重建 bridge.py 功能#7, cutover 后丢失)─────────
@@ -566,19 +584,27 @@ def _extract_text(resp) -> str:
 
 
 def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
-                         image_map: dict | None = None) -> tuple[dict, dict]:
+                         image_map: dict | None = None,
+                         img_choices: list | None = None) -> tuple[dict, dict]:
     """生成 Excel/PDF → 上传 Supabase Storage → 返回 (attachment, tool_result)。
     storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。
-    image_map: {'imgN':url,...,'seal':最新图url};AI 在 make_pdf 放 {type:'image',source:'imgN'}
-    指明用哪张图(盖章挑章那张),无编号则兜底用最新图。"""
+    image_map {'imgN':url}: AI 显式指定哪张图时用。
+    img_choices: 盖章(overlay/source=seal)时,worker 自动挑最方形那张当章(可靠,不靠 AI 视觉)。"""
     builder, ext, mime = dg.DOC_BUILDERS[tool_name]
     spec = tool_input or {}
-    # 解析图片块:source 编号 → 对应 url;没指定就兜底最新图(seal)
-    if tool_name == "make_pdf" and image_map:
+    if tool_name == "make_pdf":
+        image_map = image_map or {}
+        _seal_cache = {}  # 懒加载:多个章块只挑一次
         for blk in (spec.get("blocks") or []):
-            if isinstance(blk, dict) and blk.get("type") == "image" and not blk.get("url"):
-                src = blk.get("source")
-                blk["url"] = image_map.get(src) or image_map.get("seal")
+            if not (isinstance(blk, dict) and blk.get("type") == "image" and not blk.get("url")):
+                continue
+            src = blk.get("source")
+            if src in image_map:                      # AI 显式指定编号 → 用它
+                blk["url"] = image_map[src]
+            else:                                      # 盖章/没指定 → 自动挑最方形那张
+                if "seal" not in _seal_cache:
+                    _seal_cache["seal"] = _pick_seal_url(img_choices or [])
+                blk["url"] = _seal_cache["seal"]
     data = builder(spec)
     display_name = (spec.get("filename") or "文件") + "." + ext
     path = dg.storage_path(spec.get("filename") or "file", ext)
@@ -598,7 +624,7 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
 def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     is_trade: bool,
                     room_id=None, expert_id=None, trigger_message_id=None,
-                    image_map=None) -> tuple[str, list[dict]]:
+                    image_map=None, img_choices=None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
@@ -624,7 +650,8 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         for tu in tool_uses:
             if tu.name in dg.DOC_BUILDERS:
                 try:
-                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {}, image_map=image_map)
+                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {},
+                                                   image_map=image_map, img_choices=img_choices)
                     attachments.append(att)
                 except Exception as e:  # noqa: BLE001
                     out = {"error": f"文件生成/上传失败: {type(e).__name__}: {e}"}
@@ -752,7 +779,8 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         out_text, doc_attachments = _run_completion(
             cli, sb, model, system, messages, is_trade,
             room_id=room_id, expert_id=expert_id,
-            trigger_message_id=trigger_message_id, image_map=image_map)
+            trigger_message_id=trigger_message_id,
+            image_map=image_map, img_choices=(img_choices if is_trade else None))
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,
