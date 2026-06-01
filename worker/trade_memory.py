@@ -150,3 +150,20 @@ def dispatch_order_tool(sb, room_id: str, expert_id: str,
                 "from": old_status or "(新建)", "to": new_status}
 
     return {"ok": False, "error": f"未知订单工具 {name}"}
+
+
+def plan_memory_write(existing_status, existing_version, want_freeze):
+    """决定一次 remember 的结果(纯逻辑,防推翻核心)。
+    返回 (new_status, new_version, blocked)。
+    - 无同名: 冻结→('frozen',1) / 否则→('candidate',1)
+    - 已有候选: 冻结→升 ('frozen',1) / 否则→保持 ('candidate', 原版本或1)
+    - 已有冻结: 冻结(大咖改口径)→版本+1 / 否则→**拦截**(候选不许静默覆盖冻结)
+    """
+    ver = existing_version or 1
+    if existing_status is None:
+        return ("frozen", 1, False) if want_freeze else ("candidate", 1, False)
+    if existing_status == "candidate":
+        return ("frozen", 1, False) if want_freeze else ("candidate", ver, False)
+    if want_freeze:
+        return ("frozen", ver + 1, False)
+    return ("frozen", ver, True)

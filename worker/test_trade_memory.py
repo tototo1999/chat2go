@@ -70,5 +70,26 @@ class TestToolSchemas(unittest.TestCase):
         self.assertEqual(upd["input_schema"]["properties"]["new_status"]["enum"], tm.ORDER_STATUSES)
 
 
+class TestPlanMemoryWrite(unittest.TestCase):
+    def test_new_candidate(self):
+        self.assertEqual(tm.plan_memory_write(None, None, False), ("candidate", 1, False))
+
+    def test_new_frozen(self):
+        self.assertEqual(tm.plan_memory_write(None, None, True), ("frozen", 1, False))
+
+    def test_candidate_update_stays_candidate(self):
+        self.assertEqual(tm.plan_memory_write("candidate", 1, False), ("candidate", 1, False))
+
+    def test_candidate_promote_to_frozen(self):
+        self.assertEqual(tm.plan_memory_write("candidate", 1, True), ("frozen", 1, False))
+
+    def test_frozen_rewrite_bumps_version(self):
+        self.assertEqual(tm.plan_memory_write("frozen", 2, True), ("frozen", 3, False))
+
+    def test_candidate_cannot_silently_overwrite_frozen(self):
+        status, ver, blocked = tm.plan_memory_write("frozen", 2, False)
+        self.assertTrue(blocked)
+
+
 if __name__ == "__main__":
     unittest.main()
