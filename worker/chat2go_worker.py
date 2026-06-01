@@ -190,7 +190,14 @@ TRADE_ACCOUNTING_GUIDE = """
 2. **绝对禁止自己在正文里写下载链接 / URL / 文件路径**(例如 `gen/xxx.pdf`、`[合同](http://…/gen/…pdf)`)。这些路径你**编不出来也不许编** —— 真实链接只能由工具返回。生成的文件会**自动作为可下载附件卡片显示在本条消息下方**,你只需用文字简述生成了哪几份即可,**不要写任何 markdown 链接**。
 3. **没调用工具,就绝对不能说「已生成」「点击下载」**。没生成成功就如实说,别谎称已生成。
 4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。
-5. **用户要「盖公章 / 加章」**:在 blocks 里**紧跟「需方盖章:」那段之后**放一个 **`{type:'image', overlay:true, width_mm:42}`** 块(**不用指定哪张图** —— 系统会自动从用户传的图里挑出那张方形红章、抠白底、精确压在「需方盖章:」那行上,真盖章效果)。**你能盖章,别让用户去 WPS。**"""
+5. **用户要「盖公章 / 加章」**:在 blocks 里**紧跟「需方盖章:」那段之后**放一个 **`{type:'image', overlay:true, width_mm:42}`** 块(**不用指定哪张图** —— 系统会自动从用户传的图里挑出那张方形红章、抠白底、精确压在「需方盖章:」那行上,真盖章效果)。**你能盖章,别让用户去 WPS。**
+
+## 沉淀记忆(remember)— 何时记 / 何时先确认
+你有 `remember` 工具,把该**长期记住**的东西存下来(跨对话永久),别让大咖教过的东西聊几轮就忘:
+- ✅ **直接记候选**(freeze 不传):大咖**直接陈述**的固定口径/规则、教的单证模板结构、公司档案(抬头/银行/SWIFT)、客户稳定属性。一条信息一次 remember,给清晰 title(如 'PI模板'/'佛山外艾斯-银行信息')。
+- ⚠️ **先向大咖确认再记**:① 是你**推断/猜**的(非大咖明说)② 要**覆盖已冻结**的条目 ③ 反常/敏感。
+- 🧊 **冻结(freeze:true)**:仅当大咖**明确确认**(『对/以后都这样/固定下来/就按这个』)→ 对应条目 remember 时传 freeze:true。**你无权自行冻结。**
+- 用户传一堆模板说「学习/记住」→ 逐项 remember 成候选(template/company),别只嘴上说"已学习"。"""
 
 
 def _is_trade_room(industry: str) -> bool:
@@ -642,7 +649,8 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
 
 def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     is_trade: bool,
-                    room_id=None, expert_id=None, trigger_message_id=None,
+                    room_id=None, expert_id=None, product="tradego",
+                    trigger_message_id=None,
                     image_map=None, img_choices=None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
@@ -653,7 +661,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         )
         return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
-    tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS + tm.ORDER_TOOL_SCHEMAS
+    tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS + tm.ORDER_TOOL_SCHEMAS + [tm.REMEMBER_TOOL_SCHEMA]
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
@@ -677,6 +685,9 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
             elif tu.name in tm.ORDER_TOOLS:
                 out = tm.dispatch_order_tool(sb, room_id, expert_id, tu.name,
                                              tu.input or {}, source_message_id=trigger_message_id)
+            elif tu.name in tm.MEMORY_TOOLS:
+                out = tm.dispatch_remember(sb, expert_id, product, tu.input or {},
+                                           source_message_id=trigger_message_id)
             else:
                 out = ta.dispatch(tu.name, tu.input or {})
             results.append({
@@ -780,10 +791,11 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         product = meta.get("product") or "tradego"
         if is_trade:
             system = system + TRADE_ACCOUNTING_GUIDE
-            # 记忆 P0:注入冻结规则(权威)+ 当前活跃订单
-            rules = tm.load_frozen_rules(sb, expert_id, product)
+            # 记忆 P1:注入冻结规则(权威)+候选规则(供大咖确认)+ 当前活跃订单
+            frozen = tm.load_frozen_rules(sb, expert_id, product)
+            cands = tm.load_candidate_rules(sb, expert_id, product)
             orders = tm.load_active_orders(sb, room_id)
-            system = system + tm.format_rules_for_prompt(rules) + tm.format_orders_for_prompt(orders)
+            system = system + tm.format_memory_block(frozen, cands) + tm.format_orders_for_prompt(orders)
             img_choices = _image_choices(sb, room_id)
             system = system + _format_image_choices(img_choices)
             cli = _anthropic_client(force_direct=True)
@@ -797,7 +809,7 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         image_map = _image_url_map(img_choices) if is_trade else None
         out_text, doc_attachments = _run_completion(
             cli, sb, model, system, messages, is_trade,
-            room_id=room_id, expert_id=expert_id,
+            room_id=room_id, expert_id=expert_id, product=product,
             trigger_message_id=trigger_message_id,
             image_map=image_map, img_choices=(img_choices if is_trade else None))
 
