@@ -681,7 +681,8 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     is_trade: bool,
                     room_id=None, expert_id=None, product="tradego",
                     trigger_message_id=None,
-                    image_map=None, img_choices=None) -> tuple[str, list[dict]]:
+                    image_map=None, img_choices=None,
+                    trace_steps: list | None = None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
@@ -710,6 +711,16 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
             print(f"[chat2go] usage in={u.input_tokens} "
                   f"cache_w={getattr(u, 'cache_creation_input_tokens', 0)} "
                   f"cache_r={getattr(u, 'cache_read_input_tokens', 0)} out={u.output_tokens}")
+        if trace_steps is not None:
+            trace_steps.append({
+                "call": len(trace_steps),
+                "text": _extract_text(resp),
+                "tool_uses": [{"name": b.name, "input": b.input}
+                              for b in resp.content if getattr(b, "type", None) == "tool_use"],
+                "usage": {k: getattr(u, k, 0) for k in
+                          ("input_tokens", "output_tokens",
+                           "cache_creation_input_tokens", "cache_read_input_tokens")} if u else {},
+            })
         tool_uses = [b for b in resp.content if getattr(b, "type", None) == "tool_use"]
         if not tool_uses:
             return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
@@ -758,6 +769,17 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     resp = cli.messages.create(
         model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=convo,
     )
+    if trace_steps is not None:
+        u = getattr(resp, "usage", None)
+        trace_steps.append({
+            "call": len(trace_steps),
+            "text": _extract_text(resp),
+            "tool_uses": [{"name": b.name, "input": b.input}
+                          for b in resp.content if getattr(b, "type", None) == "tool_use"],
+            "usage": {k: getattr(u, k, 0) for k in
+                      ("input_tokens", "output_tokens",
+                       "cache_creation_input_tokens", "cache_read_input_tokens")} if u else {},
+        })
     return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
 
