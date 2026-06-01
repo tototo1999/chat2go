@@ -6,9 +6,10 @@
   <div class="head">
     <div class="brand">
       <div class="logo">{{ seller.logo_text or "T" }}</div>
-      <div>
+      <div class="co-text">
         <div class="co-name">{{ seller.name_cn or "" }}</div>
-        <div class="co-sub">{{ seller.name_en or "" }}{% if seller.address %}<br>{{ seller.address }}{% endif %}</div>
+        {% if seller.name_en %}<div class="co-en">{{ seller.name_en }}</div>{% endif %}
+        {% if seller.address %}<div class="co-addr">{{ seller.address }}</div>{% endif %}
       </div>
     </div>
     <div class="doc-title"><h1>{{ title_cn }}</h1><div class="en">{{ doc_en }}</div></div>
