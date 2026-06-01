@@ -139,10 +139,11 @@ def _build_pdf_bytes(spec: dict, scale: float = 1.0) -> bytes:
                 continue
             wmm = float(blk.get("width_mm") or 38)
             if blk.get("overlay"):
-                # 精确盖章:零高度叠加,压在上一行(需方盖章:)上,随内容/缩放自动跟位
-                ov = _seal_overlay(url, wmm * scale,
-                                   float(blk.get("offset_x_mm") or 2) * scale,
-                                   blk.get("offset_y_mm"), scale)
+                # 精确盖章:零高度叠加,压在上一行(需方盖章:)上。
+                # 章**用实际尺寸,不随压页 scale 缩小**(否则压成一页时章会变得很小)。
+                ov = _seal_overlay(url, wmm,
+                                   float(blk.get("offset_x_mm") or 2),
+                                   blk.get("offset_y_mm"), 1.0)
                 if ov is not None:
                     story.append(ov)
             else:
