@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover
 
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
+import trade_memory as tm       # 订单状态机 + 冻结规则(记忆 P0)
 
 # Supabase Storage bucket (public, 已存在)
 STORAGE_BUCKET = "chat-uploads"
@@ -62,6 +63,7 @@ image = (
     # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
     .add_local_python_source("doc_gen")
+    .add_local_python_source("trade_memory")
 )
 
 # 复用 speak2go-secrets(已有 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) + chat2go-extras
@@ -207,15 +209,35 @@ def _sb_client():
     )
 
 
-def _anthropic_client():
+def _room_meta(sb, room_id: str) -> dict:
+    """取房间 expert_id + product(记忆按大咖+产品隔离;payload 里没带)。"""
+    try:
+        row = sb.table("rooms").select("expert_id, product").eq("id", room_id) \
+            .maybe_single().execute()
+        return (row.data or {}) if row else {}
+    except Exception:
+        return {}
+
+
+def _anthropic_client(force_direct: bool = False):
     from anthropic import Anthropic
+    # OPENROUTER_API_KEY 在 → 走 OpenRouter 的 Anthropic-skin(原生 Messages 协议,
+    # tool use 透传);不在 → 直连官方 Anthropic。删该 secret + redeploy 即切回直连。
+    # force_direct: tradego 记忆需直连官方 Anthropic(OpenRouter 不透传 memory/context beta)。
+    or_key = os.environ.get("OPENROUTER_API_KEY")
+    if or_key and not force_direct:
+        return Anthropic(api_key=or_key, base_url="https://openrouter.ai/api")
     return Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 
 # 房间内最近 N 轮上下文 (足够保留 token 上下文,又不爆 200k)
 HISTORY_LIMIT = 40
-# Claude 模型默认(rooms.model 为空时用)
-DEFAULT_MODEL = "claude-sonnet-4-6"
+# Claude 模型默认(rooms.model 为空时用)。OpenRouter 用 anthropic/claude-sonnet-4.6
+# (点号),直连用 claude-sonnet-4-6(横杠);跟 _anthropic_client 的路由保持一致。
+DEFAULT_MODEL = ("anthropic/claude-sonnet-4.6"
+                 if os.environ.get("OPENROUTER_API_KEY") else "claude-sonnet-4-6")
+# tradego 强制直连时用横杠名(忽略 OpenRouter 点号名)
+DIRECT_MODEL = "claude-sonnet-4-6"
 # 单次回复 max_tokens
 MAX_TOKENS = 4096
 # 外贸 tool-use 单轮最多工具调用次数(防失控/防成本爆炸)
@@ -527,7 +549,8 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict) -> tuple[dict, di
 
 
 def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
-                    is_trade: bool) -> tuple[str, list[dict]]:
+                    is_trade: bool,
+                    room_id=None, expert_id=None, trigger_message_id=None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
@@ -537,7 +560,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         )
         return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
-    tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS
+    tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS + tm.ORDER_TOOL_SCHEMAS
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
@@ -557,6 +580,9 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     attachments.append(att)
                 except Exception as e:  # noqa: BLE001
                     out = {"error": f"文件生成/上传失败: {type(e).__name__}: {e}"}
+            elif tu.name in tm.ORDER_TOOLS:
+                out = tm.dispatch_order_tool(sb, room_id, expert_id, tu.name,
+                                             tu.input or {}, source_message_id=trigger_message_id)
             else:
                 out = ta.dispatch(tu.name, tu.input or {})
             results.append({
@@ -655,11 +681,27 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
 
         # 外贸房:追加会计核算指引 + 挂计算工具(不受 room.system_prompt 覆盖影响)
         is_trade = _is_trade_room(industry)
+        meta = _room_meta(sb, room_id) if is_trade else {}
+        expert_id = meta.get("expert_id") or ""
+        product = meta.get("product") or "tradego"
         if is_trade:
             system = system + TRADE_ACCOUNTING_GUIDE
+            # 记忆 P0:注入冻结规则(权威)+ 当前活跃订单
+            rules = tm.load_frozen_rules(sb, expert_id, product)
+            orders = tm.load_active_orders(sb, room_id)
+            system = system + tm.format_rules_for_prompt(rules) + tm.format_orders_for_prompt(orders)
+            cli = _anthropic_client(force_direct=True)
+            model = DIRECT_MODEL
+        else:
+            cli = _anthropic_client()
 
-        cli = _anthropic_client()
-        out_text, doc_attachments = _run_completion(cli, sb, model, system, messages, is_trade)
+        provider = "openrouter" if os.environ.get("OPENROUTER_API_KEY") and not is_trade else "anthropic"
+        print(f"[chat2go] room={room_id[:8]} provider={provider} model={model} "
+              f"industry={industry or '-'} trade={is_trade}")
+        out_text, doc_attachments = _run_completion(
+            cli, sb, model, system, messages, is_trade,
+            room_id=room_id, expert_id=expert_id,
+            trigger_message_id=trigger_message_id)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,
