@@ -85,6 +85,37 @@ class TestSeal(unittest.TestCase):
         self.assertGreater(len(with_seal), len(without) + 100)
 
 
+class TestPhase2Context(unittest.TestCase):
+    def test_contract_keeps_money_and_clauses(self):
+        d={"doc_type":"contract","buyer":{"name":"B"},
+           "items":[{"name":"A","qty":2,"unit_price":3.0}],
+           "clauses":[{"no":"(1) PACKING","text":"carton"}],"sign_place":"Foshan"}
+        c=dr.prepare_context("contract",d,{})
+        self.assertEqual(c["subtotal"],6.0)
+        self.assertEqual(c["clauses"][0]["no"],"(1) PACKING")
+        self.assertEqual(c["sign_place"],"Foshan")
+
+    def test_packing_sums_columns(self):
+        d={"doc_type":"packing","items":[
+            {"name":"A","qty":2000,"ctns":100,"nw":880,"gw":980,"cbm":6.2},
+            {"name":"B","qty":5000,"ctns":50,"nw":420,"gw":470,"cbm":1.8}]}
+        c=dr.prepare_context("packing",d,{})
+        self.assertEqual(c["ptotals"]["ctns"],150)
+        self.assertEqual(c["ptotals"]["nw"],1300.0)
+        self.assertEqual(c["ptotals"]["gw"],1450.0)
+        self.assertEqual(round(c["ptotals"]["cbm"],2),8.0)
+        self.assertEqual(c["ptotals"]["qty"],7000)
+
+    def test_statement_sums_balance(self):
+        d={"doc_type":"statement","customer":"EURO","as_of":"2026-06-30","rows":[
+            {"date":"2026-06-01","ref":"deposit","receivable":4110,"received":4110,"balance":0},
+            {"date":"2026-06-08","ref":"balance","receivable":9590,"received":0,"balance":9590}]}
+        c=dr.prepare_context("statement",d,{})
+        self.assertEqual(c["stotals"]["receivable"],13700.0)
+        self.assertEqual(c["stotals"]["balance"],9590.0)
+        self.assertEqual(c["customer"],"EURO")
+
+
 class TestSchema(unittest.TestCase):
     def test_schema_shape(self):
         s = dr.DOCUMENT_TOOL_SCHEMA
