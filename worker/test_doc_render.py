@@ -65,3 +65,21 @@ class TestRender(unittest.TestCase):
     def test_pi_renders(self):
         pdf = dr.render_document("pi", self._data(), {"name_cn": "X"})
         self.assertGreater(len(pdf), 2000)
+
+
+class TestSeal(unittest.TestCase):
+    def _png(self):
+        from PIL import Image
+        import io
+        b = io.BytesIO(); Image.new("RGBA", (200, 200), (200, 0, 0, 255)).save(b, "PNG")
+        return b.getvalue()
+
+    def _data(self):
+        return {"doc_type": "quote", "buyer": {"name": "B"},
+                "items": [{"name": "A", "qty": 1, "unit_price": 1}], "stamp": True}
+
+    def test_stamp_embeds_image(self):
+        with_seal = dr.render_document("quote", self._data(), {"name_cn": "X"}, seal_png=self._png())
+        d2 = dict(self._data()); d2["stamp"] = False
+        without = dr.render_document("quote", d2, {"name_cn": "X"}, seal_png=self._png())
+        self.assertGreater(len(with_seal), len(without) + 100)
