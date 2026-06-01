@@ -132,6 +132,16 @@ def _build_pdf_bytes(spec: dict, scale: float = 1.0) -> bytes:
             tbl.setStyle(TableStyle(ts))
             story.append(tbl)
             story.append(Spacer(1, 4 * mm * scale))
+        elif btype == "image":
+            # 图片块(公章等):worker 已把 source:'seal' 解析成 url
+            url = blk.get("url")
+            if not url:
+                continue
+            wmm = float(blk.get("width_mm") or 35)
+            img = _image_flowable(url, wmm * scale)
+            if img is not None:
+                story.append(img)
+                story.append(Spacer(1, 2 * mm * scale))
 
     if not story:
         story.append(Paragraph(" ", body))
@@ -152,6 +162,54 @@ def _page_count(data: bytes) -> int:
         return len(PdfReader(io.BytesIO(data)).pages)
     except Exception:
         return 1
+
+
+def _fetch_bytes(url: str) -> bytes | None:
+    """下载图片(公章等)。Homebrew/容器 SSL 用 certifi 兜底。"""
+    import ssl
+    import urllib.request
+    try:
+        import certifi
+        ctx = ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        ctx = ssl.create_default_context()
+    try:
+        return urllib.request.urlopen(url, context=ctx, timeout=20).read()
+    except Exception:
+        return None
+
+
+def _seal_png(data: bytes) -> bytes:
+    """把近白底像素抠成透明,让红章干净叠在文字上(手机拍的章多是白底)。失败原样返回。"""
+    try:
+        from PIL import Image as PILImage
+        im = PILImage.open(io.BytesIO(data)).convert("RGBA")
+        out = [(r, g, b, 0) if (r > 225 and g > 225 and b > 225) else (r, g, b, a)
+               for (r, g, b, a) in im.getdata()]
+        im.putdata(out)
+        buf = io.BytesIO()
+        im.save(buf, "PNG")
+        return buf.getvalue()
+    except Exception:
+        return data
+
+
+def _image_flowable(url: str, width_mm: float):
+    """下载图片 → 抠白底 → reportlab Image flowable(等比缩放到 width_mm)。失败返回 None。"""
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.platypus import Image as RLImage
+    data = _fetch_bytes(url)
+    if not data:
+        return None
+    png = _seal_png(data)
+    try:
+        iw, ih = ImageReader(io.BytesIO(png)).getSize()
+        w = width_mm * mm
+        h = w * ih / iw if iw else w
+        return RLImage(io.BytesIO(png), width=w, height=h)
+    except Exception:
+        return None
 
 
 def build_pdf(spec: dict) -> bytes:
@@ -197,7 +255,9 @@ DOC_TOOL_SCHEMAS = [
             "filename": {"type": "string", "description": "中文文件名, 无扩展名, 如 '报价单'"},
             "title": {"type": "string"},
             "blocks": {"type": "array", "items": {"type": "object"},
-                       "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]}"},
+                       "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]} 或 "
+                                      "{type:'image',source:'seal',width_mm:35}(盖公章:用户传过章图后,在签字栏位置放这个块,"
+                                      "系统自动取最近上传的章图、抠白底叠上去 —— 你**能**盖章,别再让用户去 WPS)"},
             "fit_pages": {"type": "integer",
                           "description": "把内容压到几页内(用户要一页就传 1)。系统自动等比缩字号/边距适配。不传=默认字号自动分页。"},
         }, "required": ["filename", "blocks"]},

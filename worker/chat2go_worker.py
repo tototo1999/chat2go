@@ -57,6 +57,7 @@ image = (
         "fastapi[standard]>=0.115",
         "openpyxl>=3.1",      # Excel 生成(③)+ 读取(读文件)
         "reportlab>=4.0",     # PDF 生成 + 内置中文 CID 字体 (子项目③)
+        "Pillow>=10",         # 公章图抠白底 + PDF 图片嵌入(reportlab 也依赖)
         "pypdf>=4.0",         # PDF 文本提取 (读文件)
         "python-docx>=1.1",   # Word 文本提取 (读文件)
     )
@@ -187,7 +188,8 @@ TRADE_ACCOUNTING_GUIDE = """
 1. **必须真的调用工具生成**。用户要「全套单证」就为**每一份**各调一次 make_pdf(PI 一次、CI 一次、装箱单一次…),一份文件 = 一次工具调用。
 2. **绝对禁止自己在正文里写下载链接 / URL / 文件路径**(例如 `gen/xxx.pdf`、`[合同](http://…/gen/…pdf)`)。这些路径你**编不出来也不许编** —— 真实链接只能由工具返回。生成的文件会**自动作为可下载附件卡片显示在本条消息下方**,你只需用文字简述生成了哪几份即可,**不要写任何 markdown 链接**。
 3. **没调用工具,就绝对不能说「已生成」「点击下载」**。没生成成功就如实说,别谎称已生成。
-4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。"""
+4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。
+5. **用户要「盖公章 / 加章」**:让他先发章图(已发就用最近那张),在签字栏位置的 blocks 里放一个 **`{type:'image', source:'seal', width_mm:35}`** 块,系统会自动取最近上传的章图、抠白底叠到 PDF 上。**你能盖章,别再让用户去 WPS 手动插。**"""
 
 
 def _is_trade_room(industry: str) -> bool:
@@ -308,6 +310,16 @@ def _image_atts(row: dict) -> list[dict]:
         if mime.startswith("image/") or name.endswith(_VISION_EXTS):
             imgs.append(a)
     return imgs
+
+
+def _last_image_url(history: list[dict]) -> str | None:
+    """history 里最近一张用户上传图片的 URL(用作公章等)。SSRF 已在 _image_atts 校验。"""
+    for r in reversed(history or []):
+        if r.get("role") in ("user", "expert"):
+            imgs = _image_atts(r)
+            if imgs:
+                return imgs[-1]["url"]
+    return None
 
 
 # ── 读文件: 非图片附件文本提取(重建 bridge.py 功能#7, cutover 后丢失)─────────
@@ -528,11 +540,19 @@ def _extract_text(resp) -> str:
     return out
 
 
-def _make_doc_and_upload(sb, tool_name: str, tool_input: dict) -> tuple[dict, dict]:
+def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
+                         seal_url: str | None = None) -> tuple[dict, dict]:
     """生成 Excel/PDF → 上传 Supabase Storage → 返回 (attachment, tool_result)。
-    storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。"""
+    storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。
+    seal_url: 最近上传的图(公章)URL;AI 在 make_pdf 放 {type:'image',source:'seal'} 块时填进去。"""
     builder, ext, mime = dg.DOC_BUILDERS[tool_name]
     spec = tool_input or {}
+    # 解析公章块:把 source:'seal'(或无 url)的图片块填上最近上传的章图 URL
+    if tool_name == "make_pdf" and seal_url:
+        for blk in (spec.get("blocks") or []):
+            if (isinstance(blk, dict) and blk.get("type") == "image"
+                    and (blk.get("source") == "seal" or not blk.get("url"))):
+                blk["url"] = seal_url
     data = builder(spec)
     display_name = (spec.get("filename") or "文件") + "." + ext
     path = dg.storage_path(spec.get("filename") or "file", ext)
@@ -551,7 +571,8 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict) -> tuple[dict, di
 
 def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     is_trade: bool,
-                    room_id=None, expert_id=None, trigger_message_id=None) -> tuple[str, list[dict]]:
+                    room_id=None, expert_id=None, trigger_message_id=None,
+                    seal_url=None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
@@ -577,7 +598,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         for tu in tool_uses:
             if tu.name in dg.DOC_BUILDERS:
                 try:
-                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {})
+                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {}, seal_url=seal_url)
                     attachments.append(att)
                 except Exception as e:  # noqa: BLE001
                     out = {"error": f"文件生成/上传失败: {type(e).__name__}: {e}"}
@@ -699,10 +720,11 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         provider = "openrouter" if os.environ.get("OPENROUTER_API_KEY") and not is_trade else "anthropic"
         print(f"[chat2go] room={room_id[:8]} provider={provider} model={model} "
               f"industry={industry or '-'} trade={is_trade}")
+        seal_url = _last_image_url(history) if is_trade else None
         out_text, doc_attachments = _run_completion(
             cli, sb, model, system, messages, is_trade,
             room_id=room_id, expert_id=expert_id,
-            trigger_message_id=trigger_message_id)
+            trigger_message_id=trigger_message_id, seal_url=seal_url)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,
