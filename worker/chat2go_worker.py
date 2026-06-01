@@ -189,7 +189,7 @@ TRADE_ACCOUNTING_GUIDE = """
 2. **绝对禁止自己在正文里写下载链接 / URL / 文件路径**(例如 `gen/xxx.pdf`、`[合同](http://…/gen/…pdf)`)。这些路径你**编不出来也不许编** —— 真实链接只能由工具返回。生成的文件会**自动作为可下载附件卡片显示在本条消息下方**,你只需用文字简述生成了哪几份即可,**不要写任何 markdown 链接**。
 3. **没调用工具,就绝对不能说「已生成」「点击下载」**。没生成成功就如实说,别谎称已生成。
 4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。
-5. **用户要「盖公章 / 加章」**:让他先发章图(已发就用最近那张),在签字栏位置的 blocks 里放一个 **`{type:'image', source:'seal', width_mm:35}`** 块,系统会自动取最近上传的章图、抠白底叠到 PDF 上。**你能盖章,别再让用户去 WPS 手动插。**"""
+5. **用户要「盖公章 / 加章」**:看 system 里「可贴入图片」清单(你也能在对话里看到这些图),**挑出公章那张**(红色圆/方章,**不是合同照片/模板**),在签字栏位置放 **`{type:'image', source:'imgN', width_mm:35}`**(N=那张章的编号)。系统抠白底叠上去。**你能盖章,别让用户去 WPS;也别把合同照片当成章插进去。**"""
 
 
 def _is_trade_room(industry: str) -> bool:
@@ -312,14 +312,39 @@ def _image_atts(row: dict) -> list[dict]:
     return imgs
 
 
-def _last_image_url(history: list[dict]) -> str | None:
-    """history 里最近一张用户上传图片的 URL(用作公章等)。SSRF 已在 _image_atts 校验。"""
+def _image_choices(history: list[dict], max_n: int = 6) -> list[dict]:
+    """history 里用户上传的图片(新→旧),给 AI 按编号挑(如盖章选哪张)。
+    返回 [{ref:'img1', name, url}],ref 越小越新。"""
+    out = []
     for r in reversed(history or []):
         if r.get("role") in ("user", "expert"):
-            imgs = _image_atts(r)
-            if imgs:
-                return imgs[-1]["url"]
-    return None
+            for a in reversed(_image_atts(r)):
+                out.append({"name": a.get("name") or "图片", "url": a["url"]})
+                if len(out) >= max_n:
+                    break
+        if len(out) >= max_n:
+            break
+    return [{"ref": f"img{i+1}", "name": c["name"], "url": c["url"]} for i, c in enumerate(out)]
+
+
+def _format_image_choices(choices: list[dict]) -> str:
+    """把可用图片列进 system prompt,让 AI 用编号引用(盖章/插图)。"""
+    if not choices:
+        return ""
+    lines = ["", "## 可贴入 PDF 的图片(盖章/插图用;你能在对话里看到这些图)",
+             "在 make_pdf 的 blocks 放 {type:'image', source:'imgN'},N 用下面编号。"
+             "**盖公章就挑那张红色圆/方章的图,别选合同照片或其它图:**"]
+    for c in choices:
+        lines.append(f"- {c['ref']}: {c['name']}")
+    return "\n".join(lines) + "\n"
+
+
+def _image_url_map(choices: list[dict]) -> dict:
+    """{'imgN': url, ..., 'seal': 最新图url(兜底)}。"""
+    m = {c["ref"]: c["url"] for c in choices}
+    if choices:
+        m["seal"] = choices[0]["url"]  # 兜底:最新一张(AI 没指定编号时)
+    return m
 
 
 # ── 读文件: 非图片附件文本提取(重建 bridge.py 功能#7, cutover 后丢失)─────────
@@ -541,18 +566,19 @@ def _extract_text(resp) -> str:
 
 
 def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
-                         seal_url: str | None = None) -> tuple[dict, dict]:
+                         image_map: dict | None = None) -> tuple[dict, dict]:
     """生成 Excel/PDF → 上传 Supabase Storage → 返回 (attachment, tool_result)。
     storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。
-    seal_url: 最近上传的图(公章)URL;AI 在 make_pdf 放 {type:'image',source:'seal'} 块时填进去。"""
+    image_map: {'imgN':url,...,'seal':最新图url};AI 在 make_pdf 放 {type:'image',source:'imgN'}
+    指明用哪张图(盖章挑章那张),无编号则兜底用最新图。"""
     builder, ext, mime = dg.DOC_BUILDERS[tool_name]
     spec = tool_input or {}
-    # 解析公章块:把 source:'seal'(或无 url)的图片块填上最近上传的章图 URL
-    if tool_name == "make_pdf" and seal_url:
+    # 解析图片块:source 编号 → 对应 url;没指定就兜底最新图(seal)
+    if tool_name == "make_pdf" and image_map:
         for blk in (spec.get("blocks") or []):
-            if (isinstance(blk, dict) and blk.get("type") == "image"
-                    and (blk.get("source") == "seal" or not blk.get("url"))):
-                blk["url"] = seal_url
+            if isinstance(blk, dict) and blk.get("type") == "image" and not blk.get("url"):
+                src = blk.get("source")
+                blk["url"] = image_map.get(src) or image_map.get("seal")
     data = builder(spec)
     display_name = (spec.get("filename") or "文件") + "." + ext
     path = dg.storage_path(spec.get("filename") or "file", ext)
@@ -572,7 +598,7 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
 def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
                     is_trade: bool,
                     room_id=None, expert_id=None, trigger_message_id=None,
-                    seal_url=None) -> tuple[str, list[dict]]:
+                    image_map=None) -> tuple[str, list[dict]]:
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
@@ -598,7 +624,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         for tu in tool_uses:
             if tu.name in dg.DOC_BUILDERS:
                 try:
-                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {}, seal_url=seal_url)
+                    att, out = _make_doc_and_upload(sb, tu.name, tu.input or {}, image_map=image_map)
                     attachments.append(att)
                 except Exception as e:  # noqa: BLE001
                     out = {"error": f"文件生成/上传失败: {type(e).__name__}: {e}"}
@@ -712,6 +738,8 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
             rules = tm.load_frozen_rules(sb, expert_id, product)
             orders = tm.load_active_orders(sb, room_id)
             system = system + tm.format_rules_for_prompt(rules) + tm.format_orders_for_prompt(orders)
+            img_choices = _image_choices(history)
+            system = system + _format_image_choices(img_choices)
             cli = _anthropic_client(force_direct=True)
             model = DIRECT_MODEL
         else:
@@ -720,11 +748,11 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
         provider = "openrouter" if os.environ.get("OPENROUTER_API_KEY") and not is_trade else "anthropic"
         print(f"[chat2go] room={room_id[:8]} provider={provider} model={model} "
               f"industry={industry or '-'} trade={is_trade}")
-        seal_url = _last_image_url(history) if is_trade else None
+        image_map = _image_url_map(img_choices) if is_trade else None
         out_text, doc_attachments = _run_completion(
             cli, sb, model, system, messages, is_trade,
             room_id=room_id, expert_id=expert_id,
-            trigger_message_id=trigger_message_id, seal_url=seal_url)
+            trigger_message_id=trigger_message_id, image_map=image_map)
 
         msg_type = "markdown" if _looks_markdown(out_text) else "text"
         _update_placeholder(sb, placeholder_id, out_text, msg_type=msg_type,

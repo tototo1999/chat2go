@@ -207,7 +207,9 @@ def _image_flowable(url: str, width_mm: float):
         iw, ih = ImageReader(io.BytesIO(png)).getSize()
         w = width_mm * mm
         h = w * ih / iw if iw else w
-        return RLImage(io.BytesIO(png), width=w, height=h)
+        img = RLImage(io.BytesIO(png), width=w, height=h)
+        img.hAlign = "LEFT"   # 章靠左,落到「需方盖章」一侧,不居中飘中间
+        return img
     except Exception:
         return None
 
@@ -256,8 +258,8 @@ DOC_TOOL_SCHEMAS = [
             "title": {"type": "string"},
             "blocks": {"type": "array", "items": {"type": "object"},
                        "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]} 或 "
-                                      "{type:'image',source:'seal',width_mm:35}(盖公章:用户传过章图后,在签字栏位置放这个块,"
-                                      "系统自动取最近上传的章图、抠白底叠上去 —— 你**能**盖章,别再让用户去 WPS)"},
+                                      "{type:'image',source:'imgN',width_mm:35}(盖公章/插图:source 用 system 里「可贴入图片」列出的编号 imgN,"
+                                      "**挑红色圆/方章那张图,别选合同照片**;系统自动抠白底叠到签字栏 —— 你能盖章,别让用户去 WPS)"},
             "fit_pages": {"type": "integer",
                           "description": "把内容压到几页内(用户要一页就传 1)。系统自动等比缩字号/边距适配。不传=默认字号自动分页。"},
         }, "required": ["filename", "blocks"]},
