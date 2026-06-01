@@ -1,0 +1,63 @@
+{# worker/templates/contract.html —— 销售合同 #}
+{% extends "base.html" %}
+
+{% block meta %}
+  <div class="meta">
+    {% if doc_no %}<div><span>合同号</span><b>{{ doc_no }}</b></div>{% endif %}
+    {% if sign_place %}<div><span>签约地</span><b>{{ sign_place }}</b></div>{% endif %}
+    {% if date %}<div><span>日期</span><b>{{ date }}</b></div>{% endif %}
+  </div>
+{% endblock %}
+
+{% block parties %}
+  <div class="parties">
+    <div class="party"><div class="label">买方 / The Buyers</div>
+      <div class="nm">{{ buyer.name or "" }}</div>
+      <div class="ln">{% if buyer.attn %}Attn: {{ buyer.attn }}<br>{% endif %}{{ buyer.address or "" }}{% if buyer.tel %}<br>Tel: {{ buyer.tel }}{% endif %}</div>
+    </div>
+    <div class="party"><div class="label">卖方 / The Sellers</div>
+      <div class="nm">{{ seller.name_cn or "" }}</div>
+      <div class="ln">{% if seller.address %}{{ seller.address }}<br>{% endif %}{% if seller.tel %}Tel: {{ seller.tel }}{% endif %}</div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block body %}
+  <table class="items">
+    <thead><tr><th style="width:36px;">#</th><th>品名 / Commodity</th>
+      <th class="num" style="width:70px;">数量</th><th class="num" style="width:90px;">单价 {{ currency }}</th>
+      <th class="num" style="width:100px;">金额 {{ currency }}</th></tr></thead>
+    <tbody>
+    {% for it in items %}
+      <tr><td class="num">{{ loop.index }}</td>
+        <td><div class="desc-main">{{ it.name }}</div>{% if it.spec %}<div class="desc-sub">{{ it.spec }}</div>{% endif %}</td>
+        <td class="num">{{ "{:,.0f}".format(it.qty) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.unit_price) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.amount) }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="grand"><td colspan="4" style="text-align:right;">合计 TOTAL{% if trade_term %}（{{ trade_term }}）{% endif %}</td>
+      <td class="num">{{ currency }} {{ "{:,.2f}".format(total) }}</td></tr></tfoot>
+  </table>
+  {% if clauses %}<div class="terms-title">条款 / Terms &amp; Conditions</div>
+  <div class="md-clauses">
+    {% for c in clauses %}<div class="c"><span class="n">{{ c.no }}</span><span>{{ c.text }}</span></div>{% endfor %}
+  </div>{% endif %}
+  {% if seller.bank %}<div class="bank-title">收款银行 / Bank Info</div><div class="bank">
+    {% if seller.bank.beneficiary %}<b>Beneficiary:</b> {{ seller.bank.beneficiary }}　{% endif %}
+    {% if seller.bank.bank_name %}<b>Bank:</b> {{ seller.bank.bank_name }}<br>{% endif %}
+    {% if seller.bank.account %}<b>A/C No.:</b> {{ seller.bank.account }}　{% endif %}
+    {% if seller.bank.swift %}<b>SWIFT:</b> {{ seller.bank.swift }}{% endif %}
+  </div>{% endif %}
+{% endblock %}
+
+{% block sign %}
+  <div class="sign">
+    <div class="box"><div class="lab">THE BUYERS（盖章/签字）：</div>
+      <div class="line">{{ buyer.name or "" }}　Authorized Signature / Date</div></div>
+    <div class="box"><div class="lab">THE SELLERS（盖章/签字）：</div>
+      <div class="line">{{ seller.name_cn or "" }}
+        {% if seal_img %}<img class="seal" src="{{ seal_img }}">{% endif %}
+      </div></div>
+  </div>
+{% endblock %}

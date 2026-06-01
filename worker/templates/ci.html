@@ -1,0 +1,53 @@
+{# worker/templates/ci.html —— 商业发票 Commercial Invoice #}
+{% extends "base.html" %}
+
+{% block meta %}
+  <div class="meta">
+    {% if doc_no %}<div><span>发票号</span><b>{{ doc_no }}</b></div>{% endif %}
+    {% if date %}<div><span>日期</span><b>{{ date }}</b></div>{% endif %}
+    {% if contract_no %}<div><span>合同号</span><b>{{ contract_no }}</b></div>{% endif %}
+  </div>
+{% endblock %}
+
+{% block parties %}
+  <div class="parties">
+    <div class="party"><div class="label">收货人 / Consignee</div>
+      <div class="nm">{{ consignee.name or "" }}</div>
+      <div class="ln">{% if consignee.attn %}Attn: {{ consignee.attn }}<br>{% endif %}{{ consignee.address or "" }}{% if consignee.tel %}<br>Tel: {{ consignee.tel }}{% endif %}</div>
+    </div>
+    <div class="party"><div class="label">起运/目的 / Port</div>
+      <div class="nm">{{ port or "" }}</div>
+      <div class="ln">{% if trade_term %}{{ trade_term }}{% endif %}</div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block body %}
+  <table class="items">
+    <thead><tr><th>Marks &amp; No.</th><th>品名 / Description</th>
+      <th class="num" style="width:64px;">Qty</th><th class="num" style="width:84px;">Unit {{ currency }}</th>
+      <th class="num" style="width:94px;">Amount {{ currency }}</th></tr></thead>
+    <tbody>
+    {% for it in items %}
+      <tr><td>{{ it.marks or "　" }}</td>
+        <td><div class="desc-main">{{ it.name }}</div>{% if it.hs %}<div class="desc-sub">HS {{ it.hs }}</div>{% elif it.spec %}<div class="desc-sub">{{ it.spec }}</div>{% endif %}</td>
+        <td class="num">{{ "{:,.0f}".format(it.qty) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.unit_price) }}</td>
+        <td class="num">{{ "{:,.2f}".format(it.amount) }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="grand"><td colspan="4" style="text-align:right;">TOTAL{% if trade_term %} {{ trade_term }}{% endif %}</td>
+      <td class="num">{{ currency }} {{ "{:,.2f}".format(total) }}</td></tr></tfoot>
+  </table>
+  <div class="doc-note">{% if amount_words %}{{ amount_words }}<br>{% endif %}We hereby certify that the goods are of Chinese origin.</div>
+{% endblock %}
+
+{% block sign %}
+  <div class="sign">
+    <div class="box"></div>
+    <div class="box"><div class="lab">Signed by：</div>
+      <div class="line">{{ seller.name_cn or "" }}
+        {% if seal_img %}<img class="seal" src="{{ seal_img }}">{% endif %}
+      </div></div>
+  </div>
+{% endblock %}

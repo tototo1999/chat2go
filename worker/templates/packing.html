@@ -1,0 +1,47 @@
+{# worker/templates/packing.html —— 装箱单 Packing List #}
+{% extends "base.html" %}
+
+{% block meta %}
+  <div class="meta">
+    {% if doc_no %}<div><span>单号</span><b>{{ doc_no }}</b></div>{% endif %}
+    {% if date %}<div><span>日期</span><b>{{ date }}</b></div>{% endif %}
+  </div>
+{% endblock %}
+
+{% block parties %}{% endblock %}
+
+{% block body %}
+  <table class="items">
+    <thead><tr><th>品名 / Description</th>
+      <th class="num">Qty</th><th class="num">箱数 CTNS</th>
+      <th class="num">净重 N.W.(kg)</th><th class="num">毛重 G.W.(kg)</th>
+      <th class="num">体积 CBM</th></tr></thead>
+    <tbody>
+    {% for r in prows %}
+      <tr><td class="desc-main">{{ r.name }}</td>
+        <td class="num">{{ "{:,.0f}".format(r.qty) }}</td>
+        <td class="num">{{ "{:,.0f}".format(r.ctns) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.nw) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.gw) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.cbm) }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="grand"><td style="text-align:right;">TOTAL</td>
+      <td class="num">{{ "{:,.0f}".format(ptotals.qty) }}</td>
+      <td class="num">{{ "{:,.0f}".format(ptotals.ctns) }}</td>
+      <td class="num">{{ "{:,.2f}".format(ptotals.nw) }}</td>
+      <td class="num">{{ "{:,.2f}".format(ptotals.gw) }}</td>
+      <td class="num">{{ "{:,.2f}".format(ptotals.cbm) }}</td></tr></tfoot>
+  </table>
+  {% if marks %}<div class="doc-note">Marks &amp; Nos.: {{ marks }}</div>{% endif %}
+{% endblock %}
+
+{% block sign %}
+  <div class="sign">
+    <div class="box"></div>
+    <div class="box"><div class="lab">Signed by：</div>
+      <div class="line">{{ seller.name_cn or "" }}
+        {% if seal_img %}<img class="seal" src="{{ seal_img }}">{% endif %}
+      </div></div>
+  </div>
+{% endblock %}

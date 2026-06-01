@@ -1,0 +1,39 @@
+{# worker/templates/statement.html —— 对账单 Statement of Account #}
+{% extends "base.html" %}
+
+{% block meta %}
+  <div class="meta">
+    {% if customer %}<div><span>客户</span><b>{{ customer }}</b></div>{% endif %}
+    {% if as_of %}<div><span>截至</span><b>{{ as_of }}</b></div>{% endif %}
+  </div>
+{% endblock %}
+
+{% block parties %}{% endblock %}
+
+{% block body %}
+  <table class="items">
+    <thead><tr><th>日期</th><th>单据 / Reference</th>
+      <th class="num">应收 {{ currency }}</th><th class="num">已收 {{ currency }}</th>
+      <th class="num">余额 {{ currency }}</th></tr></thead>
+    <tbody>
+    {% for r in srows %}
+      <tr><td>{{ r.date }}</td><td>{{ r.ref }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.receivable) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.received) }}</td>
+        <td class="num">{{ "{:,.2f}".format(r.balance) }}</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr class="grand"><td colspan="2" style="text-align:right;">合计未收 BALANCE DUE</td>
+      <td class="num">{{ "{:,.2f}".format(stotals.receivable) }}</td>
+      <td class="num">{{ "{:,.2f}".format(stotals.received) }}</td>
+      <td class="num">{{ "{:,.2f}".format(stotals.balance) }}</td></tr></tfoot>
+  </table>
+  {% if seller.bank %}<div class="bank-title">请汇款至 / Remit to</div><div class="bank">
+    {% if seller.bank.beneficiary %}<b>Beneficiary:</b> {{ seller.bank.beneficiary }}<br>{% endif %}
+    {% if seller.bank.bank_name %}<b>Bank:</b> {{ seller.bank.bank_name }}　{% endif %}
+    {% if seller.bank.account %}<b>A/C:</b> {{ seller.bank.account }}　{% endif %}
+    {% if seller.bank.swift %}<b>SWIFT:</b> {{ seller.bank.swift }}{% endif %}
+  </div>{% endif %}
+{% endblock %}
+
+{% block sign %}{% endblock %}
