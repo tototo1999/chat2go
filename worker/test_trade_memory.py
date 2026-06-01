@@ -115,5 +115,17 @@ class TestMemoryFormat(unittest.TestCase):
         self.assertIn("freeze", props)
 
 
+class TestCompanyProfile(unittest.TestCase):
+    def test_parse_valid_json(self):
+        p = tm.parse_company_profile('{"name_cn":"佛山外艾斯","bank":{"swift":"X"}}')
+        self.assertEqual(p["name_cn"], "佛山外艾斯")
+        self.assertEqual(p["bank"]["swift"], "X")
+
+    def test_parse_invalid_returns_empty(self):
+        self.assertEqual(tm.parse_company_profile("not json"), {})
+        self.assertEqual(tm.parse_company_profile(None), {})
+        self.assertEqual(tm.parse_company_profile(""), {})
+
+
 if __name__ == "__main__":
     unittest.main()

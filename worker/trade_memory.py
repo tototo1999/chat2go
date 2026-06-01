@@ -5,6 +5,7 @@ DB I/O(load/dispatch)是薄封装,由 worker 传入 sb(service-role)。
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
 # 订单状态(P0 默认 6 段;后续按真实跟单流程加值需同步 migration 的 enum)
@@ -244,3 +245,33 @@ def dispatch_remember(sb, expert_id, product, tool_input, source_message_id=None
         sb.table("tradego_memory_rules").insert(payload).execute()
         action = "新建" + ("(冻结)" if new_status == "frozen" else "(候选)")
     return {"ok": True, "title": title, "status": new_status, "version": new_version, "action": action}
+
+
+# ── 公司档案(company profile)──────────────────────────────────────────────────
+
+COMPANY_PROFILE_TITLE = "公司档案"
+
+
+def parse_company_profile(content) -> dict:
+    """记忆里的公司档案 content(JSON 字符串) → dict；解析失败/空 → {}。"""
+    if not content or not isinstance(content, str):
+        return {}
+    try:
+        obj = json.loads(content)
+        return obj if isinstance(obj, dict) else {}
+    except (ValueError, TypeError):
+        return {}
+
+
+def load_company_profile(sb, expert_id: str, product: str) -> dict:
+    """从 tradego_memory_rules(kind='company', title='公司档案') 载入结构化公司档案。"""
+    try:
+        res = (sb.table("tradego_memory_rules")
+               .select("content")
+               .eq("expert_id", expert_id).eq("product", product)
+               .eq("kind", "company").eq("title", COMPANY_PROFILE_TITLE)
+               .limit(1).execute())
+        rows = res.data or []
+        return parse_company_profile(rows[0]["content"]) if rows else {}
+    except Exception:
+        return {}
