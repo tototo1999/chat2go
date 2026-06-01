@@ -272,8 +272,9 @@ DEFAULT_MODEL = ("anthropic/claude-sonnet-4.6"
                  if os.environ.get("OPENROUTER_API_KEY") else "claude-sonnet-4-6")
 # tradego 强制直连时用横杠名(忽略 OpenRouter 点号名)
 DIRECT_MODEL = "claude-opus-4-8"
-# 单次回复 max_tokens
-MAX_TOKENS = 4096
+# 单次回复 max_tokens(Opus 4.8 + adaptive thinking 会吃 token,给足 headroom 防截断;
+# 非流式下 12000 仍远低于超时风险。非 trade/OpenRouter 路径同享,加大无害)
+MAX_TOKENS = 12000
 # 外贸 tool-use 单轮最多工具调用次数(防失控/防成本爆炸)
 MAX_TOOL_ITERS = 5
 
