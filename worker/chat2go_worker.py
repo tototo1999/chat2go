@@ -685,9 +685,14 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     """返回 (最终文字, 生成的文件 attachments)。
     非外贸房:单次调用。外贸房:带会计+文档工具的 tool-use 循环(最多 MAX_TOOL_ITERS 次)。"""
     attachments: list[dict] = []
+    # prompt caching(GA,无需 beta header):把 system 转成带 cache_control 的内容块。
+    # 渲染顺序 tools→system→messages,所以这一个断点把 tools+system 一起缓存。
+    # 命中场景:tool-use 循环第 2+ 次调用、5 分钟内同房连续消息(读取按 0.1x 计费)。
+    # claude-sonnet-4-6 最小可缓存前缀 2048 token;外贸房 tools+system 远超,稳缓存。
+    system_blocks = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
     if not is_trade:
         resp = cli.messages.create(
-            model=model, max_tokens=MAX_TOKENS, system=system, messages=messages,
+            model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=messages,
         )
         return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
@@ -697,9 +702,14 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
-            model=model, max_tokens=MAX_TOKENS, system=system,
+            model=model, max_tokens=MAX_TOKENS, system=system_blocks,
             messages=convo, tools=tools,
         )
+        u = getattr(resp, "usage", None)
+        if u:
+            print(f"[chat2go] usage in={u.input_tokens} "
+                  f"cache_w={getattr(u, 'cache_creation_input_tokens', 0)} "
+                  f"cache_r={getattr(u, 'cache_read_input_tokens', 0)} out={u.output_tokens}")
         tool_uses = [b for b in resp.content if getattr(b, "type", None) == "tool_use"]
         if not tool_uses:
             return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
@@ -746,7 +756,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         convo.append({"role": "user", "content": results})
     # 用尽迭代次数:再要一次最终文字总结(不给 tools, 逼它收尾)
     resp = cli.messages.create(
-        model=model, max_tokens=MAX_TOKENS, system=system, messages=convo,
+        model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=convo,
     )
     return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
