@@ -54,8 +54,10 @@ image = (
         "anthropic>=0.39.0",
         "httpx>=0.27",
         "fastapi[standard]>=0.115",
-        "openpyxl>=3.1",      # Excel 生成 (子项目③)
+        "openpyxl>=3.1",      # Excel 生成(③)+ 读取(读文件)
         "reportlab>=4.0",     # PDF 生成 + 内置中文 CID 字体 (子项目③)
+        "pypdf>=4.0",         # PDF 文本提取 (读文件)
+        "python-docx>=1.1",   # Word 文本提取 (读文件)
     )
     # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
@@ -285,6 +287,111 @@ def _image_atts(row: dict) -> list[dict]:
     return imgs
 
 
+# ── 读文件: 非图片附件文本提取(重建 bridge.py 功能#7, cutover 后丢失)─────────
+# 文档附件(PDF/Excel/Word/文本)→ 从 Storage 下载 → 抽文本 → 注入上下文让 AI 能读。
+_DOC_EXTS = (".pdf", ".xlsx", ".xlsm", ".docx", ".txt", ".csv",
+             ".md", ".json", ".xml", ".html", ".log", ".tsv")
+MAX_DOC_BYTES = 8_000_000   # 单附件最多下载 8MB
+MAX_DOC_CHARS = 16_000      # 单附件注入文本上限(防爆 token)
+
+
+def _storage_path_from_url(url: str) -> str | None:
+    """从本项目 Storage URL 解析对象 path(.../object/.../chat-uploads/<path>)。
+    非本项目 Storage 的 URL → None(SSRF: 只下自己桶里的文件)。"""
+    if not isinstance(url, str):
+        return None
+    base = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
+    if not base or not url.startswith(base + "/storage/v1/object/"):
+        return None
+    marker = "/" + STORAGE_BUCKET + "/"
+    i = url.find(marker)
+    if i < 0:
+        return None
+    path = url[i + len(marker):].split("?", 1)[0]
+    return path or None
+
+
+def _doc_atts(row: dict) -> list[dict]:
+    """挑出可读文本的文档附件(非图片, 且有本项目 storage path)。返回 [{name, path}]。"""
+    atts = row.get("attachments")
+    if not isinstance(atts, list):
+        return []
+    out = []
+    for a in atts:
+        if not isinstance(a, dict):
+            continue
+        name = (a.get("name") or "").lower()
+        mime = (a.get("mime_type") or "").lower()
+        if mime.startswith("image/") or name.endswith(_VISION_EXTS):
+            continue  # 图片走 Vision, 不在这里
+        if not name.endswith(_DOC_EXTS):
+            continue
+        path = a.get("storage_path") or _storage_path_from_url(a.get("url") or "")
+        if not path:
+            continue
+        out.append({"name": a.get("name") or "文件", "path": path})
+    return out
+
+
+def _download_storage(sb, path: str) -> bytes | None:
+    try:
+        data = sb.storage.from_(STORAGE_BUCKET).download(path)
+    except Exception:
+        return None
+    return data[:MAX_DOC_BYTES] if data else None
+
+
+def _extract_doc_text(name: str, data: bytes) -> str:
+    """按扩展名抽文本。不支持/解析失败 → 返回空或提示, 绝不抛。"""
+    import io
+    n = (name or "").lower()
+    try:
+        if n.endswith(".pdf"):
+            from pypdf import PdfReader
+            r = PdfReader(io.BytesIO(data))
+            return "\n".join((p.extract_text() or "") for p in r.pages).strip()
+        if n.endswith((".xlsx", ".xlsm")):
+            from openpyxl import load_workbook
+            wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+            parts = []
+            for ws in wb.worksheets:
+                parts.append(f"# {ws.title}")
+                for rw in ws.iter_rows(values_only=True):
+                    cells = [str(c) for c in rw if c is not None]
+                    if cells:
+                        parts.append("\t".join(cells))
+            return "\n".join(parts).strip()
+        if n.endswith(".docx"):
+            from docx import Document
+            d = Document(io.BytesIO(data))
+            return "\n".join(p.text for p in d.paragraphs).strip()
+        if n.endswith((".txt", ".csv", ".md", ".json", ".xml", ".html", ".log", ".tsv")):
+            return data.decode("utf-8", "replace").strip()
+    except Exception as e:  # noqa: BLE001
+        return f"(无法解析 {name}: {type(e).__name__})"
+    return ""
+
+
+def _doc_text_block(sb, docs: list[dict]) -> str:
+    """下载并抽取一条消息的所有文档附件文本, 拼成「附件内容」段(供 LLM 读)。"""
+    if sb is None or not docs:
+        return ""
+    chunks = []
+    for d in docs:
+        data = _download_storage(sb, d["path"])
+        if not data:
+            chunks.append(f"[附件 {d['name']}: 下载失败]")
+            continue
+        text = _extract_doc_text(d["name"], data)
+        if not text:
+            chunks.append(f"[附件 {d['name']}: 无可提取文本(可能是扫描件, 请截图发我走读图)]")
+            continue
+        if len(text) > MAX_DOC_CHARS:
+            text = text[:MAX_DOC_CHARS] + f"\n…(文件较长, 已截断到 {MAX_DOC_CHARS} 字)"
+        chunks.append(f"[附件 {d['name']} 内容如下]\n{text}")
+    return "\n\n".join(chunks)
+
+
 def _to_blocks(content) -> list[dict]:
     """字符串 content → [{type:text}] block 列表(已是 list 则原样返回)。"""
     if isinstance(content, list):
@@ -292,18 +399,20 @@ def _to_blocks(content) -> list[dict]:
     return [{"type": "text", "text": content}] if content else []
 
 
-def _build_messages(history: list[dict]) -> list[dict]:
+def _build_messages(history: list[dict], sb=None) -> list[dict]:
     """history → Anthropic messages array。
     role 映射:user / expert → 'user';ai → 'assistant'。
     连续 same role 合并(纯文本拼字符串;含图片转 content block 列表)。
     图片附件 → Claude Vision image block(url source),让 AI 能读图/OCR。
+    文档附件(PDF/Excel/Word/文本)→ 下载抽文本拼进消息,让 AI 能读文件(需传 sb)。
     """
     out: list[dict] = []
     for r in history:
         role = "assistant" if r.get("role") == "ai" else "user"
         text = (r.get("content") or "").strip()
         imgs = _image_atts(r) if role == "user" else []  # 只对用户侧消息读图
-        if not text and not imgs:
+        docs = _doc_atts(r) if (role == "user" and sb is not None) else []
+        if not text and not imgs and not docs:
             continue
         # 把 user/expert 区分塞进 text 前缀,让 LLM 看到角色差异
         if text:
@@ -311,6 +420,11 @@ def _build_messages(history: list[dict]) -> list[dict]:
                 text = f"[大咖] {text}"
             elif r.get("role") == "user":
                 text = f"[小白] {text}"
+        # 文档附件 → 抽文本拼到消息正文(让 AI 读文件)
+        if docs:
+            doc_text = _doc_text_block(sb, docs)
+            if doc_text:
+                text = (text + "\n\n" + doc_text) if text else doc_text
 
         if imgs:
             # 含图片 → content block 列表: 图片在前, 文字在后
@@ -529,7 +643,7 @@ def ingest(payload: dict, request: _FastAPIRequest) -> dict:
 
     try:
         history = _load_history(sb, room_id, channel, trigger_message_id)
-        messages = _build_messages(history)
+        messages = _build_messages(history, sb)
         if not messages:
             _update_placeholder(sb, placeholder_id,
                                 "⚠️ 没拉到上下文消息,无法回复。请重新发一条试试。")

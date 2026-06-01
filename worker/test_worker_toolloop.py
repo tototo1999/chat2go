@@ -344,5 +344,86 @@ class TestLoadHistory(unittest.TestCase):
         self.assertEqual([r["id"] for r in out], ["u1"])
 
 
+# ── 读文件: 文档附件文本提取 ─────────────────────────────────────────────────
+_SB_BASE = "https://qjnagbzqhoansixqharb.supabase.co"
+
+
+class _FakeDocBucket:
+    def __init__(self, files): self._f = files
+    def download(self, path):
+        if path in self._f:
+            return self._f[path]
+        raise Exception("404 not found")
+
+
+class _FakeDocStorage:
+    def __init__(self, files): self._f = files
+    def from_(self, _b): return _FakeDocBucket(self._f)
+
+
+class _FakeDocSb:
+    def __init__(self, files): self.storage = _FakeDocStorage(files)
+
+
+class TestStoragePathFromUrl(unittest.TestCase):
+    def test_parses_own_storage(self):
+        u = _SB_BASE + "/storage/v1/object/public/chat-uploads/gen/a.pdf"
+        self.assertEqual(w._storage_path_from_url(u), "gen/a.pdf")
+
+    def test_strips_query(self):
+        u = _SB_BASE + "/storage/v1/object/sign/chat-uploads/gen/a.pdf?token=x"
+        self.assertEqual(w._storage_path_from_url(u), "gen/a.pdf")
+
+    def test_rejects_external(self):
+        self.assertIsNone(w._storage_path_from_url("https://evil.com/chat-uploads/x.pdf"))
+
+
+class TestDocAtts(unittest.TestCase):
+    def test_picks_doc_skips_image_and_unknown(self):
+        row = {"attachments": [
+            {"name": "报价.pdf", "mime_type": "application/pdf", "storage_path": "gen/q.pdf"},
+            {"name": "photo.png", "mime_type": "image/png", "storage_path": "gen/p.png"},
+            {"name": "data.xlsx", "mime_type": "application/octet-stream",
+             "url": _SB_BASE + "/storage/v1/object/public/chat-uploads/gen/d.xlsx"},
+            {"name": "weird.exe", "storage_path": "gen/w.exe"},
+        ]}
+        got = [d["path"] for d in w._doc_atts(row)]
+        self.assertEqual(got, ["gen/q.pdf", "gen/d.xlsx"])
+
+    def test_no_attachments(self):
+        self.assertEqual(w._doc_atts({"content": "hi"}), [])
+
+
+class TestExtractDocText(unittest.TestCase):
+    def test_txt(self):
+        data = "暗号 ZEBRA-7741\n供应商 火星".encode("utf-8")
+        self.assertIn("ZEBRA-7741", w._extract_doc_text("a.txt", data))
+
+    def test_csv(self):
+        self.assertIn("a,b", w._extract_doc_text("x.csv", b"a,b\n1,2"))
+
+
+class TestBuildMessagesDocs(unittest.TestCase):
+    def test_doc_text_injected(self):
+        url = _SB_BASE + "/storage/v1/object/public/chat-uploads/gen/secret.txt"
+        history = [{
+            "role": "expert", "content": "读一下这个文件",
+            "attachments": [{"name": "secret.txt", "mime_type": "text/plain",
+                             "url": url, "storage_path": "gen/secret.txt"}],
+        }]
+        sb = _FakeDocSb({"gen/secret.txt": "SECRET-CODE: ZEBRA-7741".encode("utf-8")})
+        msgs = w._build_messages(history, sb)
+        self.assertEqual(len(msgs), 1)
+        self.assertIn("ZEBRA-7741", msgs[0]["content"])
+        self.assertIn("secret.txt", msgs[0]["content"])
+
+    def test_no_sb_skips_doc(self):
+        # sb=None(向后兼容): 不下载文档, 只留正文
+        history = [{"role": "user", "content": "hi",
+                    "attachments": [{"name": "a.pdf", "storage_path": "gen/a.pdf"}]}]
+        msgs = w._build_messages(history)  # 不传 sb
+        self.assertEqual(msgs[0]["content"], "[小白] hi")
+
+
 if __name__ == "__main__":
     unittest.main()
