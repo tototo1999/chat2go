@@ -83,3 +83,13 @@ class TestSeal(unittest.TestCase):
         d2 = dict(self._data()); d2["stamp"] = False
         without = dr.render_document("quote", d2, {"name_cn": "X"}, seal_png=self._png())
         self.assertGreater(len(with_seal), len(without) + 100)
+
+
+class TestSchema(unittest.TestCase):
+    def test_schema_shape(self):
+        s = dr.DOCUMENT_TOOL_SCHEMA
+        self.assertEqual(s["name"], "make_document")
+        props = s["input_schema"]["properties"]
+        self.assertIn("doc_type", props)
+        self.assertEqual(props["doc_type"]["enum"], ["quote", "pi"])
+        self.assertEqual(set(s["input_schema"]["required"]), {"doc_type", "buyer", "items"})
