@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover
 
 import trade_accounting as ta  # 外贸会计核算工具 (子项目②)
 import doc_gen as dg            # Excel/PDF 生成 (子项目③)
+import doc_render as dr          # 品牌化 PDF 模板渲染 (make_document)
 import trade_memory as tm       # 订单状态机 + 冻结规则(记忆 P0)
 
 # Supabase Storage bucket (public, 已存在)
@@ -633,16 +634,27 @@ def _make_doc_and_upload(sb, tool_name: str, tool_input: dict,
                 blk["url"] = _seal_cache["seal"]
     data = builder(spec)
     display_name = (spec.get("filename") or "文件") + "." + ext
-    path = dg.storage_path(spec.get("filename") or "file", ext)
+    return _upload_doc_bytes(sb, data, display_name, mime)
+
+
+def _upload_doc_bytes(sb, data: bytes, filename: str, mime: str) -> tuple[dict, dict]:
+    """bytes → 上传 Supabase Storage → 返回 (attachment, tool_result)。
+    storage 路径 ASCII(uuid), 中文名只放 attachment.name(中文路径 Storage 会 400)。
+    供 make_pdf/make_excel(_make_doc_and_upload)和 make_document 复用。"""
+    # filename 形如 "报价单.pdf";拆出 base + ext 供 ASCII 路径生成
+    base, _, ext = filename.rpartition(".")
+    if not ext:
+        base, ext = filename, "bin"
+    path = dg.storage_path(base or "file", ext)
     sb.storage.from_(STORAGE_BUCKET).upload(
         path, data, {"content-type": mime, "upsert": "true"},
     )
     url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
     attachment = {
-        "name": display_name, "url": url, "size": len(data),
+        "name": filename, "url": url, "size": len(data),
         "mime_type": mime, "storage_path": path,
     }
-    tool_result = {"ok": True, "url": url, "name": display_name, "size_bytes": len(data),
+    tool_result = {"ok": True, "url": url, "name": filename, "size_bytes": len(data),
                    "note": "文件已生成并附在本条消息下,用户可直接下载"}
     return attachment, tool_result
 
@@ -662,6 +674,8 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         return _extract_text(resp).strip() or "(AI 没有返回内容)", attachments
 
     tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS + tm.ORDER_TOOL_SCHEMAS + [tm.REMEMBER_TOOL_SCHEMA]
+    if is_trade:
+        tools = tools + [dr.DOCUMENT_TOOL_SCHEMA]  # 品牌化 PDF 模板(报价/PI),仅外贸房
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
@@ -675,7 +689,23 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
         convo.append({"role": "assistant", "content": resp.content})
         results = []
         for tu in tool_uses:
-            if tu.name in dg.DOC_BUILDERS:
+            if tu.name == "make_document":
+                try:
+                    profile = tm.load_company_profile(sb, expert_id, product)
+                    tin = dict(tu.input or {})
+                    seal_url = _pick_seal_url(img_choices or []) if tin.get("stamp") else None
+                    seal_png = None
+                    if seal_url:
+                        raw = dg._fetch_bytes(seal_url)
+                        seal_png = dg._seal_png(raw) if raw else None
+                    tin.setdefault("date", tm._now_iso()[:10])
+                    pdf_bytes = dr.render_document(tin["doc_type"], tin, profile, seal_png)
+                    fname = f"{tin.get('doc_no') or tin['doc_type']}.pdf"
+                    att, out = _upload_doc_bytes(sb, pdf_bytes, fname, "application/pdf")
+                    attachments.append(att)
+                except Exception as e:  # noqa: BLE001
+                    out = {"error": f"文档生成/上传失败: {type(e).__name__}: {e}"}
+            elif tu.name in dg.DOC_BUILDERS:
                 try:
                     att, out = _make_doc_and_upload(sb, tu.name, tu.input or {},
                                                    image_map=image_map, img_choices=img_choices)
