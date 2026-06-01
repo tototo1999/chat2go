@@ -218,9 +218,11 @@ def _load_history(sb, room_id: str, channel: str, before_message_id: str) -> lis
     """拉本房本频道 N 条历史消息,按时间升序返回。
     placeholder 自身(role=ai content='...') 也会被拉到,要在这一步过滤掉。
     """
-    # 拿 trigger 消息的 created_at,确保上下文截止到它(不含 placeholder)
-    trig = sb.table("messages").select("created_at").eq("id", before_message_id).single().execute()
-    cutoff = trig.data["created_at"] if trig.data else None
+    # 拿 trigger 消息的 created_at,确保上下文截止到它(不含 placeholder)。
+    # 用 maybe_single: 触发消息偶发查到 0 行(并发/读时序)时返回 data=None 而不抛
+    # PGRST116, 退化成「不设截止、照常拉历史」, 而不是整条回复崩成「AI 调用失败」。
+    trig = sb.table("messages").select("created_at").eq("id", before_message_id).maybe_single().execute()
+    cutoff = trig.data["created_at"] if trig and trig.data else None
 
     q = sb.table("messages") \
         .select("id, role, content, type, attachments, created_at, channel") \

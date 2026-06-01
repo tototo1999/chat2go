@@ -281,5 +281,68 @@ class TestRunCompletion(unittest.TestCase):
         self.assertEqual(atts[0]["mime_type"], "application/pdf")
 
 
+# ── _load_history: 触发消息查不到时不该崩 (PGRST116 回归) ─────────────────────
+class _FakeQuery:
+    """模拟 supabase-py 查询链; maybe_single 标记下次 execute 返回触发消息结果。"""
+    def __init__(self, trig_data, history_rows):
+        self._trig_data = trig_data
+        self._history = history_rows
+        self._is_trig = False
+
+    # 链式方法一律返回自身
+    def select(self, *a, **k): return self
+    def eq(self, *a, **k): return self
+    def order(self, *a, **k): return self
+    def limit(self, *a, **k): return self
+    def lte(self, *a, **k): return self
+
+    def maybe_single(self):
+        self._is_trig = True
+        return self
+
+    def single(self):  # 若代码回退用 single, 0 行抛 PGRST116 — 测试要保证不会走这
+        self._is_trig = True
+        self._raise_single = True
+        return self
+
+    def execute(self):
+        if self._is_trig:
+            if getattr(self, "_raise_single", False) and self._trig_data is None:
+                raise Exception("PGRST116: Cannot coerce the result to a single JSON object")
+            return types.SimpleNamespace(data=self._trig_data)
+        return types.SimpleNamespace(data=self._history)
+
+
+class _FakeSbHistory:
+    def __init__(self, trig_data, history_rows):
+        self._trig_data = trig_data
+        self._history = history_rows
+
+    def table(self, _name):
+        return _FakeQuery(self._trig_data, self._history)
+
+
+class TestLoadHistory(unittest.TestCase):
+    def _rows(self):
+        return [
+            {"id": "u1", "role": "user", "content": "你好", "type": "text",
+             "attachments": None, "created_at": "2026-05-31T00:00:00+00", "channel": "main"},
+            {"id": "ph", "role": "ai", "content": "...", "type": "text",
+             "attachments": None, "created_at": "2026-05-31T00:00:01+00", "channel": "main"},
+        ]
+
+    def test_trigger_missing_does_not_crash(self):
+        # 触发消息查到 0 行 (data=None) → 不抛, 退化成照常拉历史
+        sb = _FakeSbHistory(trig_data=None, history_rows=self._rows())
+        out = w._load_history(sb, "room1", "main", "missing-id")
+        self.assertEqual([r["id"] for r in out], ["u1"])  # placeholder '...' 被过滤
+
+    def test_trigger_found_normal(self):
+        sb = _FakeSbHistory(trig_data={"created_at": "2026-05-31T00:00:05+00"},
+                            history_rows=self._rows())
+        out = w._load_history(sb, "room1", "main", "u1")
+        self.assertEqual([r["id"] for r in out], ["u1"])
+
+
 if __name__ == "__main__":
     unittest.main()
