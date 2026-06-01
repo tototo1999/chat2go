@@ -78,7 +78,10 @@ DOCUMENT_TOOL_SCHEMA = {
     },
 }
 
-_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+_TEMPLATE_DIR = os.environ.get(
+    "DOC_TEMPLATE_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
+)
 _DOC_EN = {"quote": "Quotation", "pi": "Proforma Invoice"}
 
 _env = Environment(

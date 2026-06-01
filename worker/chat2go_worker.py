@@ -51,6 +51,12 @@ app = modal.App("chat2go-worker")
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
+    # WeasyPrint 系统依赖 (Pango/Cairo/GDK-Pixbuf/FFI) + 中文字体 Noto Sans CJK
+    .apt_install(
+        "libpango-1.0-0", "libpangocairo-1.0-0", "libgdk-pixbuf-2.0-0",
+        "libffi-dev", "libcairo2", "fonts-noto-cjk", "fontconfig",
+    )
+    .run_commands("fc-cache -f")  # 重建字体缓存,WeasyPrint 才能找到 Noto CJK
     .pip_install(
         "supabase>=2.10.0",
         "anthropic>=0.39.0",
