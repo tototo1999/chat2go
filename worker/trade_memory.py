@@ -79,3 +79,74 @@ ORDER_TOOL_SCHEMAS = [
     },
 ]
 ORDER_TOOLS = {"update_order_status", "query_orders"}
+
+# ── DB 薄封装(worker 传 service-role sb;本地不单测,部署后真实验)──────────────
+from datetime import datetime, timezone
+
+MEMORY_BUCKET_RULES_LIMIT = 40
+
+
+def _now_iso() -> str:
+    """关闭旧订单行用的 UTC ISO 时间戳(supabase-py 不能传 SQL now(),需 Python 算)。"""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def load_frozen_rules(sb, expert_id: str, product: str = "tradego") -> list[dict]:
+    """读该大咖该产品的冻结规则,版本新→旧。"""
+    if not expert_id:
+        return []
+    return sb.table("tradego_memory_rules") \
+        .select("content, version") \
+        .eq("expert_id", expert_id).eq("product", product).eq("status", "frozen") \
+        .order("version", desc=True).limit(MEMORY_BUCKET_RULES_LIMIT) \
+        .execute().data or []
+
+
+def load_active_orders(sb, room_id: str) -> list[dict]:
+    """读本房订单全部行,Python 侧过滤当前态(避开 postgrest null 过滤歧义)。"""
+    rows = sb.table("tradego_orders") \
+        .select("customer, product_desc, amount, currency, status, valid_to") \
+        .eq("room_id", room_id).execute().data or []
+    return current_orders_from_rows(rows)
+
+
+def dispatch_order_tool(sb, room_id: str, expert_id: str,
+                        name: str, tool_input: dict, source_message_id: str | None = None) -> dict:
+    """执行订单工具,返回给 LLM 的 tool_result dict。"""
+    ti = tool_input or {}
+    if name == "query_orders":
+        orders = load_active_orders(sb, room_id)
+        cust = (ti.get("customer") or "").strip()
+        if cust:
+            orders = [o for o in orders if (o.get("customer") or "") == cust]
+        return {"ok": True, "orders": orders, "count": len(orders)}
+
+    if name == "update_order_status":
+        customer = (ti.get("customer") or "").strip()
+        new_status = (ti.get("new_status") or "").strip()
+        if not customer or not new_status:
+            return {"ok": False, "error": "缺 customer 或 new_status"}
+        active = [o for o in load_active_orders(sb, room_id)
+                  if (o.get("customer") or "") == customer]
+        old_status = active[0]["status"] if active else None
+        if not is_valid_transition(old_status, new_status):
+            return {"ok": False,
+                    "error": f"非法状态变更:{old_status or '(新建)'} → {new_status}。"
+                             f"只能前进,合法状态:{ORDER_STATUSES}"}
+        if active:
+            sb.table("tradego_orders").update({"valid_to": _now_iso()}) \
+                .eq("room_id", room_id).eq("customer", customer).is_("valid_to", "null").execute()
+        prev = active[0] if active else {}
+        row = {
+            "room_id": room_id, "expert_id": expert_id, "customer": customer,
+            "status": new_status,
+            "product_desc": ti.get("product_desc") or prev.get("product_desc"),
+            "amount": ti.get("amount") if ti.get("amount") is not None else prev.get("amount"),
+            "currency": ti.get("currency") or prev.get("currency"),
+            "source_message_id": source_message_id,
+        }
+        sb.table("tradego_orders").insert(row).execute()
+        return {"ok": True, "customer": customer,
+                "from": old_status or "(新建)", "to": new_status}
+
+    return {"ok": False, "error": f"未知订单工具 {name}"}
