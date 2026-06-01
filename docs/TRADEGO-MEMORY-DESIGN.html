@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade2GO 记忆系统设计 · C′ 方案</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-glow:#3b82f6; --cyan:#22d3ee;
+    --bg:#0a0e1a; --card:#121a2e; --line:#1e2a44;
+    --txt:#dbe4f3; --dim:#8a9bbd; --warn:#fbbf24; --ok:#34d399; --bad:#f87171; --code:#0d1424;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(37,99,235,.18), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(34,211,238,.10), transparent 55%), var(--bg);
+    color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;
+    line-height:1.7; font-size:15px;}
+  .wrap{max-width:960px; margin:0 auto; padding:48px 28px 120px}
+  header{border:1px solid var(--line); border-radius:18px; padding:34px 32px;
+    background:linear-gradient(135deg, rgba(37,99,235,.16), rgba(15,22,38,.6));
+    box-shadow:0 0 0 1px rgba(59,130,246,.12), 0 20px 60px -20px rgba(37,99,235,.4); position:relative; overflow:hidden}
+  .badge{display:inline-block; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--cyan); border:1px solid rgba(34,211,238,.35); padding:3px 12px; border-radius:999px; background:rgba(34,211,238,.06)}
+  h1{margin:14px 0 6px; font-size:32px; font-weight:800; letter-spacing:-.5px;
+    background:linear-gradient(90deg,#fff,#bcd4ff 60%,var(--cyan)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{color:var(--dim); font-size:14px; margin-top:8px}
+  .lede{font-size:16px; color:#cdd9ee; background:rgba(37,99,235,.07); border-left:3px solid var(--blue);
+    padding:14px 18px; border-radius:0 10px 10px 0; margin:16px 0}
+  h2{margin:46px 0 14px; font-size:22px; font-weight:700; color:#fff; padding-bottom:10px; border-bottom:1px solid var(--line); position:relative}
+  h2::before{content:""; position:absolute; left:0; bottom:-1px; width:60px; height:2px;
+    background:linear-gradient(90deg,var(--blue),var(--cyan)); box-shadow:0 0 12px var(--blue-glow)}
+  h3{margin:22px 0 8px; font-size:16px; color:var(--cyan); font-weight:700}
+  p{margin:10px 0}
+  code{background:var(--code); color:#7dd3fc; padding:1.5px 6px; border-radius:5px;
+    font-family:"SF Mono",Menlo,Consolas,monospace; font-size:.86em; border:1px solid var(--line)}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:6px 22px; margin:16px 0; box-shadow:0 8px 30px -18px rgba(0,0,0,.8)}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:13.5px}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{color:var(--cyan); font-weight:600; background:rgba(34,211,238,.04)}
+  tr:hover td{background:rgba(59,130,246,.04)}
+  ul,ol{padding-left:22px} li{margin:6px 0}
+  .tag{font-size:11px; padding:1px 8px; border-radius:6px; font-weight:600; white-space:nowrap}
+  .t-ok{background:rgba(52,211,153,.12); color:var(--ok); border:1px solid rgba(52,211,153,.3)}
+  .t-warn{background:rgba(251,191,36,.12); color:var(--warn); border:1px solid rgba(251,191,36,.3)}
+  .t-bad{background:rgba(248,113,113,.1); color:var(--bad); border:1px solid rgba(248,113,113,.3)}
+  .t-new{background:rgba(59,130,246,.14); color:#93c5fd; border:1px solid rgba(59,130,246,.35)}
+  .flow{display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:14px 0; font-size:13px}
+  .step{padding:7px 12px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.02)}
+  .step b{color:#fff}
+  .arr{color:var(--cyan)}
+  .kill{text-decoration:line-through; color:var(--dim)}
+  .pill{display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; margin-right:6px}
+  .p0{background:rgba(248,113,113,.14); color:#fca5a5; border:1px solid rgba(248,113,113,.3)}
+  .p1{background:rgba(251,191,36,.14); color:#fcd34d; border:1px solid rgba(251,191,36,.3)}
+  .p2{background:rgba(52,211,153,.14); color:#6ee7b7; border:1px solid rgba(52,211,153,.3)}
+  .p3{background:rgba(59,130,246,.14); color:#93c5fd; border:1px solid rgba(59,130,246,.3)}
+  .q{background:rgba(251,191,36,.07); border:1px solid rgba(251,191,36,.3); border-radius:12px; padding:6px 20px; margin-top:14px}
+  footer{margin-top:60px; text-align:center; color:var(--dim); font-size:12.5px}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:680px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="badge">Design · Brainstorm 产出</span>
+  <h1>Trade2GO 记忆系统设计 · C′ 方案</h1>
+  <div class="sub">外贸跟单(CheckToGo.ai = Trade2GO 别名) ｜ 2026-06-01 ｜ 待你确认 → 落 spec → 实现</div>
+  <div class="lede"><b>一句话:</b>用强模型(Sonnet)当"老师"把对话里搞定的口径/习惯<b>结晶成纯文本规则并冻结版本</b>,弱模型(Haiku 4.5)当"执行工"照规则答。<b>确定的不推翻、知识单调向前、成果可复用到别的模型</b>。订单进度走结构化状态表,语义记忆走 Claude memory tool。</div>
+</header>
+
+<h2>0 · 怎么走到 C′ 的(决策链)</h2>
+<div class="flow">
+  <span class="step">取消<b>打钩</b>沉淀</span><span class="arr">→</span>
+  <span class="step"><b>AI 自主</b>从对话判断记/更新</span><span class="arr">→</span>
+  <span class="step">选 <b>C</b>:Claude memory tool</span><span class="arr">→</span>
+  <span class="step t-bad" style="border-color:rgba(248,113,113,.4)">⚠️ OpenRouter <b>不透传</b> memory beta(400)</span><span class="arr">→</span>
+  <span class="step t-new"><b>C′</b>:tradego <b>直连 Anthropic</b></span>
+</div>
+<p class="sub">验证依据:OpenRouter 的 Claude 端点不支持 <code>context-management-2025-06-27</code> beta,带该 header 直接 400 → memory tool 必须直连 Anthropic。国产模型可移植性<b>本期不做</b>(C′ 绑 Claude 家族,够 Sonnet↔Haiku 4.5 切)。</p>
+
+<h2>1 · 总体:三种存储,各管一摊</h2>
+<div class="card"><table>
+  <tr><th>存什么</th><th>怎么存</th><th>为什么</th></tr>
+  <tr><td><b>订单 / 跟单进度</b>(有状态)</td><td>Supabase 结构化表 <code>tradego_orders</code>(status 枚举 + 双时序 valid_from/to)+ 专用工具</td><td>状态机<b>绝不能</b>塞自由文本(调研头号坑:会自相矛盾)</td></tr>
+  <tr><td><b>冻结规则 / 候选 / 客户事实</b>(语义)</td><td><b>Claude memory tool</b>(<code>/memories/…</code> 文件,后端落 Supabase)</td><td>原生 view/create/str_replace,省脚手架 + context editing 省 token</td></tr>
+  <tr><td><b>行业基线 prompt</b></td><td>代码 <code>INDUSTRY_PROMPTS['外贸']</code></td><td>不变的底座</td></tr>
+</table></div>
+<p>memory 文件约定:<code>rules/frozen.md</code>(冻结,带版本号)· <code>rules/candidates.md</code>(候选)· <code>customers/&lt;id&gt;.md</code>(客户长期事实)。按 <code>expert_id + product</code> 隔离。</p>
+
+<h2>2 · 写入 &amp; 冻结(防推翻的核心)</h2>
+<div class="card">
+  <h3>热路径(边聊边记)</h3>
+  <p>Sonnet 边回答边判断,新东西<b>只写进 <code>candidates.md</code></b>(不动冻结层)。<b>廉价关键词门控</b>:出现 金额/单号/FOB·CIF/已发货… 才触发判定,寒暄直接跳过省 token。判定逻辑借 mem0 的 <b>ADD / UPDATE / NOOP</b> prompt(让 LLM 判,不写 if-else)。</p>
+  <h3>候选 → 冻结:三种信号(全要)</h3>
+  <ol>
+    <li><b>大咖一句话确认</b> —— AI 识别「对 / 以后都这样」→ 候选升冻结 + 版本号 +1(替代旧的打钩按钮)</li>
+    <li><b>重复自判</b> —— 同口径连续被遵循 N 次且无反驳 → 后台 Sonnet 巡检自动升级</li>
+    <li><b>版本快照 + 测评集门槛</b> —— 攒一批候选 → 跑外贸场景测评集 → 过了才 cut 成 <code>frozen.md vN</code></li>
+  </ol>
+  <h3>防推翻</h3>
+  <p><code>frozen.md</code> 只能由上面三条确认/版本路径改;执行模型被明确告知<b>冻结规则是权威、不许私自覆盖</b>。要改先经确认或新版本。</p>
+</div>
+
+<h2>3 · 订单状态机</h2>
+<div class="card">
+  <div class="flow">
+    <span class="step">报价</span><span class="arr">→</span>
+    <span class="step">待 PI</span><span class="arr">→</span>
+    <span class="step">已付定金</span><span class="arr">→</span>
+    <span class="step">生产中</span><span class="arr">→</span>
+    <span class="step">已发货</span><span class="arr">→</span>
+    <span class="step">收尾</span>
+  </div>
+  <p><code>tradego_orders</code>:status 枚举 + 金额/币种/客户 + <b>双时序</b>(状态变更不删旧值,旧行置 <code>valid_to</code>,留时间线)。工具:<code>update_order_status</code>(只允许合法迁移)+ <code>query_orders</code>。</p>
+  <p class="sub">⚠️ 待你确认:上面枚举要不要按你真实跟单流程改。</p>
+</div>
+
+<h2>4 · 检索 · 注入 · 模型路由</h2>
+<div class="two">
+  <div class="card">
+    <h3>注入(system prompt 分层)</h3>
+    <ul style="padding-left:18px">
+      <li>行业基线 prompt</li>
+      <li><b>冻结规则</b>(权威,<b>prompt-cached</b> 5min)</li>
+      <li>当前活跃订单摘要(查表)</li>
+      <li>相关候选;更深回忆走 memory tool view</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>模型路由(<code>product=tradego</code> → 直连 Anthropic)</h3>
+    <ul style="padding-left:18px">
+      <li><b>现在</b>:Sonnet 4.6 = 老师(写规则)</li>
+      <li><b>规则稳了</b>:回答切 <b>Haiku 4.5</b>(执行,约 1/3 成本)</li>
+      <li>记忆固化仍留 Sonnet 后台巡检</li>
+    </ul>
+  </div>
+</div>
+<p>省钱三件套:<b>prompt caching</b>(规则当缓存前缀)+ <b>context editing</b>(长会话清旧 tool 结果)+ <b>关键词门控</b>判定。</p>
+
+<h2>5 · 测评集(一举两得)</h2>
+<div class="card"><p>攒一组真实跟单对话 + 期望行为:① <b>冻结新版本前的门槛</b> ② 以后<b>换 Haiku / 国产模型时拿它验证「成果可复用」</b> —— 正好兑现你要的可移植验证。</p></div>
+
+<h2>6 · 分阶段落地</h2>
+<div class="card"><table>
+  <tr><th>阶段</th><th>做什么</th></tr>
+  <tr><td><span class="pill p0">P0</span></td><td><code>tradego_orders</code> 表 + update/query 工具 + 冻结规则纯文本注入(手动种几条)→ 跑通最小闭环</td></tr>
+  <tr><td><span class="pill p1">P1</span></td><td>memory tool 后端(Supabase)+ Sonnet 写候选 + 大咖一句话确认冻结</td></tr>
+  <tr><td><span class="pill p2">P2</span></td><td>后台巡检(重复 N 次升级)+ 版本快照 + 测评集门槛</td></tr>
+  <tr><td><span class="pill p3">P3</span></td><td>回答切 Haiku 4.5 + context editing;退休旧 <code class="kill">trg_save_memory_on_expert_up</code> 打钩触发器</td></tr>
+</table></div>
+
+<h2>7 · 调研背书 &amp; 避坑</h2>
+<div class="two">
+  <div class="card">
+    <h3>抄进来的范式</h3>
+    <ul style="padding-left:18px">
+      <li><b>mem0</b> A.U.D.N. 判定(何时记/更新)</li>
+      <li><b>Zep/Graphiti</b> 双时序(订单不删旧值)</li>
+      <li><b>Generative-Agents</b> 三因子检索(recency+importance+相关性)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>避的坑</h3>
+    <ul style="padding-left:18px">
+      <li>订单进度<b>不</b>用自由文本(会自相矛盾)→ 结构化表</li>
+      <li>高置信<b>陈旧</b>记忆:大咖一句话可即时 invalidate + cron 审计</li>
+      <li>判定器漏写:关键词门控 + 系统提示反复强调"做了决策就记" + 小样本回归</li>
+    </ul>
+  </div>
+</div>
+
+<div class="q">
+  <h3>⚠️ 待你拍板的 3 个点</h3>
+  <ol>
+    <li>订单 <b>status 枚举</b>要不要按你真实跟单流程改?</li>
+    <li>"重复 N 次"自动冻结的 <b>N 取几</b>?(建议 3)</li>
+    <li>P0 范围够不够小?要不要先只做 P0 验证体验,再继续?</li>
+  </ol>
+</div>
+
+<footer>Trade2GO 记忆系统设计 · C′ 方案 · 2026-06-01 · 确认后落 docs/superpowers/specs/ 并转 writing-plans</footer>
+</div>
+</body>
+</html>
