@@ -68,11 +68,17 @@ image = (
         "pypdf>=4.0",         # PDF 文本提取 (读文件)
         "python-docx>=1.1",   # Word 文本提取 (读文件)
         "xlrd>=2.0",          # 老式 .xls 读取(报关/开票资料,openpyxl 不认 .xls)
+        "weasyprint",         # 品牌级单证 HTML→PDF 渲染 (make_document)
+        "jinja2",             # 单证模板引擎 (make_document)
     )
     # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
     .add_local_python_source("doc_gen")
+    .add_local_python_source("doc_render")
     .add_local_python_source("trade_memory")
+    # 品牌化单证模板目录(brand.css/base.html/quote.html/pi.html)挂进容器
+    .add_local_dir("templates", "/root/templates")
+    .env({"DOC_TEMPLATE_DIR": "/root/templates"})
 )
 
 # 复用 speak2go-secrets(已有 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) + chat2go-extras
@@ -198,6 +204,12 @@ TRADE_ACCOUNTING_GUIDE = """
 3. **没调用工具,就绝对不能说「已生成」「点击下载」**。没生成成功就如实说,别谎称已生成。
 4. **用户要「一页纸 / 压成一页 / 紧凑」**:调 make_pdf 时传 **`fit_pages: 1`**,系统自动缩字号+边距把内容压进一页。**你能控制页数和字号,别再说「无法控制页数/字体」** —— 直接传 fit_pages 重出。
 5. **用户要「盖公章 / 加章」**:在 blocks 里**紧跟「需方盖章:」那段之后**放一个 **`{type:'image', overlay:true, width_mm:42}`** 块(**不用指定哪张图** —— 系统会自动从用户传的图里挑出那张方形红章、抠白底、精确压在「需方盖章:」那行上,真盖章效果)。**你能盖章,别让用户去 WPS。**
+
+## 标准单证优先用 make_document(品牌级排版)
+- **标准外贸单证(报价单 / 形式发票 PI)→ 必须用 make_document**(品牌级排版,样式统一)。只需给 doc_type(quote/pi) + buyer(客户) + items(货物:name/spec/qty/unit_price) + trade_term + terms(条款键值对);要盖章传 stamp:true。卖方公司抬头/银行/logo/公章不用你填,系统按公司档案自动套。
+- 非标准/自由格式文档才用 make_pdf。
+- 若公司档案还没建立,先用 remember 工具记一条 kind='company'、title='公司档案'、content 为 JSON(name_cn/name_en/address/tel/email/contact/logo_text/bank{beneficiary/bank_name/account/swift}),再出单证。
+- 仍然:严禁编造下载链接,必须真的调用工具生成。
 
 ## 沉淀记忆(remember)— 何时记 / 何时先确认
 你有 `remember` 工具,把该**长期记住**的东西存下来(跨对话永久),别让大咖教过的东西聊几轮就忘:
