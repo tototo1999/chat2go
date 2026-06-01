@@ -71,14 +71,14 @@ image = (
         "weasyprint",         # 品牌级单证 HTML→PDF 渲染 (make_document)
         "jinja2",             # 单证模板引擎 (make_document)
     )
+    .env({"DOC_TEMPLATE_DIR": "/root/templates"})  # 必须在 add_local_* 之前(env 是构建步骤)
     # 本地纯 python 模块(会计工具②, 文档生成③), 随 image 带进容器
     .add_local_python_source("trade_accounting")
     .add_local_python_source("doc_gen")
     .add_local_python_source("doc_render")
     .add_local_python_source("trade_memory")
-    # 品牌化单证模板目录(brand.css/base.html/quote.html/pi.html)挂进容器
+    # 品牌化单证模板目录(brand.css/base.html/quote.html/pi.html)挂进容器,放最后
     .add_local_dir("templates", "/root/templates")
-    .env({"DOC_TEMPLATE_DIR": "/root/templates"})
 )
 
 # 复用 speak2go-secrets(已有 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) + chat2go-extras
