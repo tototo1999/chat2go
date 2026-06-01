@@ -125,7 +125,9 @@ _TEMPLATE_DIR = os.environ.get(
     "DOC_TEMPLATE_DIR",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates"),
 )
-_DOC_EN = {"quote": "Quotation", "pi": "Proforma Invoice"}
+_DOC_EN = {"quote": "Quotation", "pi": "Proforma Invoice",
+           "contract": "Sales Contract", "ci": "Commercial Invoice",
+           "packing": "Packing List", "statement": "Statement of Account"}
 
 _env = Environment(
     loader=FileSystemLoader(_TEMPLATE_DIR),

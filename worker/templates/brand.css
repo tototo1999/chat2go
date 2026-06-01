@@ -62,3 +62,11 @@ table.totals .grand td{border-top:2px solid var(--brand); font-size:14px; font-w
 .sign .box .lab{color:var(--muted); margin-bottom:30px;}
 .sign .box .line{border-top:1px solid var(--line2); padding-top:6px; position:relative;}
 .seal{position:absolute; right:24px; top:-46px; width:42mm; height:42mm; opacity:.85; transform:rotate(-14deg);}
+
+/* Phase 2 追加 */
+.md-clauses{font-size:11px;line-height:1.6;margin-top:6px;}
+.md-clauses .c{display:flex;gap:9px;padding:3px 0;border-bottom:1px dashed var(--line);}
+.md-clauses .c .n{color:var(--brand);font-weight:700;min-width:120px;flex-shrink:0;}
+table.items tfoot td{padding:8px 10px;font-weight:600;}
+table.items tfoot .grand td{border-top:2px solid var(--brand);color:var(--amount);font-size:13px;}
+.doc-note{font-size:10.5px;color:var(--muted);margin-top:12px;line-height:1.6;}

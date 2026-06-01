@@ -13,12 +13,15 @@
     </div>
     <div class="doc-title"><h1>{{ title_cn }}</h1><div class="en">{{ doc_en }}</div></div>
   </div>
+  {% block meta %}
   <div class="meta">
     {% if doc_no %}<div><span>单号</span><b>{{ doc_no }}</b></div>{% endif %}
     {% if date %}<div><span>日期</span><b>{{ date }}</b></div>{% endif %}
     {% if validity %}<div><span>有效期</span><b>{{ validity }}</b></div>{% endif %}
   </div>
+  {% endblock %}
 
+  {% block parties %}
   <div class="parties">
     <div class="party"><div class="label">致 / To Buyer</div>
       <div class="nm">{{ buyer.name or "" }}</div>
@@ -29,9 +32,11 @@
       <div class="ln">{% if seller.contact %}联系人：{{ seller.contact }}<br>{% endif %}{% if seller.tel %}Tel: {{ seller.tel }}<br>{% endif %}{% if seller.email %}Email: {{ seller.email }}{% endif %}</div>
     </div>
   </div>
+  {% endblock %}
 
   {% block body %}{% endblock %}
 
+  {% block sign %}
   <div class="sign">
     <div class="box"><div class="lab">买方确认（盖章/签字）：</div><div class="line">Buyer Confirmation</div></div>
     <div class="box"><div class="lab">{{ seller_seal_label }}</div>
@@ -40,4 +45,5 @@
       </div>
     </div>
   </div>
+  {% endblock %}
 </body></html>
