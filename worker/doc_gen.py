@@ -82,11 +82,8 @@ def build_excel(spec: dict) -> bytes:
 
 # ── PDF ──────────────────────────────────────────────────────────────────────
 
-def build_pdf(spec: dict) -> bytes:
-    """结构化文档 → .pdf bytes (中文用 STSong-Light, 无豆腐块)。
-    spec: {filename, title?, blocks[]}
-    blocks: [{type:'paragraph', text}, {type:'table', headers[], rows[][]}]
-    """
+def _build_pdf_bytes(spec: dict, scale: float = 1.0) -> bytes:
+    """渲染一次 PDF。scale<1 时等比缩小字号/行距/边距/留白/表格 padding,用于压页。"""
     _ensure_cn_font()
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
@@ -98,21 +95,21 @@ def build_pdf(spec: dict) -> bytes:
 
     styles = getSampleStyleSheet()
     body = ParagraphStyle("CNBody", parent=styles["Normal"],
-                          fontName=_CN_FONT, fontSize=11, leading=18)
+                          fontName=_CN_FONT, fontSize=11 * scale, leading=18 * scale)
     h1 = ParagraphStyle("CNTitle", parent=styles["Title"],
-                        fontName=_CN_FONT, fontSize=18, leading=24)
+                        fontName=_CN_FONT, fontSize=18 * scale, leading=24 * scale)
 
     story = []
     title = spec.get("title")
     if title:
         story.append(Paragraph(title, h1))
-        story.append(Spacer(1, 6 * mm))
+        story.append(Spacer(1, 6 * mm * scale))
 
     for blk in (spec.get("blocks") or []):
         btype = blk.get("type")
         if btype == "paragraph":
             story.append(Paragraph(str(blk.get("text", "")), body))
-            story.append(Spacer(1, 3 * mm))
+            story.append(Spacer(1, 3 * mm * scale))
         elif btype == "table":
             headers = blk.get("headers") or []
             rows = blk.get("rows") or []
@@ -120,29 +117,60 @@ def build_pdf(spec: dict) -> bytes:
             if not data:
                 continue
             # 用 Paragraph 包裹单元格以支持中文字体
-            cell_style = ParagraphStyle("CNCell", parent=body, fontSize=10, leading=14)
+            cell_style = ParagraphStyle("CNCell", parent=body,
+                                        fontSize=10 * scale, leading=14 * scale)
             wrapped = [[Paragraph(str(c), cell_style) for c in row] for row in data]
             tbl = Table(wrapped, hAlign="LEFT")
+            pad = max(1, round(4 * scale))
             ts = [
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#F0F0F0")),
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                ("TOPPADDING", (0, 0), (-1, -1), pad),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), pad),
             ]
             tbl.setStyle(TableStyle(ts))
             story.append(tbl)
-            story.append(Spacer(1, 4 * mm))
+            story.append(Spacer(1, 4 * mm * scale))
 
     if not story:
         story.append(Paragraph(" ", body))
 
+    margin = max(8.0, 20 * scale)   # mm,下限 8mm
+    lr = max(8.0, 18 * scale)
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
-                            topMargin=20 * mm, bottomMargin=20 * mm,
-                            leftMargin=18 * mm, rightMargin=18 * mm)
+                            topMargin=margin * mm, bottomMargin=margin * mm,
+                            leftMargin=lr * mm, rightMargin=lr * mm)
     doc.build(story)
     return buf.getvalue()
+
+
+def _page_count(data: bytes) -> int:
+    try:
+        from pypdf import PdfReader
+        return len(PdfReader(io.BytesIO(data)).pages)
+    except Exception:
+        return 1
+
+
+def build_pdf(spec: dict) -> bytes:
+    """结构化文档 → .pdf bytes (中文用 STSong-Light, 无豆腐块)。
+    spec: {filename, title?, blocks[], fit_pages?}
+    blocks: [{type:'paragraph', text}, {type:'table', headers[], rows[][]}]
+    fit_pages 设了(如 1)→ 自动等比缩小字号/边距,边渲染边数页,收敛到 ≤fit_pages 页(尽力)。
+    不传 → 默认字号、自动分页(原行为)。
+    """
+    fit = spec.get("fit_pages")
+    if not isinstance(fit, int) or fit < 1:
+        return _build_pdf_bytes(spec, 1.0)
+    last = None
+    for scale in (1.0, 0.88, 0.78, 0.68, 0.6, 0.52, 0.45):
+        data = _build_pdf_bytes(spec, scale)
+        last = data
+        if _page_count(data) <= fit:
+            return data
+    return last  # 缩到下限仍超页 → 返回最小那版(尽力)
 
 
 # ── Claude tool schemas (dispatch 在 worker 层, 因需上传副作用) ────────────────
@@ -163,12 +191,15 @@ DOC_TOOL_SCHEMAS = [
     },
     {
         "name": "make_pdf",
-        "description": "把结构化文档生成可下载的 PDF 文件(中文正常显示)。报价单/合同/PI/正式文件用。filename 用中文(无扩展名)。",
+        "description": "把结构化文档生成可下载的 PDF 文件(中文正常显示)。报价单/合同/PI/正式文件用。filename 用中文(无扩展名)。"
+                       "用户要「一页纸/压成一页/紧凑排版」时,传 fit_pages=1,系统会自动缩字号和边距把内容压进一页 —— 你**能**控制页数,别再说做不到。",
         "input_schema": {"type": "object", "properties": {
             "filename": {"type": "string", "description": "中文文件名, 无扩展名, 如 '报价单'"},
             "title": {"type": "string"},
             "blocks": {"type": "array", "items": {"type": "object"},
                        "description": "文档块: {type:'paragraph',text} 或 {type:'table',headers[],rows[][]}"},
+            "fit_pages": {"type": "integer",
+                          "description": "把内容压到几页内(用户要一页就传 1)。系统自动等比缩字号/边距适配。不传=默认字号自动分页。"},
         }, "required": ["filename", "blocks"]},
     },
 ]
