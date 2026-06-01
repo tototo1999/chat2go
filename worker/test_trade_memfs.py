@@ -170,5 +170,119 @@ class TestDispatch(unittest.TestCase):
         self.assertIn("unknown memory command", out)
 
 
+# ── worker 集成: memory tool 经 _run_completion 不崩, content 是 plain string ──
+import test_worker_toolloop as tw  # noqa: E402  复用 fake-modal 后的真实 worker
+
+w = tw.w
+_Block = tw._Block
+_Resp = tw._Resp
+_FakeCli = tw._FakeCli
+
+
+class _MemSbQuery:
+    """支持 memory 分支用到的链: select/eq/maybe_single/upsert/delete/like/execute。"""
+    def __init__(self, files):
+        self._files = files
+        self._mode = None      # 'read' | 'list' | 'delete'
+        self._path = None
+        self._prefix = None
+        self._upsert = None
+
+    def select(self, *a, **k):
+        self._mode = "read"
+        return self
+
+    def upsert(self, row, *a, **k):
+        self._upsert = row
+        return self
+
+    def delete(self, *a, **k):
+        self._mode = "delete"
+        return self
+
+    def eq(self, col, val):
+        if col == "path":
+            self._path = val
+        return self
+
+    def like(self, col, pattern):
+        self._mode = "list"
+        self._prefix = pattern.rstrip("%")
+        return self
+
+    def maybe_single(self):
+        return self
+
+    def execute(self):
+        import types as _t
+        if self._upsert is not None:
+            self._files[self._upsert["path"]] = self._upsert["content"]
+            return _t.SimpleNamespace(data=self._upsert)
+        if self._mode == "delete":
+            self._files.pop(self._path, None)
+            return _t.SimpleNamespace(data=None)
+        if self._mode == "list":
+            rows = [{"path": p} for p in self._files if p.startswith(self._prefix)]
+            return _t.SimpleNamespace(data=rows)
+        # read
+        if self._path in self._files:
+            return _t.SimpleNamespace(data={"content": self._files[self._path]})
+        return _t.SimpleNamespace(data=None)
+
+
+class _MemSb:
+    def __init__(self):
+        self.files = {}
+
+    def table(self, _name):
+        return _MemSbQuery(self.files)
+
+
+class TestWorkerMemoryIntegration(unittest.TestCase):
+    def test_memory_tool_does_not_crash_and_returns_text(self):
+        # 第1次: AI 调 memory view /memories; 第2次: AI 给最终文字
+        mem_tu = _Block("tool_use", name="memory",
+                        input={"command": "view", "path": "/memories"}, id="m1")
+        cli = _FakeCli([
+            _Resp([mem_tu]),
+            _Resp([_Block("text", text="记忆已读取")]),
+        ])
+        sb = _MemSb()
+        out, atts = w._run_completion(
+            cli, sb, "claude-opus-4-8", "sys",
+            [{"role": "user", "content": "看下记忆"}],
+            is_trade=True, expert_id="exp1", product="tradego")
+        self.assertEqual(out, "记忆已读取")
+        # memory tool_result content 必须是 plain string(非 json), 含目录 header
+        tr = cli.calls[1]["messages"][-1]["content"][0]
+        self.assertEqual(tr["type"], "tool_result")
+        self.assertIsInstance(tr["content"], str)
+        self.assertIn("files and directories in /memories", tr["content"])
+        # 第一次调用带了 memory tool + adaptive thinking + high effort
+        names = [t.get("name") for t in cli.calls[0]["tools"]]
+        self.assertIn("memory", names)
+        self.assertEqual(cli.calls[0]["thinking"], {"type": "adaptive"})
+        self.assertEqual(cli.calls[0]["output_config"], {"effort": "high"})
+
+    def test_memory_create_persists_string_result(self):
+        create_tu = _Block("tool_use", name="memory",
+                           input={"command": "create", "path": "/memories/lessons.md",
+                                  "file_text": "客户 ACME 只接受 FOB"}, id="m2")
+        cli = _FakeCli([
+            _Resp([create_tu]),
+            _Resp([_Block("text", text="已记住")]),
+        ])
+        sb = _MemSb()
+        out, _ = w._run_completion(
+            cli, sb, "claude-opus-4-8", "sys",
+            [{"role": "user", "content": "记住 ACME 只接受 FOB"}],
+            is_trade=True, expert_id="exp1", product="tradego")
+        self.assertEqual(out, "已记住")
+        self.assertEqual(sb.files["/memories/lessons.md"], "客户 ACME 只接受 FOB")
+        tr = cli.calls[1]["messages"][-1]["content"][0]
+        self.assertIsInstance(tr["content"], str)
+        self.assertIn("created successfully", tr["content"])
+
+
 if __name__ == "__main__":
     unittest.main()

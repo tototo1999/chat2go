@@ -43,6 +43,7 @@ import doc_gen as dg            # Excel/PDF 生成 (子项目③)
 import doc_render as dr          # 品牌化 PDF 模板渲染 (make_document)
 import trade_memory as tm       # 订单状态机 + 冻结规则(记忆 P0)
 import trade_trace as ttrace     # Trace 采集:真实请求落库可回放
+import trade_memfs as tmf        # Anthropic native memory tool (memory_20250818) 后端
 
 # Supabase Storage bucket (public, 已存在)
 STORAGE_BUCKET = "chat-uploads"
@@ -79,6 +80,7 @@ image = (
     .add_local_python_source("doc_render")
     .add_local_python_source("trade_memory")
     .add_local_python_source("trade_trace")
+    .add_local_python_source("trade_memfs")
     # 品牌化单证模板目录(brand.css/base.html/quote.html/pi.html)挂进容器,放最后
     .add_local_dir("templates", "/root/templates")
 )
@@ -269,7 +271,7 @@ HISTORY_LIMIT = 40
 DEFAULT_MODEL = ("anthropic/claude-sonnet-4.6"
                  if os.environ.get("OPENROUTER_API_KEY") else "claude-sonnet-4-6")
 # tradego 强制直连时用横杠名(忽略 OpenRouter 点号名)
-DIRECT_MODEL = "claude-sonnet-4-6"
+DIRECT_MODEL = "claude-opus-4-8"
 # 单次回复 max_tokens
 MAX_TOKENS = 4096
 # 外贸 tool-use 单轮最多工具调用次数(防失控/防成本爆炸)
@@ -702,11 +704,13 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     tools = ta.TOOL_SCHEMAS + dg.DOC_TOOL_SCHEMAS + tm.ORDER_TOOL_SCHEMAS + [tm.REMEMBER_TOOL_SCHEMA]
     if is_trade:
         tools = tools + [dr.DOCUMENT_TOOL_SCHEMA]  # 品牌化 PDF 模板(报价/PI),仅外贸房
+    tools = tools + [{"type": "memory_20250818", "name": "memory"}]  # 跨会话记忆(客户端工具)
     convo = list(messages)
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
             model=model, max_tokens=MAX_TOKENS, system=system_blocks,
             messages=convo, tools=tools,
+            thinking={"type": "adaptive"}, output_config={"effort": "high"},
         )
         u = getattr(resp, "usage", None)
         if u:
@@ -759,17 +763,23 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
             elif tu.name in tm.MEMORY_TOOLS:
                 out = tm.dispatch_remember(sb, expert_id, product, tu.input or {},
                                            source_message_id=trigger_message_id)
+            elif tu.name == "memory":
+                try:
+                    out = tmf.dispatch(tmf.SupabaseStore(sb, expert_id, product), tu.input or {})
+                except Exception as e:  # noqa: BLE001
+                    out = f"memory error: {type(e).__name__}: {e}"
             else:
                 out = ta.dispatch(tu.name, tu.input or {})
             results.append({
                 "type": "tool_result",
                 "tool_use_id": tu.id,
-                "content": json.dumps(out, ensure_ascii=False),
+                "content": out if isinstance(out, str) else json.dumps(out, ensure_ascii=False),
             })
         convo.append({"role": "user", "content": results})
     # 用尽迭代次数:再要一次最终文字总结(不给 tools, 逼它收尾)
     resp = cli.messages.create(
         model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=convo,
+        thinking={"type": "adaptive"}, output_config={"effort": "high"},
     )
     if trace_steps is not None:
         u = getattr(resp, "usage", None)
