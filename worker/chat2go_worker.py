@@ -206,7 +206,7 @@ TRADE_ACCOUNTING_GUIDE = """
 5. **用户要「盖公章 / 加章」**:在 blocks 里**紧跟「需方盖章:」那段之后**放一个 **`{type:'image', overlay:true, width_mm:42}`** 块(**不用指定哪张图** —— 系统会自动从用户传的图里挑出那张方形红章、抠白底、精确压在「需方盖章:」那行上,真盖章效果)。**你能盖章,别让用户去 WPS。**
 
 ## 标准单证优先用 make_document(品牌级排版)
-- **标准外贸单证(报价单 / 形式发票 PI)→ 必须用 make_document**(品牌级排版,样式统一)。只需给 doc_type(quote/pi) + buyer(客户) + items(货物:name/spec/qty/unit_price) + trade_term + terms(条款键值对);要盖章传 stamp:true。卖方公司抬头/银行/logo/公章不用你填,系统按公司档案自动套。
+- **整套外贸单证(报价单 quote / 形式发票 pi / 销售合同 contract / 商业发票 ci / 装箱单 packing / 对账单 statement)→ 必须用 make_document**(品牌级排版,样式统一)。按 doc_type 区分:报价/PI/合同/CI 给 items(name/spec/qty/unit_price);装箱单 items 带 ctns/nw/gw/cbm;对账单给 rows;合同条款给 clauses。卖方抬头/银行/logo/公章不用你填,系统按公司档案自动套。要盖章传 stamp:true。
 - 非标准/自由格式文档才用 make_pdf。
 - 若公司档案还没建立,先用 remember 工具记一条 kind='company'、title='公司档案'、content 为 JSON(name_cn/name_en/address/tel/email/contact/logo_text/bank{beneficiary/bank_name/account/swift}),再出单证。
 - 仍然:严禁编造下载链接,必须真的调用工具生成。

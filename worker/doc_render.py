@@ -91,13 +91,15 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 DOCUMENT_TOOL_SCHEMA = {
     "name": "make_document",
-    "description": ("生成品牌级外贸单证 PDF(报价单 quote / 形式发票 pi)。"
-                    "只需给 buyer+items+条款,卖方抬头/银行/logo/公章由系统按公司档案自动填充。"
+    "description": ("生成品牌级外贸单证 PDF。"
+                    "doc_type: 报价单 quote/形式发票 pi/销售合同 contract/商业发票 ci/装箱单 packing/对账单 statement。"
+                    "报价/PI/合同/CI 用 items(name/qty/unit_price);装箱单 items 带 ctns/nw/gw/cbm;对账单用 rows。合同条款用 clauses。"
+                    "卖方抬头/银行/logo/公章由系统按公司档案自动填充。"
                     "要盖章传 stamp:true。必须真的调用本工具,严禁编造下载链接。"),
     "input_schema": {
         "type": "object",
         "properties": {
-            "doc_type": {"type": "string", "enum": ["quote", "pi"]},
+            "doc_type": {"type": "string", "enum": ["quote", "pi", "contract", "ci", "packing", "statement"]},
             "title_cn": {"type": "string"},
             "doc_no": {"type": "string"},
             "date": {"type": "string", "description": "YYYY-MM-DD,省略则用当天"},
@@ -110,12 +112,32 @@ DOCUMENT_TOOL_SCHEMA = {
             "items": {"type": "array", "items": {"type": "object", "properties": {
                 "name": {"type": "string"}, "spec": {"type": "string"},
                 "qty": {"type": "number"}, "unit_price": {"type": "number"},
-                "amount": {"type": "number"}}, "required": ["name", "qty", "unit_price"]}},
+                "amount": {"type": "number"},
+                "ctns": {"type": "number"}, "nw": {"type": "number"},
+                "gw": {"type": "number"}, "cbm": {"type": "number"},
+                "hs": {"type": "string"}}, "required": ["name", "qty", "unit_price"]}},
             "extra_charges": {"type": "array", "items": {"type": "object", "properties": {
                 "label": {"type": "string"}, "amount": {"type": "number"}}}},
             "trade_term": {"type": "string"},
             "terms": {"type": "object", "additionalProperties": {"type": "string"}},
             "stamp": {"type": "boolean"},
+            "clauses": {"type": "array", "description": "销售合同条款,每项 {no,text}",
+                        "items": {"type": "object", "properties": {
+                            "no": {"type": "string"}, "text": {"type": "string"}}}},
+            "sign_place": {"type": "string", "description": "合同签约地"},
+            "consignee": {"type": "object", "description": "商业发票收货人(缺省用 buyer)",
+                          "properties": {"name": {"type": "string"}, "address": {"type": "string"}}},
+            "port": {"type": "string", "description": "起运→目的港,如 Ningbo → Busan"},
+            "amount_words": {"type": "string", "description": "金额英文大写(商业发票)"},
+            "contract_no": {"type": "string"},
+            "marks": {"type": "string", "description": "唛头 Marks & Nos.(CI/装箱单)"},
+            "rows": {"type": "array", "description": "对账单行,每项 {date,ref,receivable,received,balance}",
+                     "items": {"type": "object", "properties": {
+                         "date": {"type": "string"}, "ref": {"type": "string"},
+                         "receivable": {"type": "number"}, "received": {"type": "number"},
+                         "balance": {"type": "number"}}}},
+            "customer": {"type": "string", "description": "对账单客户名"},
+            "as_of": {"type": "string", "description": "对账单截止日期"},
         },
         "required": ["doc_type", "buyer", "items"],
     },

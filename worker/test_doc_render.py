@@ -181,5 +181,5 @@ class TestSchema(unittest.TestCase):
         self.assertEqual(s["name"], "make_document")
         props = s["input_schema"]["properties"]
         self.assertIn("doc_type", props)
-        self.assertEqual(props["doc_type"]["enum"], ["quote", "pi"])
+        self.assertEqual(props["doc_type"]["enum"], ["quote", "pi", "contract", "ci", "packing", "statement"])
         self.assertEqual(set(s["input_schema"]["required"]), {"doc_type", "buyer", "items"})
