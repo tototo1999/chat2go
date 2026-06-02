@@ -271,7 +271,9 @@ HISTORY_LIMIT = 40
 DEFAULT_MODEL = ("anthropic/claude-sonnet-4.6"
                  if os.environ.get("OPENROUTER_API_KEY") else "claude-sonnet-4-6")
 # tradego 强制直连时用横杠名(忽略 OpenRouter 点号名)
-DIRECT_MODEL = "claude-opus-4-8"
+# 2026-06-01 降本:Opus 4.8→Sonnet 4.6(原 P0 模型,proven)。adaptive thinking/effort 仅 Opus 带。
+# 要切回 Opus 改这一行即可(reasoning 自动按模型名启停)。
+DIRECT_MODEL = "claude-sonnet-4-6"
 # 单次回复 max_tokens(Opus 4.8 + adaptive thinking 会吃 token,给足 headroom 防截断;
 # 非流式下 12000 仍远低于超时风险。非 trade/OpenRouter 路径同享,加大无害)
 MAX_TOKENS = 12000
@@ -696,6 +698,9 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     # 命中场景:tool-use 循环第 2+ 次调用、5 分钟内同房连续消息(读取按 0.1x 计费)。
     # claude-sonnet-4-6 最小可缓存前缀 2048 token;外贸房 tools+system 远超,稳缓存。
     system_blocks = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+    # adaptive thinking + high effort 是 Opus 4.8 专属;非 Opus(如 Sonnet)不带,否则 API 不认。
+    reasoning = ({"thinking": {"type": "adaptive"}, "output_config": {"effort": "high"}}
+                 if model.startswith("claude-opus") else {})
     if not is_trade:
         resp = cli.messages.create(
             model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=messages,
@@ -710,8 +715,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     for _ in range(MAX_TOOL_ITERS):
         resp = cli.messages.create(
             model=model, max_tokens=MAX_TOKENS, system=system_blocks,
-            messages=convo, tools=tools,
-            thinking={"type": "adaptive"}, output_config={"effort": "high"},
+            messages=convo, tools=tools, **reasoning,
         )
         u = getattr(resp, "usage", None)
         if u:
@@ -780,7 +784,7 @@ def _run_completion(cli, sb, model: str, system: str, messages: list[dict],
     # 用尽迭代次数:再要一次最终文字总结(不给 tools, 逼它收尾)
     resp = cli.messages.create(
         model=model, max_tokens=MAX_TOKENS, system=system_blocks, messages=convo,
-        thinking={"type": "adaptive"}, output_config={"effort": "high"},
+        **reasoning,
     )
     if trace_steps is not None:
         u = getattr(resp, "usage", None)
